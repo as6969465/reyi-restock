@@ -1,3 +1,9 @@
+/* ── CSS Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+button, input, select, textarea { font-family: inherit; }
+img { max-width: 100%; display: block; }
+
 /* ── 基礎 ── */
 * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
 body { font-family: -apple-system, 'Segoe UI', Arial, sans-serif; overscroll-behavior: none; }
