@@ -108,7 +108,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   let user = getCurrentUser();
   if (!user) {
     try { user = await AuthAPI.me(); sessionStorage.setItem('rr_user', JSON.stringify(user)); }
-    catch(e) { window.location.href = 'index.html'; return; }
+    catch(e) { window.location.replace('index.html'); return; }
   }
 
   currentRole = user.roleId || user.role;
@@ -132,6 +132,10 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   initTabsByRole(currentRole);
   renderPhotoSlots();
+
+  // 驗證完成，移除 Loading 遮罩
+  const loading = document.getElementById('authLoading');
+  if (loading) loading.remove();
 });
 
 function logout() {
