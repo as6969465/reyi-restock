@@ -87,9 +87,10 @@ async function handleLogin(e) {
   try {
     const user = await AuthAPI.login(userId, password);
     sessionStorage.setItem('rr_user', JSON.stringify(user));
-    // 自動偵測裝置：手機 → app.html，桌機 → main.html
-    const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth < 768;
-    window.location.href = isMobile ? 'app.html' : 'main.html';
+    // 顯示版本選擇 Modal
+    const modal = document.getElementById('versionModal');
+    if (modal) { modal.style.display = 'flex'; }
+    else { window.location.href = 'main.html'; }
   } catch(e) {
     errDiv.textContent = e.message || '登入失敗，請稍後再試';
     errDiv.classList.remove('hidden');
