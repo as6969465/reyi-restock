@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "reyi-restock",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "-p", "3456", "-s", "C:\\Users\\c830627\\Desktop\\reyi-restock"],
+      "port": 3456
+    }
+  ]
+}

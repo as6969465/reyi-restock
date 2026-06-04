@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 帳號資料：申請時可寫（新增），管理員可讀全部
+    // 修改/刪除 需後端驗證（目前以前端 session 控制）
+    match /users/{userId} {
+      allow read:   if true;  // 登入需讀取使用者資料
+      allow create: if true;  // 允許新帳號申請
+      allow update: if true;  // 管理員編輯（前端已做角色驗證）
+      allow delete: if true;
+    }
+
+    match /roles/{roleId} {
+      allow read:  if true;
+      allow write: if true;   // 前端已限制管理員才能操作
+    }
+
+    match /products/{productId} {
+      allow read:  if true;
+      allow write: if true;
+    }
+
+    match /audit_logs/{logId} {
+      allow read:  if true;
+      allow create: if true;  // 任何已登入操作皆可寫入
+      allow update, delete: if false;  // 日誌不允許修改或刪除
+    }
+  }
+}

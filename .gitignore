@@ -1,0 +1,25 @@
+# Firebase 設定（含 API Key，請勿推送）
+config.js
+
+# Python 後端資料庫
+*.db
+reyi_restock.db
+flask_session/
+
+# Python 環境
+__pycache__/
+*.pyc
+.env
+
+# Node
+node_modules/
+
+# 系統檔案
+.DS_Store
+Thumbs.db
+
+# 暫存檔
+out*.json
+chunk*.txt
+admin_chunk.txt
+.github-deploy.json

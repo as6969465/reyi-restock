@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>日翊收發進貨平台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-indigo-700 text-white px-6 py-3 flex items-center justify-between shadow-md">
+    <div class="flex items-center gap-3">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+      </svg>
+      <span class="font-bold text-lg">日翊收發進貨平台</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="text-right">
+        <p id="userDisplay" class="text-sm font-medium text-white"></p>
+        <p id="roleDisplay" class="text-xs text-indigo-300"></p>
+      </div>
+      <button onclick="logout()" class="text-sm bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded-lg transition-colors">登出</button>
+    </div>
+  </header>
+
+  <!-- ===== 流程進度列 ===== -->
+  <div class="bg-white border-b border-gray-100 px-6 py-2">
+    <div class="flex items-center gap-2 text-xs text-gray-400 max-w-2xl">
+      <span class="step-dot bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center font-bold">1</span>
+      <span class="text-gray-600 font-medium">現場收貨驗收</span>
+      <span class="flex-1 h-px bg-gray-200"></span>
+      <span class="step-dot bg-orange-400 text-white rounded-full w-5 h-5 flex items-center justify-center font-bold">2</span>
+      <span class="text-gray-600 font-medium">專員異常檢核</span>
+      <span class="flex-1 h-px bg-gray-200"></span>
+      <span class="step-dot bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center font-bold">3</span>
+      <span class="text-gray-600 font-medium">採購回覆處理</span>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="bg-white border-b border-gray-200 px-6 flex items-center justify-between">
+    <nav class="flex gap-0" id="mainTabs">
+      <!-- 現場人員 tabs -->
+      <button onclick="switchTab('receiving')" id="tab-receiving" data-role="field"
+        class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-indigo-600 text-indigo-600">
+        當日驗收作業
+      </button>
+      <button onclick="switchTab('warehouse')" id="tab-warehouse" data-role="field"
+        class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+        入庫清單
+      </button>
+      <!-- 物流專員 tabs -->
+      <button onclick="switchTab('review')" id="tab-review" data-role="specialist"
+        class="tab-btn hidden px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+        異常檢核
+        <span id="badge-review" class="ml-1.5 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 hidden"></span>
+      </button>
+      <button onclick="switchTab('report')" id="tab-report" data-role="specialist"
+        class="tab-btn hidden px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+        異常報表
+      </button>
+      <!-- 採購人員 tabs -->
+      <button onclick="switchTab('purchase')" id="tab-purchase" data-role="purchase"
+        class="tab-btn hidden px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+        待回覆清單
+        <span id="badge-purchase" class="ml-1.5 bg-blue-500 text-white text-xs rounded-full px-1.5 py-0.5 hidden"></span>
+      </button>
+      <button onclick="switchTab('resolved')" id="tab-resolved" data-role="purchase"
+        class="tab-btn hidden px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+        已處理記錄
+      </button>
+      <!-- 管理員 tab -->
+      <button onclick="switchTab('admin')" id="tab-admin" data-role="admin"
+        class="tab-btn hidden px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+        ⚙️ 帳號管理
+      </button>
+    </nav>
+    <!-- 全域日期篩選（非驗收頁） -->
+    <div id="globalDateFilter" class="hidden items-center gap-2 py-2">
+      <span class="text-xs text-gray-500">到貨日</span>
+      <input type="date" id="filterDateFrom" onchange="applyDateFilter()"
+        class="border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+      <span class="text-gray-400 text-xs">～</span>
+      <input type="date" id="filterDateTo" onchange="applyDateFilter()"
+        class="border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+      <button onclick="clearDateFilter()" class="text-xs text-gray-400 hover:text-gray-600 underline">清除</button>
+    </div>
+  </div>
+
+  <!-- ===== 1. 當日驗收作業 (現場人員) ===== -->
+  <div id="page-receiving" class="p-6">
+    <div class="flex flex-wrap items-center gap-4 mb-5">
+      <div>
+        <h2 class="text-lg font-semibold text-gray-800">當日驗收作業</h2>
+        <p class="text-xs text-gray-500 mt-0.5">上傳每日進貨 Excel，進行商品驗收登錄</p>
+      </div>
+      <div class="ml-auto flex items-center gap-3">
+        <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+          <span class="text-xs text-gray-500">到貨日</span>
+          <input type="date" id="receivingDate" onchange="onReceivingDateChange()"
+            class="border-none bg-transparent text-sm font-medium text-gray-700 focus:outline-none cursor-pointer" />
+        </div>
+        <label class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+          </svg>
+          匯入 Excel
+          <input type="file" id="excelFile" accept=".xlsx,.xls" class="hidden" onchange="importExcel(this)" />
+        </label>
+        <button onclick="openManualAddModal()" class="bg-amber-500 hover:bg-amber-600 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          手動新增
+        </button>
+        <span id="importStatus" class="text-xs text-gray-500"></span>
+        <button id="deleteSelectedBtn" onclick="deleteSelected()" class="hidden bg-red-500 hover:bg-red-600 text-white text-sm px-4 py-2 rounded-lg flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          刪除勾選
+        </button>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-5">
+      <div class="bg-white rounded-xl border border-gray-200 p-4">
+        <p class="text-xs text-gray-500">今日進貨項數</p>
+        <p id="stat-total" class="text-2xl font-bold text-gray-800 mt-1">0</p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 p-4">
+        <p class="text-xs text-gray-500">已驗收</p>
+        <p id="stat-done" class="text-2xl font-bold text-green-600 mt-1">0</p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 p-4">
+        <p class="text-xs text-gray-500">待驗收</p>
+        <p id="stat-pending" class="text-2xl font-bold text-amber-500 mt-1">0</p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 p-4">
+        <p class="text-xs text-gray-500">有異常</p>
+        <p id="stat-abnormal" class="text-2xl font-bold text-red-500 mt-1">0</p>
+      </div>
+      <div class="bg-white rounded-xl border border-amber-200 p-4">
+        <p class="text-xs text-gray-500">臨時到貨</p>
+        <p id="stat-manual" class="text-2xl font-bold text-amber-500 mt-1">0</p>
+      </div>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm whitespace-nowrap">
+          <thead>
+            <tr class="bg-gray-50 border-b border-gray-200">
+              <th class="px-4 py-3 w-8"><input type="checkbox" id="checkAll" onchange="toggleCheckAll(this)" class="accent-indigo-600 w-4 h-4 cursor-pointer" /></th>
+              <th class="text-left px-4 py-3 font-medium text-gray-600 w-10">序</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-600">採購單號</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-600">大分類</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-600">條碼</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-600">品號</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-normal min-w-[120px]">品名</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-600 w-24">規格</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-600">期數</th>
+              <th class="text-right px-4 py-3 font-medium text-gray-600">採購數量</th>
+              <th class="text-center px-4 py-3 font-medium text-gray-600">狀態</th>
+              <th class="text-center px-4 py-3 font-medium text-gray-600">操作</th>
+            </tr>
+          </thead>
+          <tbody id="productTableBody">
+            <tr><td colspan="11" class="px-4 py-16 text-center text-gray-400">
+              <div class="flex flex-col items-center gap-2">
+                <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <span class="text-sm">尚未匯入進貨資料，請點選「匯入 Excel」</span>
+              </div>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 2. 入庫清單 (現場人員) ===== -->
+  <div id="page-warehouse" class="p-6 hidden">
+    <div class="flex items-center justify-between mb-5">
+      <div><h2 class="text-lg font-semibold text-gray-800">入庫清單</h2>
+        <p class="text-xs text-gray-500 mt-0.5">已驗收商品清單，供入庫人員使用</p></div>
+      <button onclick="exportWarehouseList()" class="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>匯出清單
+      </button>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm whitespace-nowrap">
+          <thead><tr class="bg-gray-50 border-b border-gray-200">
+            <th class="text-left px-4 py-3 font-medium text-gray-600">到貨日</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">品號</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">條碼</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">品名</th>
+            <th class="text-right px-4 py-3 font-medium text-gray-600">採購數量</th>
+            <th class="text-right px-4 py-3 font-medium text-gray-600">良品數量</th>
+            <th class="text-right px-4 py-3 font-medium text-gray-600">不良品數量</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">不良原因</th>
+            <th class="text-center px-4 py-3 font-medium text-gray-600">照片</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">驗收時間</th>
+          </tr></thead>
+          <tbody id="warehouseTableBody"><tr><td colspan="10" class="px-4 py-12 text-center text-gray-400 text-sm">尚無已驗收資料</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 3. 異常檢核 (物流專員) ===== -->
+  <div id="page-review" class="p-6 hidden">
+    <div class="flex items-center justify-between mb-5">
+      <div><h2 class="text-lg font-semibold text-gray-800">異常檢核</h2>
+        <p class="text-xs text-gray-500 mt-0.5">審核現場回報的不良品，填寫異常商流並轉交採購</p></div>
+    </div>
+    <!-- 統計 -->
+    <div class="grid grid-cols-3 gap-4 mb-5">
+      <div class="bg-white rounded-xl border border-red-200 p-4">
+        <p class="text-xs text-gray-500">待檢核</p>
+        <p id="rev-stat-pending" class="text-2xl font-bold text-red-500 mt-1">0</p>
+      </div>
+      <div class="bg-white rounded-xl border border-orange-200 p-4">
+        <p class="text-xs text-gray-500">待採購回覆</p>
+        <p id="rev-stat-proc" class="text-2xl font-bold text-orange-500 mt-1">0</p>
+      </div>
+      <div class="bg-white rounded-xl border border-green-200 p-4">
+        <p class="text-xs text-gray-500">已處理</p>
+        <p id="rev-stat-done" class="text-2xl font-bold text-green-600 mt-1">0</p>
+      </div>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm whitespace-nowrap">
+          <thead><tr class="bg-gray-50 border-b border-gray-200">
+            <th class="text-left px-4 py-3 font-medium text-gray-600">到貨日</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">品號</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">品名</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">大分類</th>
+            <th class="text-right px-4 py-3 font-medium text-gray-600">採購數</th>
+            <th class="text-right px-4 py-3 font-medium text-gray-600">不良品</th>
+            <th class="text-center px-4 py-3 font-medium text-gray-600">照片</th>
+            <th class="text-center px-4 py-3 font-medium text-gray-600">流程狀態</th>
+            <th class="text-center px-4 py-3 font-medium text-gray-600">操作</th>
+          </tr></thead>
+          <tbody id="reviewTableBody"><tr><td colspan="9" class="px-4 py-12 text-center text-gray-400 text-sm">尚無待檢核資料</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 4. 異常報表 (物流專員) ===== -->
+  <div id="page-report" class="p-6 hidden">
+    <div class="flex items-center justify-between mb-5">
+      <div><h2 class="text-lg font-semibold text-gray-800">異常報表</h2>
+        <p class="text-xs text-gray-500 mt-0.5">對齊商品異常回覆商流格式</p></div>
+      <button onclick="exportReport()" class="bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>匯出異常報表
+      </button>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm whitespace-nowrap">
+          <thead><tr class="bg-gray-50 border-b border-gray-200">
+            <th class="text-left px-4 py-3 font-medium text-gray-600">日期</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">連動時間</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">異常分類</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">大分類</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">商品編號</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">商品名稱</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">異常原因</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">其他說明</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">物流專員</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">採購人員</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">採購回覆</th>
+            <th class="text-center px-4 py-3 font-medium text-gray-600">照片</th>
+          </tr></thead>
+          <tbody id="reportTableBody"><tr><td colspan="11" class="px-4 py-12 text-center text-gray-400 text-sm">尚無異常記錄</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 5. 待回覆清單 (採購人員) ===== -->
+  <div id="page-purchase" class="p-6 hidden">
+    <div class="flex items-center justify-between mb-5">
+      <div><h2 class="text-lg font-semibold text-gray-800">待回覆清單</h2>
+        <p class="text-xs text-gray-500 mt-0.5">請針對各異常商品填寫處理方式</p></div>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm whitespace-nowrap">
+          <thead><tr class="bg-gray-50 border-b border-gray-200">
+            <th class="text-left px-4 py-3 font-medium text-gray-600">到貨日</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">品號</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">品名</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">異常原因</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">其他說明</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">物流專員</th>
+            <th class="text-center px-4 py-3 font-medium text-gray-600">照片</th>
+            <th class="text-center px-4 py-3 font-medium text-gray-600">操作</th>
+          </tr></thead>
+          <tbody id="purchaseTableBody"><tr><td colspan="8" class="px-4 py-12 text-center text-gray-400 text-sm">尚無待回覆項目</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 6. 已處理記錄 (採購人員) ===== -->
+  <div id="page-resolved" class="p-6 hidden">
+    <div class="flex items-center justify-between mb-5">
+      <div><h2 class="text-lg font-semibold text-gray-800">已處理記錄</h2>
+        <p class="text-xs text-gray-500 mt-0.5">已回覆完成的異常商品記錄</p></div>
+      <button onclick="exportResolvedExcel()" class="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded-lg flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>匯出 Excel
+      </button>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm whitespace-nowrap">
+          <thead><tr class="bg-gray-50 border-b border-gray-200">
+            <th class="text-left px-4 py-3 font-medium text-gray-600">日期</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">連動時間</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">異常分類</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">廠商</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">大分類</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">商品編號</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">商品名稱</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">異常原因</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">其他說明</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">物流回覆專員</th>
+          </tr></thead>
+          <tbody id="resolvedTableBody"><tr><td colspan="10" class="px-4 py-12 text-center text-gray-400 text-sm">尚無已處理記錄</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 帳號管理 (管理員) ===== -->
+  <div id="page-admin" class="p-6 hidden space-y-8">
+
+    <!-- 角色管理 -->
+    <div>
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-800">角色管理</h2>
+          <p class="text-xs text-gray-500 mt-0.5">建立角色並設定可存取的功能頁籤</p>
+        </div>
+        <button onclick="openAddRoleModal()" class="bg-purple-600 hover:bg-purple-700 text-white text-sm px-4 py-2 rounded-lg flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>新增角色
+        </button>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <table class="w-full text-sm">
+          <thead><tr class="bg-gray-50 border-b border-gray-200">
+            <th class="text-left px-4 py-3 font-medium text-gray-600">角色名稱</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">可存取功能</th>
+            <th class="text-center px-4 py-3 font-medium text-gray-600">操作</th>
+          </tr></thead>
+          <tbody id="roleTableBody"><tr><td colspan="3" class="px-4 py-8 text-center text-gray-400 text-sm">尚無自訂角色</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 帳號管理 -->
+    <div>
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-800">帳號管理</h2>
+          <p class="text-xs text-gray-500 mt-0.5">管理系統成員帳號與指派角色</p>
+        </div>
+        <button onclick="openAddUserModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-2 rounded-lg flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>新增帳號
+        </button>
+      </div>
+      <div id="pendingAlert" class="hidden mb-4 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+        <p class="text-sm font-medium text-yellow-700">⚠️ 有待審核的帳號申請</p>
+        <p class="text-xs text-yellow-600 mt-1">請至下方列表查看狀態為「待審核」的帳號並指派角色</p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <table class="w-full text-sm">
+          <thead><tr class="bg-gray-50 border-b border-gray-200">
+            <th class="text-left px-4 py-3 font-medium text-gray-600">帳號</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">姓名</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">角色</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">申請時間</th>
+            <th class="text-center px-4 py-3 font-medium text-gray-600">操作</th>
+          </tr></thead>
+          <tbody id="userTableBody"><tr><td colspan="5" class="px-4 py-12 text-center text-gray-400 text-sm">尚無帳號資料</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 角色 Modal ===== -->
+  <div id="roleModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <h3 id="roleModalTitle" class="font-semibold text-gray-800">新增角色</h3>
+        <button onclick="closeRoleModal()" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="px-6 py-4 space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">角色名稱 <span class="text-red-500">*</span></label>
+          <input id="rm-name" type="text" maxlength="20" placeholder="請輸入角色名稱（如：倉管人員）"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">可存取功能頁籤</label>
+          <div class="grid grid-cols-2 gap-2 border border-gray-200 rounded-lg p-3 bg-gray-50">
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" value="receiving" class="rm-tab accent-purple-500" /> 當日驗收作業
+            </label>
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" value="warehouse" class="rm-tab accent-purple-500" /> 入庫清單
+            </label>
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" value="review" class="rm-tab accent-purple-500" /> 異常檢核
+            </label>
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" value="report" class="rm-tab accent-purple-500" /> 異常報表
+            </label>
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" value="purchase" class="rm-tab accent-purple-500" /> 待回覆清單
+            </label>
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" value="resolved" class="rm-tab accent-purple-500" /> 已處理記錄
+            </label>
+          </div>
+        </div>
+        <div id="roleModalError" class="hidden text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2"></div>
+        <div class="flex gap-3 pt-2">
+          <button onclick="closeRoleModal()" class="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-lg text-sm hover:bg-gray-50">取消</button>
+          <button onclick="saveRole()" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2.5 rounded-lg text-sm font-medium">儲存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 帳號 Modal ===== -->
+  <div id="userModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <h3 id="userModalTitle" class="font-semibold text-gray-800">新增帳號</h3>
+        <button onclick="closeUserModal()" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="px-6 py-4 space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">帳號 <span class="text-xs text-gray-400">（EIP 帳號）</span></label>
+          <input id="um-userId" type="text" maxlength="15" placeholder="請輸入帳號"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">姓名 <span class="text-red-500">*</span></label>
+          <input id="um-name" type="text" maxlength="20" placeholder="請輸入真實姓名"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+        <div id="um-password-row">
+          <label class="block text-sm font-medium text-gray-700 mb-1">密碼 <span class="text-gray-400 font-normal text-xs">（編輯時留空則不變更）</span></label>
+          <input id="um-password" type="password" maxlength="30" placeholder="請輸入密碼"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">角色 <span class="text-red-500">*</span></label>
+          <select id="um-role" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="pending">待審核</option>
+            <!-- 動態角色選項由 JS 填入 -->
+            <option value="admin">管理員</option>
+          </select>
+        </div>
+        <div id="userModalError" class="hidden text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2"></div>
+        <div class="flex gap-3 pt-2">
+          <button onclick="closeUserModal()" class="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-lg text-sm hover:bg-gray-50">取消</button>
+          <button onclick="saveUser()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg text-sm font-medium">儲存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 照片預覽 Modal ===== -->
+  <div id="photoModal" class="fixed inset-0 bg-black/80 z-[100] hidden flex items-center justify-center p-4" onclick="closePhotoModal(event)">
+    <div class="relative max-w-3xl w-full" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between mb-3">
+        <span id="photoModalTitle" class="text-white font-medium text-sm"></span>
+        <button onclick="closePhotoModal()" class="text-white/70 hover:text-white">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="relative bg-black rounded-xl overflow-hidden flex items-center justify-center" style="min-height:320px">
+        <img id="photoModalImg" src="" alt="" class="max-w-full max-h-[70vh] object-contain" />
+        <button id="photoPrev" onclick="shiftPhoto(-1)" class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full w-10 h-10 flex items-center justify-center">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <button id="photoNext" onclick="shiftPhoto(1)" class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full w-10 h-10 flex items-center justify-center">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+      <div id="photoThumbs" class="flex gap-2 mt-3 overflow-x-auto pb-1 justify-center"></div>
+      <p id="photoCounter" class="text-center text-white/60 text-xs mt-2"></p>
+    </div>
+  </div>
+
+  <!-- ===== 手動新增 Modal ===== -->
+  <div id="manualAddModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-white">
+        <div>
+          <h3 class="font-semibold text-gray-800">手動新增臨時到貨</h3>
+          <p class="text-xs text-amber-500 mt-0.5">此筆資料將標記為「臨時到貨」</p>
+        </div>
+        <button onclick="closeManualAddModal()" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="px-6 py-4 space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">採購單號</label>
+            <input id="ma-po" type="text" placeholder="選填"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">大分類</label>
+            <input id="ma-cat" type="text" placeholder="如：食品"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">條碼</label>
+            <input id="ma-barcode" type="text" placeholder="選填"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">品號</label>
+            <input id="ma-itemNo" type="text" placeholder="選填"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">品名 <span class="text-red-500">*</span></label>
+          <input id="ma-name" type="text" placeholder="請輸入商品名稱"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">規格</label>
+            <input id="ma-spec" type="text" placeholder="選填"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">採購數量 <span class="text-red-500">*</span></label>
+            <input id="ma-qty" type="number" min="1" placeholder="0"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+          </div>
+        </div>
+        <div id="manualAddError" class="hidden text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2"></div>
+        <div class="flex gap-3 pt-2">
+          <button onclick="closeManualAddModal()" class="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-lg text-sm hover:bg-gray-50">取消</button>
+          <button onclick="saveManualAdd()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-lg text-sm font-medium">新增</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 驗收 Modal (現場人員) ===== -->
+  <div id="receiveModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+        <h3 id="modalTitle" class="font-semibold text-gray-800">驗收登錄</h3>
+        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="px-6 py-4">
+        <div class="bg-gray-50 rounded-xl p-4 mb-5">
+          <div class="grid grid-cols-2 gap-2 text-sm">
+            <div><span class="text-gray-500">品號：</span><span id="m-itemCode" class="font-medium"></span></div>
+            <div><span class="text-gray-500">採購單：</span><span id="m-poNo" class="font-medium"></span></div>
+            <div class="col-span-2"><span class="text-gray-500">品名：</span><span id="m-itemName" class="font-medium"></span></div>
+            <div class="col-span-2"><span class="text-gray-500">規格：</span><span id="m-spec" class="font-medium text-gray-600"></span></div>
+            <div><span class="text-gray-500">條碼：</span><span id="m-barcode" class="font-medium"></span></div>
+            <div><span class="text-gray-500">採購數量：</span><span id="m-qty" class="font-bold text-indigo-600"></span></div>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">良品數量 <span class="text-red-500">*</span></label>
+            <input id="goodQty" type="number" min="0" placeholder="0"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">不良品數量</label>
+            <input id="badQty" type="number" min="0" placeholder="0" oninput="onBadQtyInput()"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+        </div>
+
+        <!-- 異常資訊 (有不良品才顯示) -->
+        <div id="defectSection" class="hidden space-y-3 mb-4 border-t border-red-100 pt-3">
+          <p class="text-xs font-semibold text-red-500 uppercase tracking-wide">異常資訊</p>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">異常分類</label>
+            <select id="defectClass" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400">
+              <option value="其他異常">其他異常</option>
+              <option value="效期異常">效期異常</option>
+              <option value="數量異常">數量異常</option>
+              <option value="品名異常">品名異常</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">異常原因 <span class="text-red-500">*</span><span class="text-gray-400 font-normal ml-1">（可複選）</span></label>
+            <div class="grid grid-cols-2 gap-1.5 border border-gray-200 rounded-lg p-3 bg-gray-50 max-h-44 overflow-y-auto" id="defectReasonList"></div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">其他說明</label>
+            <textarea id="defectNote" rows="2" placeholder="補充說明..."
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"></textarea>
+          </div>
+
+        </div>
+
+        <!-- 照片上傳 -->
+        <div class="mb-5">
+          <label class="block text-sm font-medium text-gray-700 mb-2">上傳照片（最多 6 張）</label>
+          <div class="grid grid-cols-3 gap-2" id="photoGrid"></div>
+          <input type="file" id="photoInput" accept="image/*" multiple class="hidden" onchange="handlePhotoUpload(this)" />
+          <p class="text-xs text-gray-400 mt-1" id="photoCount">已上傳 0 / 6 張</p>
+        </div>
+
+        <div id="modalError" class="hidden mb-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2"></div>
+        <div class="flex gap-3">
+          <button onclick="closeModal()" class="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-lg text-sm hover:bg-gray-50">取消</button>
+          <button onclick="saveReceiving()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg text-sm font-medium">確認驗收</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 異常檢核 Modal (物流專員) ===== -->
+  <div id="reviewModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+        <h3 class="font-semibold text-gray-800">異常檢核</h3>
+        <button onclick="closeReviewModal()" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="px-6 py-4">
+        <!-- 商品資訊 -->
+        <div class="bg-gray-50 rounded-xl p-4 mb-4 text-sm">
+          <div class="grid grid-cols-2 gap-2">
+            <div><span class="text-gray-500">品號：</span><span id="rv-itemCode" class="font-medium"></span></div>
+            <div><span class="text-gray-500">大分類：</span><span id="rv-cat" class="font-medium"></span></div>
+            <div class="col-span-2"><span class="text-gray-500">品名：</span><span id="rv-name" class="font-medium"></span></div>
+            <div><span class="text-gray-500">採購數：</span><span id="rv-qty" class="font-bold text-gray-700"></span></div>
+            <div><span class="text-gray-500">不良品：</span><span id="rv-badQty" class="font-bold text-red-500"></span></div>
+          </div>
+        </div>
+        <!-- 現場記錄（唯讀） -->
+        <div class="bg-orange-50 rounded-xl p-4 mb-4">
+          <p class="text-xs font-semibold text-orange-600 mb-2">現場記錄</p>
+          <div class="text-sm space-y-1">
+            <div><span class="text-gray-500">異常原因：</span><span id="rv-reasons" class="text-gray-700"></span></div>
+            <div><span class="text-gray-500">其他說明：</span><span id="rv-note" class="text-gray-700"></span></div>
+          </div>
+          <div id="rv-photos-row" class="mt-3 flex gap-2 flex-wrap"></div>
+        </div>
+        <!-- 專員補充 -->
+        <div class="space-y-3 mb-4">
+          <p class="text-xs font-semibold text-gray-600">專員確認</p>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1">連動時間</label>
+              <input id="rv-defectTime" type="text" placeholder="09:00~09:30"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1">異常分類</label>
+              <select id="rv-defectClass" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                <option value="其他異常">其他異常</option>
+                <option value="效期異常">效期異常</option>
+                <option value="數量異常">數量異常</option>
+                <option value="品名異常">品名異常</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">異常原因（可複選）</label>
+            <div class="grid grid-cols-2 gap-1.5 border border-gray-200 rounded-lg p-3 bg-gray-50 max-h-44 overflow-y-auto" id="rv-defectReasonList"></div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">補充說明</label>
+            <textarea id="rv-defectNote" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"></textarea>
+          </div>
+
+        </div>
+        <div id="reviewModalError" class="hidden mb-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2"></div>
+        <div class="flex gap-3">
+          <button onclick="closeReviewModal()" class="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-lg text-sm hover:bg-gray-50">取消</button>
+          <button onclick="submitReview()" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-lg text-sm font-medium">確認檢核・轉採購</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 採購回覆 Modal ===== -->
+  <div id="purchaseModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+        <h3 class="font-semibold text-gray-800">採購回覆處理方式</h3>
+        <button onclick="closePurchaseModal()" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="px-6 py-4">
+        <div class="bg-gray-50 rounded-xl p-4 mb-4 text-sm">
+          <div class="grid grid-cols-2 gap-2">
+            <div><span class="text-gray-500">品號：</span><span id="pur-itemCode" class="font-medium"></span></div>
+            <div><span class="text-gray-500">大分類：</span><span id="pur-cat"></span></div>
+            <div class="col-span-2"><span class="text-gray-500">品名：</span><span id="pur-name" class="font-medium"></span></div>
+          </div>
+        </div>
+        <div class="bg-orange-50 rounded-xl p-4 mb-4 text-sm">
+          <p class="text-xs font-semibold text-orange-600 mb-2">異常資訊</p>
+          <div><span class="text-gray-500">異常原因：</span><span id="pur-reasons" class="text-gray-700"></span></div>
+          <div class="mt-1"><span class="text-gray-500">補充說明：</span><span id="pur-note" class="text-gray-700"></span></div>
+          <div class="mt-1"><span class="text-gray-500">物流專員：</span><span id="pur-staff" class="text-gray-700"></span></div>
+        </div>
+        <div class="space-y-3 mb-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">處理方式 <span class="text-red-500">*</span></label>
+            <select id="pur-action" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+              <option value="">請選擇處理方式</option>
+              <option value="正常收貨">正常收貨</option>
+              <option value="退貨">退貨</option>
+              <option value="換貨">換貨</option>
+              <option value="補貨">補貨</option>
+              <option value="折讓">折讓</option>
+              <option value="報廢">報廢</option>
+              <option value="廠商確認後處理">廠商確認後處理</option>
+              <option value="其他">其他</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">回覆說明</label>
+            <textarea id="pur-reply" rows="3" placeholder="詳細說明處理方式..."
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"></textarea>
+          </div>
+        </div>
+        <div id="purchaseModalError" class="hidden mb-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2"></div>
+        <div class="flex gap-3">
+          <button onclick="closePurchaseModal()" class="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-lg text-sm hover:bg-gray-50">取消</button>
+          <button onclick="submitPurchaseReply()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-medium">確認回覆</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script type="module" src="firebase.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
