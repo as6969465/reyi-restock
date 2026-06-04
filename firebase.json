@@ -3,15 +3,22 @@
     "public": ".",
     "ignore": [
       "firebase.json",
+      ".firebaserc",
       "**/.*",
       "**/node_modules/**",
       "server.py",
       "requirements.txt",
+      "start.bat",
+      "*.bat",
+      "*.py",
+      "*.sh",
       "*.db",
+      "*.docx",
       "gen_report.js",
-      "security-report-*.docx",
       "openspec/**",
-      "db/**"
+      "db/**",
+      ".github/**",
+      ".claude/**"
     ],
     "rewrites": [
       {
