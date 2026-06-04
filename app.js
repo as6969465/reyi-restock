@@ -219,49 +219,65 @@ function renderProductCards() {
   const list  = getDateProducts(date);
   if (!list.length) {
     container.innerHTML = `<div class="empty-state">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-      <p style="font-size:15px;font-weight:600">${date ? date+' 尚無進貨資料' : '請選擇日期'}</p>
-      <p style="font-size:13px;margin-top:4px">點右下角匯入 Excel</p></div>`;
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+      <p>${date ? date + ' 尚無進貨資料' : '請選擇日期'}</p>
+      <small>點右下角 ↑ 匯入 Excel</small></div>`;
     return;
   }
   container.innerHTML = list.map((p, i) => `
-    <div class="product-card ${p.status!==STATUS.PENDING?'received':''} slide-up" onclick="openReceiveSheet('${date}',${i})">
-      <div class="product-card-header">
-        <div style="flex:1;min-width:0">
-          <div style="font-size:15px;font-weight:700;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
-          <div style="font-size:12px;color:#6b7280;margin-top:2px">${p.itemNo} · ${p.cat||'—'}</div>
-        </div>
-        <div style="text-align:right;flex-shrink:0">
-          ${statusBadgeHtml(p)}
-        </div>
+    <div class="product-card slide-up" data-status="${p.status}" onclick="openReceiveSheet('${date}',${i})">
+      <div class="product-card-inner">
+        <div class="product-card-name">${p.name}</div>
+        <div class="product-card-sub">${p.itemNo||'—'} · ${p.cat||'—'}</div>
+        ${p.received && p.badQty > 0 ? `<div style="margin-top:6px">${(p.defectReasons||[]).slice(0,2).map(r=>`<span class="badge badge-abnormal" style="font-size:10px;margin-right:3px">${r}</span>`).join('')}</div>` : ''}
       </div>
-      <div class="product-card-footer">
-        <div style="display:flex;gap:16px">
-          <div><div style="font-size:11px;color:#9ca3af">採購數量</div><div style="font-size:16px;font-weight:700;color:#4f46e5">${p.qty}</div></div>
-          ${p.received ? `<div><div style="font-size:11px;color:#9ca3af">良品</div><div style="font-size:16px;font-weight:700;color:#059669">${p.goodQty}</div></div>
-          <div><div style="font-size:11px;color:#9ca3af">不良品</div><div style="font-size:16px;font-weight:700;color:#dc2626">${p.badQty}</div></div>` : ''}
-        </div>
-        <div style="font-size:12px;color:#9ca3af">${p.barcode||''}</div>
+      <div class="product-card-right">
+        ${statusBadgeHtml(p)}
+        ${p.received
+          ? `<div class="qty-row">
+              <div class="qty-item"><div class="qty-num" style="color:#059669">${p.goodQty}</div><div class="qty-lbl">良品</div></div>
+              <div class="qty-item"><div class="qty-num" style="color:#dc2626">${p.badQty}</div><div class="qty-lbl">不良</div></div>
+             </div>`
+          : `<div><div class="qty-lbl">採購</div><div class="qty-big">${p.qty}</div></div>`}
       </div>
     </div>`).join('');
-  // 渲染條碼
-  setTimeout(() => {
-    if (typeof JsBarcode==='undefined') return;
-    container.querySelectorAll('[data-barcode]').forEach(svg => {
-      try { JsBarcode(svg, svg.dataset.barcode, {format:'CODE128',displayValue:false,height:28,margin:1,lineColor:'#374151',width:1}); } catch(e){}
-    });
-  }, 50);
 }
 
 function updateStats() {
   const list = getDateProducts(currentReceivingDate());
-  const set = el => { const e=document.getElementById(el.id); if(e) e.textContent=el.val; };
-  [
-    {id:'stat-total',    val:list.length},
-    {id:'stat-done',     val:list.filter(p=>p.status!==STATUS.PENDING).length},
-    {id:'stat-pending',  val:list.filter(p=>p.status===STATUS.PENDING).length},
-    {id:'stat-abnormal', val:list.filter(p=>[STATUS.ABNORMAL,STATUS.PROCUREMENT,STATUS.RESOLVED].includes(p.status)).length}
-  ].forEach(set);
+  const done     = list.filter(p=>p.status!==STATUS.PENDING).length;
+  const pending  = list.filter(p=>p.status===STATUS.PENDING).length;
+  const abnormal = list.filter(p=>[STATUS.ABNORMAL,STATUS.PROCUREMENT,STATUS.RESOLVED].includes(p.status)).length;
+  // 更新數字
+  const sv = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
+  sv('stat-total',   list.length);
+  sv('stat-done',    done);
+  sv('stat-pending', pending);
+  sv('stat-abnormal',abnormal);
+  // 更新統計卡片（重繪）
+  const grid = document.getElementById('statGrid');
+  if (!grid) return;
+  const IC = (path) => `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="${path}"/></svg>`;
+  grid.innerHTML = `
+    <div class="stat-card stat-total">
+      <div class="stat-card-icon">${IC('M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2')}</div>
+      <div><div class="stat-card-val">${list.length}</div><div class="stat-card-lbl">今日進貨</div></div>
+    </div>
+    <div class="stat-card stat-done">
+      <div class="stat-card-icon">${IC('M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z')}</div>
+      <div><div class="stat-card-val">${done}</div><div class="stat-card-lbl">已驗收</div></div>
+    </div>
+    <div class="stat-card stat-pending">
+      <div class="stat-card-icon">${IC('M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z')}</div>
+      <div><div class="stat-card-val">${pending}</div><div class="stat-card-lbl">待驗收</div></div>
+    </div>
+    <div class="stat-card stat-bad">
+      <div class="stat-card-icon">${IC('M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z')}</div>
+      <div><div class="stat-card-val">${abnormal}</div><div class="stat-card-lbl">有異常</div></div>
+    </div>`;
 }
 
 // ── 驗收 Sheet 開啟 ───────────────────────────────────

@@ -37,12 +37,7 @@
           style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:10px;padding:8px 10px;font-size:13px;font-weight:600;outline:none" />
       </div>
     </div>
-    <div class="stat-grid">
-      <div class="stat-card"><div class="val" id="stat-total" style="color:#111">0</div><div class="lbl">今日進貨</div></div>
-      <div class="stat-card"><div class="val" id="stat-done" style="color:#059669">0</div><div class="lbl">已驗收</div></div>
-      <div class="stat-card"><div class="val" id="stat-pending" style="color:#d97706">0</div><div class="lbl">待驗收</div></div>
-      <div class="stat-card"><div class="val" id="stat-abnormal" style="color:#dc2626">0</div><div class="lbl">有異常</div></div>
-    </div>
+<div class="stat-grid" id="statGrid"></div>
     <div id="productListContainer" class="card-list" style="flex:1">
       <div class="empty-state">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -50,11 +45,11 @@
         <p style="font-size:13px;margin-top:4px">點右下角匯入 Excel</p>
       </div>
     </div>
-    <label class="fab" style="bottom:148px">
+    <label class="fab fab-primary">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
       <input type="file" id="excelFile" accept=".xlsx,.xls" class="hidden" onchange="importExcel(this)" />
     </label>
-    <button class="fab" onclick="openSheet('manualSheet')" style="bottom:84px;background:#f59e0b">
+    <button class="fab fab-secondary" onclick="openSheet('manualSheet')">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
     </button>
   </div>
