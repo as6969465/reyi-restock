@@ -498,18 +498,28 @@ function syncDeleteBtn() {
   btn.classList.toggle('hidden', count === 0);
   btn.textContent = count > 0 ? `刪除勾選（${count}）` : '';
 }
-function deleteSelected() {
+async function deleteSelected() {
   const date = currentReceivingDate();
-  const checked = [...document.querySelectorAll('.row-check:checked')].map(cb => parseInt(cb.dataset.idx));
-  if (!checked.length) return;
-  if (!confirm(`確定刪除選取的 ${checked.length} 筆資料？`)) return;
+  const checkedIdxs = [...document.querySelectorAll('.row-check:checked')].map(cb => parseInt(cb.dataset.idx));
+  if (!checkedIdxs.length) return;
+  if (!confirm(`確定刪除選取的 ${checkedIdxs.length} 筆資料？`)) return;
   const list = getDateProducts(date);
-  // 從後往前刪，避免 index 錯位
-  checked.sort((a,b) => b-a).forEach(i => list.splice(i,1));
+  // 收集 Firestore ID
+  const firestoreIds = checkedIdxs.map(i => list[i]?.id).filter(Boolean);
+  // 從後往前刪本機記憶體
+  checkedIdxs.sort((a,b) => b-a).forEach(i => list.splice(i,1));
   productsByDate[date] = list;
+  // 同步刪除 Firestore
+  if (firestoreIds.length) {
+    try {
+      await ProductAPI.batchDelete(firestoreIds);
+    } catch(e) { console.warn('Firestore delete failed:', e.message); }
+  }
   saveProductsData();
   const master = document.getElementById('checkAll');
   if (master) master.checked = false;
+  // 重載確保同步
+  await reloadFromFirestore(date);
   renderProductTable(); updateStats();
 }
 
