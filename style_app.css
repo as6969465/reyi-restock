@@ -11,7 +11,7 @@ button, input, select, textarea { font-family: inherit; }
   --green:  #059669; --green-lt: #d1fae5;
   --amber:  #d97706; --amber-lt: #fef3c7;
   --red:    #dc2626; --red-lt:   #fee2e2;
-  --purple: #7c3aed; --purple-lt:#ede9fe;
+  --purple: #1d4ed8; --purple-lt:#dbeafe;
   --gray:   #6b7280; --gray-lt:  #f3f4f6;
 }
 
@@ -44,7 +44,7 @@ body { font-family: -apple-system,'Segoe UI',Arial,sans-serif;
 .app-page.active { display:flex; }
 
 /* ── 頁面標題 ── */
-.page-header { background:linear-gradient(135deg,#1e40af 0%,var(--blue) 100%);
+.page-header { background:linear-gradient(135deg,#1e3a8a 0%,var(--blue) 100%);
   color:#fff; padding:16px 16px 20px;
   padding-top:calc(env(safe-area-inset-top) + 16px); }
 .page-header h1 { font-size:20px; font-weight:800; }
@@ -77,7 +77,7 @@ body { font-family: -apple-system,'Segoe UI',Arial,sans-serif;
 .product-card[data-status="pending"]          { border-left-color:var(--amber); }
 .product-card[data-status="received"]         { border-left-color:var(--green); }
 .product-card[data-status="abnormal_pending"] { border-left-color:var(--red); }
-.product-card[data-status="procurement"]      { border-left-color:var(--purple); }
+.product-card[data-status="procurement"]      { border-left-color:var(--blue); }
 .product-card[data-status="resolved"]         { border-left-color:var(--gray); opacity:.7; }
 .product-card-inner { padding:13px 12px 11px; flex:1; min-width:0; }
 .product-card-name  { font-size:15px; font-weight:700; color:#111;
@@ -97,7 +97,7 @@ body { font-family: -apple-system,'Segoe UI',Arial,sans-serif;
 .badge-pending  { background:var(--amber-lt);  color:var(--amber); }
 .badge-done     { background:var(--green-lt);  color:var(--green); }
 .badge-abnormal { background:var(--red-lt);    color:var(--red); }
-.badge-proc     { background:var(--purple-lt); color:var(--purple); }
+.badge-proc     { background:var(--blue-lt); color:var(--blue); }
 .badge-resolved { background:var(--green-lt);  color:var(--green); }
 .badge-manual   { background:#fef9c3;          color:#a16207; }
 

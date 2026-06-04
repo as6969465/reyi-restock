@@ -298,7 +298,7 @@ function openReceiveSheet(date, idx) {
         <div>品號：<b style="color:#374151">${p.itemNo||'—'}</b></div>
         <div>採購單：<b style="color:#374151">${p.po||'—'}</b></div>
         <div>條碼：<b style="color:#374151">${p.barcode||'—'}</b></div>
-        <div>採購數量：<b style="color:#4f46e5;font-size:16px">${p.qty}</b></div>
+        <div>採購數量：<b style="color:#2563eb;font-size:16px">${p.qty}</b></div>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
@@ -413,7 +413,7 @@ function renderWarehouseCards() {
           <div><div style="font-size:11px;color:#9ca3af">良品</div><div style="font-size:16px;font-weight:700;color:#059669">${p.goodQty}</div></div>
           <div><div style="font-size:11px;color:#9ca3af">不良品</div><div style="font-size:16px;font-weight:700;color:#dc2626">${p.badQty}</div></div>
         </div>
-        ${p.photos.length>0 ? `<span style="color:#4f46e5;font-size:13px;cursor:pointer" onclick="viewPhotos('${p.arrivalDate}','${p.itemNo}')">${p.photos.length} 張照片</span>` : ''}
+        ${p.photos.length>0 ? `<span style="color:#2563eb;font-size:13px;cursor:pointer" onclick="viewPhotos('${p.arrivalDate}','${p.itemNo}')">${p.photos.length} 張照片</span>` : ''}
       </div>
       ${p.defectReasons?.length>0 ? `<div style="padding:0 16px 12px;display:flex;flex-wrap:wrap;gap:4px">${p.defectReasons.map(r=>`<span class="badge badge-abnormal" style="font-size:11px">${r}</span>`).join('')}</div>` : ''}
     </div>`).join('');
@@ -441,7 +441,7 @@ function renderReviewCards() {
         <span class="badge ${p.status===STATUS.RESOLVED?'badge-resolved':p.status===STATUS.PROCUREMENT?'badge-proc':'badge-abnormal'}">${{abnormal_pending:'待檢核',procurement:'待採購',resolved:'已處理'}[p.status]||p.status}</span>
       </div>
       ${p.defectReasons?.length>0 ? `<div style="padding:0 16px 12px;display:flex;flex-wrap:wrap;gap:4px">${p.defectReasons.map(r=>`<span class="badge badge-abnormal" style="font-size:11px">${r}</span>`).join('')}</div>` : ''}
-      ${p.photos.length>0 ? `<div style="padding:0 16px 12px"><span style="color:#4f46e5;font-size:13px;cursor:pointer" onclick="event.stopPropagation();viewPhotos('${p.arrivalDate}','${p.itemNo}')">${p.photos.length} 張照片 ›</span></div>` : ''}
+      ${p.photos.length>0 ? `<div style="padding:0 16px 12px"><span style="color:#2563eb;font-size:13px;cursor:pointer" onclick="event.stopPropagation();viewPhotos('${p.arrivalDate}','${p.itemNo}')">${p.photos.length} 張照片 ›</span></div>` : ''}
     </div>`).join('');
 }
 
@@ -554,7 +554,7 @@ function renderPurchaseCards() {
         <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">${(p.defectReasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:11px">${r}</span>`).join('')||'—'}</div>
         <div style="font-size:12px;color:#9ca3af">物流專員：${p.defectStaff||'—'}</div>
         ${p.defectNote?`<div style="font-size:13px;color:#6b7280;margin-top:4px">${p.defectNote}</div>`:''}
-        ${p.photos.length>0?`<span style="color:#4f46e5;font-size:13px;cursor:pointer;display:block;margin-top:6px" onclick="event.stopPropagation();viewPhotos('${p.arrivalDate}','${p.itemNo}')">${p.photos.length} 張照片 ›</span>`:''}
+        ${p.photos.length>0?`<span style="color:#2563eb;font-size:13px;cursor:pointer;display:block;margin-top:6px" onclick="event.stopPropagation();viewPhotos('${p.arrivalDate}','${p.itemNo}')">${p.photos.length} 張照片 ›</span>`:''}
       </div>
     </div>`).join('');
 }
@@ -658,10 +658,10 @@ function renderRoleCards() {
     <div class="card" style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
       <div>
         <div style="font-size:15px;font-weight:700;color:#111;margin-bottom:4px">${r.name}</div>
-        <div style="display:flex;flex-wrap:wrap;gap:4px">${(r.tabs||[]).map(t=>`<span style="font-size:11px;background:#ede9fe;color:#4f46e5;border-radius:8px;padding:2px 8px">${TAB_LABELS[t]||t}</span>`).join('')}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px">${(r.tabs||[]).map(t=>`<span style="font-size:11px;background:#ede9fe;color:#2563eb;border-radius:8px;padding:2px 8px">${TAB_LABELS[t]||t}</span>`).join('')}</div>
       </div>
       <div style="display:flex;gap:8px;flex-shrink:0;margin-left:12px">
-        <button onclick="openEditRoleSheet(${i})" class="btn btn-sm" style="background:#ede9fe;color:#4f46e5;border:none">編輯</button>
+        <button onclick="openEditRoleSheet(${i})" class="btn btn-sm" style="background:#ede9fe;color:#2563eb;border:none">編輯</button>
         <button onclick="deleteRole(${i})" class="btn btn-sm" style="background:#fee2e2;color:#991b1b;border:none">刪除</button>
       </div>
     </div>`).join('');
@@ -672,7 +672,7 @@ function renderUserCards() {
   if (!container) return;
   const users = getUsers();
   if (!users.length) { container.innerHTML='<div style="padding:16px;font-size:13px;color:#9ca3af">尚無帳號</div>'; return; }
-  const roleColors = { admin:'background:#ede9fe;color:#4f46e5', pending:'background:#f3f4f6;color:#6b7280' };
+  const roleColors = { admin:'background:#ede9fe;color:#2563eb', pending:'background:#f3f4f6;color:#6b7280' };
   container.innerHTML = users.map((u,i) => {
     const rid = getRid(u);
     const rname = getRoleName(rid);
@@ -912,7 +912,7 @@ function renderPhotoSheet() {
   document.getElementById('photoSheetImg').src=_photoList[_photoIdx];
   document.getElementById('photoCounterLabel').textContent=`${_photoIdx+1} / ${_photoList.length}`;
   const thumbs=document.getElementById('photoSheetThumbs');
-  thumbs.innerHTML=_photoList.map((s,i)=>`<img src="${s}" onclick="jumpPhoto(${i})" style="width:56px;height:56px;border-radius:10px;object-fit:cover;flex-shrink:0;${i===_photoIdx?'border:3px solid #4f46e5;':'opacity:.5'};cursor:pointer" />`).join('');
+  thumbs.innerHTML=_photoList.map((s,i)=>`<img src="${s}" onclick="jumpPhoto(${i})" style="width:56px;height:56px;border-radius:10px;object-fit:cover;flex-shrink:0;${i===_photoIdx?'border:3px solid #2563eb;':'opacity:.5'};cursor:pointer" />`).join('');
 }
 function shiftPhoto(dir){_photoIdx=(_photoIdx+dir+_photoList.length)%_photoList.length;renderPhotoSheet();}
 function jumpPhoto(i){_photoIdx=i;renderPhotoSheet();}
