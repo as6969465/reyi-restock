@@ -14,8 +14,14 @@ import {
 } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-storage.js";
 
 // ── Firebase 初始化 ────────────────────────────────────
-// Firebase 設定由 config.js 注入（已加入 .gitignore）
-const firebaseConfig = window.FIREBASE_CONFIG || {};
+const firebaseConfig = {
+  apiKey:            "AIzaSyDenrHO9G8TRxs3glpQLwG7HymXTqqyCRk",
+  authDomain:        "reyi-mailroom.firebaseapp.com",
+  projectId:         "reyi-mailroom",
+  storageBucket:     "reyi-mailroom.firebasestorage.app",
+  messagingSenderId: "119280647295",
+  appId:             "1:119280647295:web:a97bd142a57f4ef89e934a"
+};
 
 const fbApp     = initializeApp(firebaseConfig);
 const db        = getFirestore(fbApp);

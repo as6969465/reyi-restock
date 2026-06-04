@@ -1,6 +1,3 @@
-# Firebase 設定（含 API Key，請勿推送）
-config.js
-
 # Python 後端資料庫
 *.db
 reyi_restock.db
