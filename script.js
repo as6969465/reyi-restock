@@ -287,18 +287,16 @@ function importExcel(input) {
       }
       const dates = [...new Set(parsed.map(p=>p.arrivalDate).filter(Boolean))].sort();
       document.getElementById('importStatus').textContent = `已載入 ${parsed.length} 筆 · ${dates.join('、')||file.name}`;
-      // 呼叫後端匯入 API
-      const selectedDate = document.getElementById('receivingDate').value;
+      // 儲存到 Firestore，再重載確保多台同步
+      const importDate = document.getElementById('receivingDate').value;
       try {
-        const result = await ProductAPI.importItems(parsed, selectedDate);
+        const result = await ProductAPI.importItems(parsed, importDate);
         document.getElementById('importStatus').textContent += ` (入庫 ${result?.inserted || 0} 筆)`;
-        // 重新從 API 載入
-        const items = await ProductAPI.getByDate(document.getElementById('receivingDate').value);
-        productsByDate[document.getElementById('receivingDate').value] = normalizeProducts(items);
       } catch(apiErr) {
-        console.warn('後端匯入失敗，使用本地暫存:', apiErr.message);
-        saveProductsData();
+        console.warn('Firestore 匯入失敗:', apiErr.message);
       }
+      // 無論成功與否，從 Firestore 重載最新資料
+      await reloadFromFirestore(importDate);
       renderProductTable(); updateStats();
     } catch(err) { alert('匯入失敗：'+err.message); }
   };
@@ -306,15 +304,19 @@ function importExcel(input) {
   input.value = '';
 }
 
+// ── Firestore 重載（確保多台電腦資料同步）────────────────
+async function reloadFromFirestore(date) {
+  try {
+    const items = await ProductAPI.getByDate(date || currentReceivingDate());
+    productsByDate[date || currentReceivingDate()] = normalizeProducts(items);
+  } catch(e) { console.warn('Firestore reload failed:', e.message); }
+}
+
 // ── 日期篩選 ──────────────────────────────────────────
 async function onReceivingDateChange() {
   const date = currentReceivingDate();
-  if (!productsByDate[date]) {
-    try {
-      const items = await ProductAPI.getByDate(date);
-      productsByDate[date] = normalizeProducts(items);
-    } catch(e) { productsByDate[date] = []; }
-  }
+  // 每次切換日期都從 Firestore 取最新資料（不用 localStorage 快取）
+  await reloadFromFirestore(date);
   renderProductTable(); updateStats();
 }
 function applyDateFilter() {
@@ -426,7 +428,7 @@ function openManualAddModal() {
 }
 function closeManualAddModal() { document.getElementById('manualAddModal').classList.add('hidden'); }
 
-function saveManualAdd() {
+async function saveManualAdd() {
   const errDiv = document.getElementById('manualAddError');
   errDiv.classList.add('hidden');
   const name = document.getElementById('ma-name').value.trim();
@@ -460,7 +462,18 @@ function saveManualAdd() {
     time:        ''
   });
 
-  saveProductsData();
+  // 儲存到 Firestore
+  try {
+    await ProductAPI.create({
+      arrivalDate: date, seq, po: document.getElementById('ma-po').value.trim(),
+      cat: document.getElementById('ma-cat').value.trim(),
+      barcode: document.getElementById('ma-barcode').value.trim(),
+      itemNo: document.getElementById('ma-itemNo').value.trim(),
+      name, spec: document.getElementById('ma-spec').value.trim(), qty
+    });
+  } catch(e) { console.warn('Firestore create failed:', e.message); }
+  // 重載確保同步
+  await reloadFromFirestore(date);
   closeManualAddModal();
   renderProductTable();
   updateStats();
@@ -721,15 +734,20 @@ function saveReceiving() {
   p.operatorName   = user?.name  || '';
   p.status         = bad > 0 ? STATUS.ABNORMAL_PENDING : STATUS.RECEIVED;
 
-  // 呼叫後端 API
+  // 呼叫後端 API 後重載 Firestore 資料（確保多台同步）
+  const receiveDate = date;
   if (p.id) {
     ProductAPI.receive(p.id, {
       goodQty: good, badQty: bad, defectReasons: reasons,
       defectNote: p.defectNote, defectClass: p.defectClass, photos: p.photos
+    }).then(async () => {
+      await reloadFromFirestore(receiveDate);
+      renderProductTable(); updateStats(); updateBadges();
     }).catch(e => console.warn('receive API:', e.message));
+  } else {
+    saveProductsData();
   }
-  saveProductsData();
-  renderProductTable(); updateStats(); updateBadges(); closeModal();
+  closeModal();
 }
 
 // ── 異常檢核 Modal (物流專員) ─────────────────────────
@@ -781,10 +799,12 @@ function submitReview() {
     ProductAPI.review(p.id, {
       defectTime: p.defectTime, defectClass: p.defectClass,
       defectReasons: p.defectReasons, defectNote: p.defectNote
+    }).then(async () => {
+      await reloadFromFirestore(arrivalDate);
+      renderReviewTable(); updateBadges();
     }).catch(e => console.warn('review API:', e.message));
-  }
-  saveProductsData();
-  renderReviewTable(); closeReviewModal();
+  } else { saveProductsData(); }
+  closeReviewModal();
 }
 
 // ── 採購回覆 Modal ────────────────────────────────────
@@ -819,19 +839,16 @@ function submitPurchaseReply() {
   p.procStaffId   = purUser?.userId || '';
   p.procStaffName = purUser?.name   || '';
   p.status        = STATUS.RESOLVED;
+  const replyArrivalDate = arrivalDate;
   if (p.id) {
     ProductAPI.reply(p.id, { procAction: action, procReply: p.procReply })
+      .then(async () => {
+        await reloadFromFirestore(replyArrivalDate);
+        renderPurchaseTable(); renderResolvedTable(); updateBadges();
+      })
       .catch(e => console.warn('reply API:', e.message));
-  }
-  saveProductsData();
-  // 連動時間結束：補入採購回覆時間
-  const endTime = nowHHMM();
-  if (p.defectTime && p.defectTime.endsWith('～')) {
-    p.defectTime = p.defectTime + endTime;
-  } else if (!p.defectTime) {
-    p.defectTime = `～${endTime}`;
-  }
-  renderPurchaseTable(); renderResolvedTable(); updateBadges(); closePurchaseModal();
+  } else { saveProductsData(); }
+  closePurchaseModal();
 }
 
 // ── 照片上傳 ──────────────────────────────────────────
