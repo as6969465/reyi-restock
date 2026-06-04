@@ -1,0 +1,34 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "server.py",
+      "requirements.txt",
+      "*.db",
+      "gen_report.js",
+      "security-report-*.docx",
+      "openspec/**",
+      "db/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/main",
+        "destination": "/main.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "**/*.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      }
+    ]
+  }
+}
