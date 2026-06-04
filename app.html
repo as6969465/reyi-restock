@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>日翊收發進貨平台</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <link rel="stylesheet" href="style_app.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#4f46e5" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="收發平台" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
+</head>
+<body style="background:#f3f4f6">
+
+  <!-- Loading -->
+  <div id="authLoading" style="position:fixed;inset:0;background:#4f46e5;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center">
+    <div style="width:64px;height:64px;background:rgba(255,255,255,.2);border-radius:20px;display:flex;align-items:center;justify-content:center;margin-bottom:16px">
+      <svg style="width:36px;height:36px;color:#fff" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+      </svg>
+    </div>
+    <p style="color:#fff;font-size:18px;font-weight:700">收發平台</p>
+    <div style="margin-top:20px;width:32px;height:32px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%" class="spin"></div>
+  </div>
+
+  <!-- 當日驗收 -->
+  <div id="page-receiving" class="app-page active">
+    <div class="page-header">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div><h1>當日驗收</h1><p id="userDisplay-r"></p></div>
+        <input type="date" id="receivingDate" onchange="onReceivingDateChange()"
+          style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:10px;padding:8px 10px;font-size:13px;font-weight:600;outline:none" />
+      </div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="val" id="stat-total" style="color:#111">0</div><div class="lbl">今日進貨</div></div>
+      <div class="stat-card"><div class="val" id="stat-done" style="color:#059669">0</div><div class="lbl">已驗收</div></div>
+      <div class="stat-card"><div class="val" id="stat-pending" style="color:#d97706">0</div><div class="lbl">待驗收</div></div>
+      <div class="stat-card"><div class="val" id="stat-abnormal" style="color:#dc2626">0</div><div class="lbl">有異常</div></div>
+    </div>
+    <div id="productListContainer" class="card-list" style="flex:1">
+      <div class="empty-state">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        <p style="font-size:15px;font-weight:600">尚未匯入進貨資料</p>
+        <p style="font-size:13px;margin-top:4px">點右下角匯入 Excel</p>
+      </div>
+    </div>
+    <label class="fab" style="bottom:148px">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+      <input type="file" id="excelFile" accept=".xlsx,.xls" class="hidden" onchange="importExcel(this)" />
+    </label>
+    <button class="fab" onclick="openSheet('manualSheet')" style="bottom:84px;background:#f59e0b">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+    </button>
+  </div>
+
+  <!-- 入庫清單 -->
+  <div id="page-warehouse" class="app-page">
+    <div class="page-header"><h1>入庫清單</h1><p>已驗收商品</p></div>
+    <div style="padding:12px;display:flex;gap:8px">
+      <input type="date" id="wh-from" onchange="renderWarehouseCards()" style="flex:1;border:1.5px solid #e5e7eb;border-radius:12px;padding:10px;font-size:14px;outline:none" />
+      <span style="align-self:center;color:#9ca3af">～</span>
+      <input type="date" id="wh-to" onchange="renderWarehouseCards()" style="flex:1;border:1.5px solid #e5e7eb;border-radius:12px;padding:10px;font-size:14px;outline:none" />
+    </div>
+    <div id="warehouseListContainer" class="card-list" style="flex:1"></div>
+    <div style="padding:12px"><button onclick="exportWarehouseList()" class="btn" style="width:100%;background:#059669;color:#fff;border:none">匯出入庫清單</button></div>
+  </div>
+
+  <!-- 異常檢核 -->
+  <div id="page-review" class="app-page">
+    <div class="page-header"><h1>異常檢核</h1><p>審核不良品，填寫異常商流</p></div>
+    <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stat-card"><div class="val" id="rev-stat-pending" style="color:#dc2626">0</div><div class="lbl">待檢核</div></div>
+      <div class="stat-card"><div class="val" id="rev-stat-proc" style="color:#d97706">0</div><div class="lbl">待採購</div></div>
+      <div class="stat-card"><div class="val" id="rev-stat-done" style="color:#059669">0</div><div class="lbl">已處理</div></div>
+    </div>
+    <div id="reviewListContainer" class="card-list" style="flex:1"></div>
+  </div>
+
+  <!-- 異常報表 -->
+  <div id="page-report" class="app-page">
+    <div class="page-header"><h1>異常報表</h1><p>商品異常回覆商流</p></div>
+    <div style="padding:12px;display:flex;gap:8px">
+      <input type="date" id="rp-from" onchange="renderReportCards()" style="flex:1;border:1.5px solid #e5e7eb;border-radius:12px;padding:10px;font-size:14px;outline:none" />
+      <span style="align-self:center;color:#9ca3af">～</span>
+      <input type="date" id="rp-to" onchange="renderReportCards()" style="flex:1;border:1.5px solid #e5e7eb;border-radius:12px;padding:10px;font-size:14px;outline:none" />
+    </div>
+    <div id="reportListContainer" class="card-list" style="flex:1"></div>
+    <div style="padding:12px"><button onclick="exportReport()" class="btn" style="width:100%;background:#dc2626;color:#fff;border:none">匯出異常報表</button></div>
+  </div>
+
+  <!-- 待回覆清單 -->
+  <div id="page-purchase" class="app-page">
+    <div class="page-header"><h1>待回覆清單</h1><p>請填寫異常商品處理方式</p></div>
+    <div id="purchaseListContainer" class="card-list" style="flex:1"></div>
+  </div>
+
+  <!-- 已處理記錄 -->
+  <div id="page-resolved" class="app-page">
+    <div class="page-header"><h1>已處理記錄</h1><p>採購回覆完成的異常商品</p></div>
+    <div id="resolvedListContainer" class="card-list" style="flex:1"></div>
+    <div style="padding:12px"><button onclick="exportResolvedExcel()" class="btn" style="width:100%;background:#059669;color:#fff;border:none">匯出 Excel</button></div>
+  </div>
+
+  <!-- 帳號管理 -->
+  <div id="page-admin" class="app-page">
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between">
+      <div><h1>帳號管理</h1><p id="userDisplay-a"></p></div>
+      <button onclick="logout()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600">登出</button>
+    </div>
+    <div class="section-title">角色設定</div>
+    <div id="roleListContainer" class="card-list"></div>
+    <div style="padding:0 12px 4px"><button onclick="openSheet('addRoleSheet')" class="btn" style="width:100%;background:#ede9fe;color:#4f46e5;border:none">＋ 新增角色</button></div>
+    <div class="section-title" style="margin-top:8px">成員帳號</div>
+    <div id="userListContainer" class="card-list"></div>
+    <div style="padding:0 12px 12px"><button onclick="openSheet('addUserSheet')" class="btn btn-primary" style="width:100%">＋ 新增帳號</button></div>
+  </div>
+
+  <!-- 底部導航 -->
+  <nav class="bottom-nav" id="bottomNav" style="display:none"></nav>
+
+  <!-- 遮罩 -->
+  <div class="sheet-overlay" id="overlay" onclick="closeAllSheets()"></div>
+
+  <!-- 驗收 Sheet -->
+  <div class="sheet" id="receiveSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><h2 id="receiveSheetTitle" style="font-size:18px;font-weight:700">驗收登錄</h2></div>
+    <div class="sheet-body" id="receiveSheetBody"></div>
+  </div>
+
+  <!-- 手動新增 Sheet -->
+  <div class="sheet" id="manualSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><h2 style="font-size:18px;font-weight:700">手動新增臨時到貨</h2></div>
+    <div class="sheet-body">
+      <div style="margin-bottom:14px"><label class="field-label">品名 *</label><input id="ma-name" class="input" placeholder="請輸入商品名稱" /></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div><label class="field-label">採購數量 *</label><input id="ma-qty" type="number" min="1" class="input" placeholder="0" /></div>
+        <div><label class="field-label">大分類</label><input id="ma-cat" class="input" placeholder="如：食品" /></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div><label class="field-label">品號</label><input id="ma-itemNo" class="input" placeholder="選填" /></div>
+        <div><label class="field-label">採購單號</label><input id="ma-po" class="input" placeholder="選填" /></div>
+      </div>
+      <div style="margin-bottom:20px"><label class="field-label">條碼</label><input id="ma-barcode" class="input" placeholder="選填" /></div>
+      <div id="manualAddError" style="display:none;padding:12px;background:#fee2e2;border-radius:12px;font-size:13px;color:#991b1b;margin-bottom:12px"></div>
+      <button onclick="saveManualAdd()" class="btn" style="width:100%;background:#f59e0b;color:#fff;border:none">新增臨時到貨</button>
+    </div>
+  </div>
+
+  <!-- 異常檢核 Sheet -->
+  <div class="sheet" id="reviewSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><h2 style="font-size:18px;font-weight:700">異常檢核</h2></div>
+    <div class="sheet-body" id="reviewSheetBody"></div>
+  </div>
+
+  <!-- 採購回覆 Sheet -->
+  <div class="sheet" id="purchaseSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><h2 style="font-size:18px;font-weight:700">採購回覆處理方式</h2></div>
+    <div class="sheet-body" id="purchaseSheetBody"></div>
+  </div>
+
+  <!-- 新增角色 Sheet -->
+  <div class="sheet" id="addRoleSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><h2 id="roleSheetTitle" style="font-size:18px;font-weight:700">新增角色</h2></div>
+    <div class="sheet-body">
+      <div style="margin-bottom:14px"><label class="field-label">角色名稱 *</label><input id="rm-name" class="input" placeholder="如：倉管人員" /></div>
+      <label class="field-label">可存取功能</label>
+      <div style="display:flex;flex-wrap:wrap;margin:8px 0 20px" id="rmTabChips">
+        <span class="reason-chip" data-tab="receiving" onclick="toggleRoleTab(this)">當日驗收作業</span>
+        <span class="reason-chip" data-tab="warehouse" onclick="toggleRoleTab(this)">入庫清單</span>
+        <span class="reason-chip" data-tab="review" onclick="toggleRoleTab(this)">異常檢核</span>
+        <span class="reason-chip" data-tab="report" onclick="toggleRoleTab(this)">異常報表</span>
+        <span class="reason-chip" data-tab="purchase" onclick="toggleRoleTab(this)">待回覆清單</span>
+        <span class="reason-chip" data-tab="resolved" onclick="toggleRoleTab(this)">已處理記錄</span>
+      </div>
+      <div id="roleSheetError" style="display:none;padding:12px;background:#fee2e2;border-radius:12px;font-size:13px;color:#991b1b;margin-bottom:12px"></div>
+      <button onclick="saveRole()" class="btn btn-primary" style="width:100%">儲存角色</button>
+    </div>
+  </div>
+
+  <!-- 新增帳號 Sheet -->
+  <div class="sheet" id="addUserSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><h2 id="userSheetTitle" style="font-size:18px;font-weight:700">新增帳號</h2></div>
+    <div class="sheet-body">
+      <div style="margin-bottom:14px"><label class="field-label">帳號 *</label><input id="um-userId" class="input" placeholder="請輸入帳號" /></div>
+      <div style="margin-bottom:14px"><label class="field-label">姓名 *</label><input id="um-name" class="input" placeholder="請輸入真實姓名" /></div>
+      <div style="margin-bottom:14px"><label class="field-label">密碼</label><input id="um-password" type="password" class="input" placeholder="新增必填，編輯留空不變更" /></div>
+      <div style="margin-bottom:20px">
+        <label class="field-label">角色</label>
+        <select id="um-role" class="input" style="appearance:auto"><option value="pending">待審核</option><option value="admin">管理員</option></select>
+      </div>
+      <div id="userSheetError" style="display:none;padding:12px;background:#fee2e2;border-radius:12px;font-size:13px;color:#991b1b;margin-bottom:12px"></div>
+      <button onclick="saveUser()" class="btn btn-primary" style="width:100%">儲存帳號</button>
+    </div>
+  </div>
+
+  <!-- 照片預覽 Sheet -->
+  <div class="sheet" id="photoSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2 id="photoSheetTitle" style="font-size:18px;font-weight:700"></h2>
+        <span id="photoCounterLabel" style="font-size:13px;color:#9ca3af"></span>
+      </div>
+    </div>
+    <div class="sheet-body">
+      <img id="photoSheetImg" src="" style="width:100%;border-radius:16px;object-fit:contain;max-height:55vh" />
+      <div id="photoSheetThumbs" style="display:flex;gap:8px;margin-top:12px;overflow-x:auto;padding-bottom:4px"></div>
+      <div style="display:flex;gap:12px;margin-top:16px">
+        <button onclick="shiftPhoto(-1)" class="btn" style="flex:1;background:#f3f4f6;color:#374151;border:none">‹ 上一張</button>
+        <button onclick="shiftPhoto(1)" class="btn" style="flex:1;background:#f3f4f6;color:#374151;border:none">下一張 ›</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="firebase.js"></script>
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+    }
+  </script>
+</body>
+</html>

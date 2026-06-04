@@ -1,4 +1,4 @@
-// ── 異常原因選項 ──────────────────────────────────────
+﻿// ── 異常原因選項 ──────────────────────────────────────
 const DEFECT_REASONS = [
   '品名不符','數量不符','規格不符',
   '外箱標示異常','條碼異常','裸瓶','混效期',
@@ -87,7 +87,9 @@ async function handleLogin(e) {
   try {
     const user = await AuthAPI.login(userId, password);
     sessionStorage.setItem('rr_user', JSON.stringify(user));
-    window.location.href = 'main.html';
+    // 自動偵測裝置：手機 → app.html，桌機 → main.html
+    const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth < 768;
+    window.location.href = isMobile ? 'app.html' : 'main.html';
   } catch(e) {
     errDiv.textContent = e.message || '登入失敗，請稍後再試';
     errDiv.classList.remove('hidden');

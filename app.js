@@ -67,7 +67,7 @@ async function handleLogin(e) {
   try {
     const user = await AuthAPI.login(userId, password);
     sessionStorage.setItem('rr_user', JSON.stringify(user));
-    window.location.href='main.html';
+    window.location.href='app.html';
   } catch(e) {
     errDiv.textContent=e.message; errDiv.style.display='block';
   } finally { btn.disabled=false; btn.textContent='登入'; }

@@ -21,20 +21,13 @@
       ".claude/**"
     ],
     "rewrites": [
-      {
-        "source": "/main",
-        "destination": "/main.html"
-      }
+      { "source": "/main", "destination": "/main.html" },
+      { "source": "/app",  "destination": "/app.html" }
     ],
     "headers": [
       {
-        "source": "**/*.js",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-cache"
-          }
-        ]
+        "source": "**/*.@(js|css|html)",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
       }
     ]
   }
