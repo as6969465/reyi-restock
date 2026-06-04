@@ -111,15 +111,6 @@
       }
       msgEl.classList.remove('hidden');
     }
-      users.push({ userId, password, name, role: 'pending', createdAt: new Date().toLocaleString('zh-TW') });
-      localStorage.setItem('rr_users', JSON.stringify(users));
-      msgEl.textContent = `申請成功！帳號「${userId}」已送出，請等待管理員開通後即可登入。`;
-      msgEl.className = 'mb-4 text-sm text-green-600 bg-green-50 border border-green-200 rounded-lg px-4 py-3';
-      msgEl.classList.remove('hidden');
-      document.getElementById('reg-userId').value   = '';
-      document.getElementById('reg-password').value = '';
-      document.getElementById('reg-name').value     = '';
-    }
   </script>
 </body>
 </html>
