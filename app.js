@@ -335,7 +335,7 @@ function openReceiveSheet(date, idx) {
     </div>
     <div style="margin-bottom:16px">
       <label class="field-label">上傳照片（最多 6 張）</label>
-      <div id="rs-photos" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>
+      <div id="rs-photos" style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px"></div>
       <input type="file" id="rs-photoInput" accept="image/*" multiple class="hidden" onchange="handlePhotoUpload(this,'rs-photos')" />
       <p id="rs-photoCount" style="font-size:12px;color:#9ca3af;margin-top:6px;text-align:center">已上傳 ${uploadedPhotos.length} / 6 張</p>
     </div>
