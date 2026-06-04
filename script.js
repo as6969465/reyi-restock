@@ -1059,20 +1059,21 @@ function refreshRoleOptions() {
 function renderUserTable() {
   const tbody  = document.getElementById('userTableBody');
   const users  = getUsers();
-  const pending = users.filter(u => u.role === 'pending').length;
+  const getRid = u => u.role_id || u.roleId || u.role || 'pending';
+  const pending = users.filter(u => getRid(u) === 'pending').length;
   const alert  = document.getElementById('pendingAlert');
   if (alert) alert.classList.toggle('hidden', pending === 0);
   if (!users.length) { tbody.innerHTML='<tr><td colspan="5" class="px-4 py-12 text-center text-gray-400 text-sm">尚無帳號</td></tr>'; return; }
   tbody.innerHTML = users.map((u, i) => `
     <tr class="border-b border-gray-100 hover:bg-gray-50">
-      <td class="px-4 py-3 font-mono text-sm text-left">${u.userId}</td>
-      <td class="px-4 py-3 font-medium text-left">${u.name}</td>
-      <td class="px-4 py-3 text-left">
-        <span class="px-2.5 py-1 rounded-full text-xs font-medium ${getRoleColor(u.role)}">
-          ${getRoleName(u.role)}
+      <td class="px-4 py-3 font-mono text-sm">${u.userId || u.user_id}</td>
+      <td class="px-4 py-3 font-medium">${u.name}</td>
+      <td class="px-4 py-3">
+        <span class="px-2.5 py-1 rounded-full text-xs font-medium ${getRoleColor(getRid(u))}">
+          ${getRoleName(getRid(u))}
         </span>
       </td>
-      <td class="px-4 py-3 text-xs text-gray-400 text-left">${u.createdAt||'—'}</td>
+      <td class="px-4 py-3 text-xs text-gray-400">${u.createdAt||'—'}</td>
       <td class="px-4 py-3 text-center">
         <div class="flex gap-2 justify-center">
           <button onclick="openEditUserModal(${i})" class="bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs px-3 py-1.5 rounded-lg">編輯</button>
