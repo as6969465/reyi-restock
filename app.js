@@ -676,6 +676,23 @@ function openReviewSheet(arrivalDate, itemNo) {
   reviewIdx = { arrivalDate, itemNo };
   _reviewStartTime = nowHHMM();
   _reviewPhotoIdx = 0;
+
+  // 確保 p.defectItems 已初始化（從驗收資料預填，每張照片各自獨立）
+  if (!(p.defectItems?.length)) {
+    const photos  = p.photos || [];
+    const reasons = p.defectReasons || [];
+    p.defectItems = photos.map((ph, i) => ({
+      photo:    ph,
+      category: p.defectClass || '',
+      reasons:  [...reasons],   // 每張照片初始帶入相同的原因
+      note:     i === 0 ? (p.defectNote || '') : ''
+    }));
+    // 若沒有照片但有不良品，建立一筆空項目
+    if (!p.defectItems.length && p.badQty > 0) {
+      p.defectItems = [{ photo:'', category: p.defectClass||'', reasons:[...reasons], note: p.defectNote||'' }];
+    }
+  }
+
   renderReviewSheetBody(p);
   openSheet('reviewSheet');
 }
@@ -685,16 +702,11 @@ function renderReviewSheetBody(p) {
   if (!p) return;
   const body = document.getElementById('reviewSheetBody');
 
-  // 取得照片＋原因清單（支援新格式 defectItems 與舊格式）
-  const items = (p.defectItems||[]).length
-    ? p.defectItems
-    : (p.photos||[]).map((ph,i)=>({
-        photo:ph, category:'', reasons:[(p.defectReasons||[])[i]||''].filter(Boolean), note:''
-      }));
-
+  // 直接使用 p.defectItems（已在 openReviewSheet 初始化）
+  const items = p.defectItems || [];
   const hasPhotos = items.length > 0;
   _reviewPhotoIdx = Math.min(_reviewPhotoIdx, Math.max(0, items.length-1));
-  const cur = items[_reviewPhotoIdx];
+  const cur = items[_reviewPhotoIdx] || {};
 
   // 頂部縮圖列
   const thumbs = items.map((it, idx) => {
@@ -776,10 +788,11 @@ function rvSetCategory(idx, cat) {
 function rvToggleReason(idx, r) {
   const p = getAllProducts().find(x=>x.arrivalDate===reviewIdx.arrivalDate&&x.itemNo===reviewIdx.itemNo);
   if (!p?.defectItems?.[idx]) return;
-  const reasons = p.defectItems[idx].reasons||[];
+  if (!p.defectItems[idx].reasons) p.defectItems[idx].reasons = [];
+  const reasons = p.defectItems[idx].reasons;
   const i = reasons.indexOf(r);
   if (i>=0) reasons.splice(i,1); else reasons.push(r);
-  p.defectItems[idx].reasons = reasons;
+  // 不重繪（checkbox 原生狀態自動更新）
 }
 function rvSetNote(idx, val) {
   const p = getAllProducts().find(x=>x.arrivalDate===reviewIdx.arrivalDate&&x.itemNo===reviewIdx.itemNo);
