@@ -280,15 +280,91 @@ function updateStats() {
     </div>`;
 }
 
+// ── 驗收 Sheet - 異常明細（每張照片各自原因）────────────
+let _defectItems = []; // [{photo, reason, note}]
+
+function renderDefectItems(readonly) {
+  const container = document.getElementById('rs-defect-items');
+  if (!container) return;
+  if (!_defectItems.length && !readonly) {
+    container.innerHTML = `<div style="text-align:center;padding:16px;color:#9ca3af;font-size:13px">尚未新增異常明細</div>`;
+    return;
+  }
+  container.innerHTML = _defectItems.map((item, i) => `
+    <div style="background:#fff;border-radius:12px;border:1.5px solid #fee2e2;padding:12px;margin-bottom:10px">
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px">
+        <!-- 照片 -->
+        <div style="flex-shrink:0">
+          ${item.photo
+            ? `<img src="${item.photo}" style="width:64px;height:64px;border-radius:10px;object-fit:cover;cursor:pointer"
+                onclick="viewDefectPhoto(${i})" />`
+            : `<label style="width:64px;height:64px;border:2px dashed #fca5a5;border-radius:10px;
+                display:flex;align-items:center;justify-content:center;cursor:pointer;background:#fef2f2">
+                <svg style="width:24px;height:24px;color:#fca5a5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                <input type="file" accept="image/*" class="hidden" onchange="setDefectPhoto(${i},this)" />
+              </label>`}
+        </div>
+        <!-- 原因 & 說明 -->
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;flex-wrap:wrap;gap:2px;margin-bottom:6px">
+            ${DEFECT_REASONS.map(r=>`<span class="reason-chip${item.reason===r?' selected':''}"
+              style="font-size:11px;padding:5px 10px;margin:2px"
+              ${readonly?'':'onclick="setDefectReason('+i+',\''+r+'\')"'}>${r}</span>`).join('')}
+          </div>
+          <textarea placeholder="其他說明（選填）"
+            style="width:100%;border:1.5px solid #e5e7eb;border-radius:10px;padding:8px 10px;
+              font-size:13px;resize:none;outline:none;background:#f9fafb;font-family:inherit"
+            rows="2" oninput="_defectItems[${i}].note=this.value" ${readonly?'readonly':''}>${item.note||''}</textarea>
+        </div>
+        ${!readonly ? `<button onclick="removeDefectItem(${i})"
+          style="flex-shrink:0;background:none;border:none;color:#fca5a5;cursor:pointer;font-size:18px;padding:2px">✕</button>` : ''}
+      </div>
+      ${item.procAction ? `<div style="background:#d1fae5;border-radius:8px;padding:8px 10px;font-size:12px;color:#065f46;margin-top:4px">
+        <b>採購回覆：</b>${item.procAction}${item.procReply?' — '+item.procReply:''}
+      </div>` : ''}
+    </div>`).join('');
+}
+
+function addDefectItem() {
+  if (_defectItems.length >= 6) { alert('最多新增 6 筆異常明細'); return; }
+  _defectItems.push({ photo: '', reason: '', note: '' });
+  renderDefectItems(false);
+}
+function removeDefectItem(i) { _defectItems.splice(i,1); renderDefectItems(false); }
+function setDefectReason(i, r) { _defectItems[i].reason = r; renderDefectItems(false); }
+function setDefectPhoto(i, input) {
+  const file = input.files[0]; if (!file) return;
+  compressImage(file, 800*1024).then(dataUrl => { _defectItems[i].photo=dataUrl; renderDefectItems(false); });
+}
+function viewDefectPhoto(i) {
+  const p = _defectItems[i];
+  if (!p?.photo) return;
+  _photoList=[p.photo]; _photoIdx=0;
+  document.getElementById('photoSheetTitle').textContent='異常照片';
+  document.getElementById('photoCounterLabel').textContent='';
+  renderPhotoSheet(); openSheet('photoSheet');
+}
+
 // ── 驗收 Sheet 開啟 ───────────────────────────────────
 function openReceiveSheet(date, idx) {
   const p = getDateProducts(date)[idx];
   if (!p) return;
   currentIdx = { date, idx };
-  uploadedPhotos = p.received ? [...p.photos] : [];
+  // 載入已有的異常明細
+  _defectItems = (p.defectItems || []).map(item => ({ ...item }));
+  // 向下相容舊資料：若有 photos 但無 defectItems，轉換
+  if (!_defectItems.length && p.photos?.length && p.badQty > 0) {
+    _defectItems = p.photos.map((ph, i) => ({
+      photo: ph, reason: (p.defectReasons||[])[i] || '', note: ''
+    }));
+  }
 
   const isResolved = p.status === STATUS.RESOLVED;
-  document.getElementById('receiveSheetTitle').textContent = p.status===STATUS.PENDING ? '驗收登錄' : (isResolved ? '已處理（唯讀）' : '修改驗收');
+  document.getElementById('receiveSheetTitle').textContent =
+    p.status===STATUS.PENDING ? '驗收登錄' : (isResolved ? '已處理（唯讀）' : '修改驗收');
 
   const body = document.getElementById('receiveSheetBody');
   body.innerHTML = `
@@ -304,59 +380,43 @@ function openReceiveSheet(date, idx) {
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
       <div>
         <label class="field-label">良品數量 *</label>
-        <input id="rs-good" type="number" min="0" value="${p.received?p.goodQty:p.qty}" class="input" style="font-size:20px;font-weight:700;text-align:center" oninput="onRsBadInput()" ${isResolved?'readonly':''} />
+        <input id="rs-good" type="number" min="0" value="${p.received?p.goodQty:p.qty}" class="input"
+          style="font-size:20px;font-weight:700;text-align:center" oninput="onRsBadInput()" ${isResolved?'readonly':''} />
       </div>
       <div>
         <label class="field-label">不良品數量</label>
-        <input id="rs-bad" type="number" min="0" value="${p.received?p.badQty:''}" class="input" style="font-size:20px;font-weight:700;text-align:center;color:#dc2626" oninput="onRsBadInput()" ${isResolved?'readonly':''} />
+        <input id="rs-bad" type="number" min="0" value="${p.received?p.badQty:''}" class="input"
+          style="font-size:20px;font-weight:700;text-align:center;color:#dc2626" oninput="onRsBadInput()" ${isResolved?'readonly':''} />
       </div>
     </div>
-    <div id="rs-defect" style="${(!p.received||p.badQty<=0)?'display:none':''}">
-      <div style="background:#fef2f2;border-radius:14px;padding:14px;margin-bottom:16px">
-        <div style="font-size:12px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">異常資訊</div>
-        <div style="margin-bottom:12px">
-          <label class="field-label">異常分類</label>
-          <select id="rs-class" class="input" ${isResolved?'disabled':''}>
-            <option ${p.defectClass==='其他異常'?'selected':''}>其他異常</option>
-            <option ${p.defectClass==='效期異常'?'selected':''}>效期異常</option>
-            <option ${p.defectClass==='數量異常'?'selected':''}>數量異常</option>
-            <option ${p.defectClass==='品名異常'?'selected':''}>品名異常</option>
-          </select>
-        </div>
-        <div style="margin-bottom:12px">
-          <label class="field-label">異常原因（可複選）</label>
-          <div style="display:flex;flex-wrap:wrap;gap:2px">${DEFECT_REASONS.map(r=>`<span class="reason-chip ${(p.defectReasons||[]).includes(r)?'selected':''}" onclick="${isResolved?'':` toggleReason(this)`}">${r}</span>`).join('')}</div>
-        </div>
-        <div style="margin-bottom:12px">
-          <label class="field-label">其他說明</label>
-          <textarea id="rs-note" class="input" rows="2" style="resize:none" ${isResolved?'readonly':''}>${p.defectNote||''}</textarea>
-        </div>
-      </div>
-    </div>
-    <div style="margin-bottom:16px">
-      <label class="field-label">上傳照片（最多 6 張）</label>
-      <div id="rs-photos" style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px"></div>
-      <input type="file" id="rs-photoInput" accept="image/*" multiple class="hidden" onchange="handlePhotoUpload(this,'rs-photos')" />
-      <p id="rs-photoCount" style="font-size:12px;color:#9ca3af;margin-top:6px;text-align:center">已上傳 ${uploadedPhotos.length} / 6 張</p>
-    </div>
-    <div id="rs-error" style="display:none;padding:12px;background:#fee2e2;border-radius:12px;font-size:13px;color:#991b1b;margin-bottom:12px"></div>
-    ${isResolved ? `<button onclick="closeAllSheets()" class="btn" style="width:100%;background:#f3f4f6;color:#374151;border:none">關閉</button>`
-    : `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <button onclick="closeAllSheets()" class="btn" style="background:#f3f4f6;color:#374151;border:none">取消</button>
-        <button onclick="saveReceiving()" class="btn btn-primary">確認驗收</button>
-       </div>`}`;
 
-  renderPhotoSlots('rs-photos', uploadedPhotos, 'rs-photoInput', 'rs-photoCount');
+    <!-- 異常明細區（每張照片各自原因）-->
+    <div id="rs-defect" style="${(!p.received&&!(p.badQty>0))?'display:none':''}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:700;color:#dc2626">異常明細</div>
+        ${!isResolved ? `<button onclick="addDefectItem()" class="btn btn-sm btn-danger">＋ 新增異常照片</button>` : ''}
+      </div>
+      <div id="rs-defect-items"></div>
+      ${!isResolved ? `<p style="font-size:11px;color:#9ca3af;margin-top:4px;margin-bottom:12px">每張照片可選擇對應的異常原因，供採購單位個別回覆</p>` : ''}
+    </div>
+
+    <div id="rs-error" style="display:none;padding:12px;background:#fee2e2;border-radius:12px;font-size:13px;color:#991b1b;margin-bottom:12px"></div>
+    ${isResolved
+      ? `<button onclick="closeAllSheets()" class="btn" style="width:100%;background:#f3f4f6;color:#374151;border:none">關閉</button>`
+      : `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <button onclick="closeAllSheets()" class="btn" style="background:#f3f4f6;color:#374151;border:none">取消</button>
+          <button onclick="saveReceiving()" class="btn btn-primary">確認驗收</button>
+         </div>`}`;
+
+  renderDefectItems(isResolved);
   openSheet('receiveSheet');
 }
 
 function onRsBadInput() {
-  const good = parseInt(document.getElementById('rs-good')?.value)||0;
   const bad  = parseInt(document.getElementById('rs-bad')?.value)||0;
   if (currentIdx) {
     const p = getDateProducts(currentIdx.date)[currentIdx.idx];
-    const auto = Math.max(0, p.qty - bad);
-    document.getElementById('rs-good').value = auto;
+    document.getElementById('rs-good').value = Math.max(0, p.qty - bad);
   }
   const sec = document.getElementById('rs-defect');
   if (sec) sec.style.display = bad > 0 ? '' : 'none';
@@ -370,19 +430,23 @@ async function saveReceiving() {
   const good = parseInt(document.getElementById('rs-good').value);
   const bad  = parseInt(document.getElementById('rs-bad').value)||0;
   if (isNaN(good)||good<0) { errDiv.textContent='請輸入正確的良品數量'; errDiv.style.display='block'; return; }
-  const reasons = [...document.querySelectorAll('#receiveSheet .reason-chip.selected')].map(el=>el.textContent);
-  if (bad>0 && reasons.length===0) { errDiv.textContent='有不良品時，請至少選擇一個異常原因'; errDiv.style.display='block'; return; }
+  if (bad>0 && _defectItems.length===0) { errDiv.textContent='有不良品時，請新增至少一筆異常明細（照片+原因）'; errDiv.style.display='block'; return; }
+  if (bad>0 && _defectItems.some(item=>!item.reason)) { errDiv.textContent='每筆異常明細都需選擇異常原因'; errDiv.style.display='block'; return; }
+
   const { date, idx } = currentIdx;
   const p = getDateProducts(date)[idx];
   const user = getCurrentUser();
   p.received=true; p.goodQty=good; p.badQty=bad;
-  p.defectClass=document.getElementById('rs-class')?.value||'其他異常';
-  p.defectReasons=reasons; p.defectNote=document.getElementById('rs-note')?.value.trim()||'';
-  p.defectStaff=user?.name||''; p.photos=[...uploadedPhotos];
-  p.time=nowStr(); p.operatorName=user?.name||'';
+  p.defectItems  = _defectItems.map(item => ({ ...item, procAction:'', procReply:'', procStaffName:'' }));
+  // 向下相容欄位
+  p.defectReasons= _defectItems.map(item=>item.reason).filter(Boolean);
+  p.photos       = _defectItems.map(item=>item.photo).filter(Boolean);
+  p.defectNote   = _defectItems.map(item=>item.note).filter(Boolean).join('；');
+  p.defectClass  = '其他異常';
+  p.defectStaff=user?.name||''; p.time=nowStr(); p.operatorName=user?.name||'';
   p.status = bad>0 ? STATUS.ABNORMAL : STATUS.RECEIVED;
   if (p.id) {
-    ProductAPI.receive(p.id, {goodQty:good,badQty:bad,defectReasons:reasons,defectNote:p.defectNote,defectClass:p.defectClass,photos:p.photos})
+    ProductAPI.receive(p.id, {goodQty:good,badQty:bad,defectReasons:p.defectReasons,defectNote:p.defectNote,defectClass:p.defectClass,photos:p.photos,defectItems:p.defectItems})
       .then(async()=>{ await reloadFromFirestore(date); renderProductCards(); updateStats(); updateBadges(); })
       .catch(e=>console.warn('receive:',e.message));
   } else { saveProductsData(); }
@@ -563,48 +627,93 @@ function openPurchaseSheet(arrivalDate, itemNo) {
   const p = getAllProducts().find(x=>x.arrivalDate===arrivalDate&&x.itemNo===itemNo);
   if (!p) return;
   purchaseIdx = { arrivalDate, itemNo };
-  const body = document.getElementById('purchaseSheetBody');
-  body.innerHTML = `
-    <div style="background:#f9fafb;border-radius:14px;padding:14px;margin-bottom:16px">
-      <div style="font-size:16px;font-weight:700;color:#111;margin-bottom:6px">${p.name}</div>
-      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">${(p.defectReasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:11px">${r}</span>`).join('')}</div>
-      <div style="font-size:13px;color:#6b7280">${p.defectNote||'—'}</div>
-      <div style="font-size:12px;color:#9ca3af;margin-top:4px">物流專員：${p.defectStaff||'—'}</div>
-    </div>
-    <div style="margin-bottom:14px">
-      <label class="field-label">處理方式 *</label>
-      <select id="pur-action" class="input" style="appearance:auto">
-        <option value="">請選擇</option>
+  const items = p.defectItems || [];
+  const body  = document.getElementById('purchaseSheetBody');
+
+  // 每筆異常明細各自回覆
+  const itemsHtml = items.length
+    ? items.map((item, i) => `
+      <div style="background:#f9fafb;border-radius:12px;border:1.5px solid #e5e7eb;padding:12px;margin-bottom:10px">
+        <div style="display:flex;gap:10px;margin-bottom:10px">
+          ${item.photo ? `<img src="${item.photo}" style="width:56px;height:56px;border-radius:8px;object-fit:cover;flex-shrink:0" />` : ''}
+          <div>
+            <span class="badge badge-abnormal" style="font-size:11px">${item.reason||'未選擇原因'}</span>
+            ${item.note ? `<div style="font-size:12px;color:#6b7280;margin-top:4px">${item.note}</div>` : ''}
+          </div>
+        </div>
+        ${item.procAction
+          ? `<div style="background:#d1fae5;border-radius:8px;padding:8px;font-size:12px;color:#065f46">
+               已回覆：<b>${item.procAction}</b>${item.procReply?' — '+item.procReply:''}
+             </div>`
+          : `<div>
+              <select id="pur-action-${i}" class="input" style="appearance:auto;margin-bottom:8px">
+                <option value="">請選擇處理方式</option>
+                ${PROC_ACTIONS.map(v=>`<option>${v}</option>`).join('')}
+              </select>
+              <textarea id="pur-reply-${i}" class="input" rows="2" style="resize:none"
+                placeholder="回覆說明（選填）"></textarea>
+             </div>`}
+      </div>`).join('')
+    : `<!-- 向下相容舊格式 -->
+      <div style="background:#f9fafb;border-radius:14px;padding:14px;margin-bottom:14px">
+        <div style="font-size:16px;font-weight:700;margin-bottom:6px">${p.name}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">
+          ${(p.defectReasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:11px">${r}</span>`).join('')}
+        </div>
+        <div style="font-size:13px;color:#6b7280">${p.defectNote||'—'}</div>
+      </div>
+      <select id="pur-action-all" class="input" style="appearance:auto;margin-bottom:12px">
+        <option value="">請選擇處理方式</option>
         ${PROC_ACTIONS.map(v=>`<option>${v}</option>`).join('')}
       </select>
+      <textarea id="pur-reply-all" class="input" rows="3" style="resize:none;margin-bottom:8px" placeholder="回覆說明"></textarea>`;
+
+  body.innerHTML = `
+    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px">
+      ${p.name} — 異常明細回覆
     </div>
-    <div style="margin-bottom:20px">
-      <label class="field-label">回覆說明</label>
-      <textarea id="pur-reply" class="input" rows="3" style="resize:none" placeholder="詳細說明處理方式…"></textarea>
-    </div>
+    <div style="font-size:12px;color:#9ca3af;margin-bottom:12px">物流專員：${p.defectStaff||'—'}</div>
+    ${itemsHtml}
     <div id="pur-error" style="display:none;padding:12px;background:#fee2e2;border-radius:12px;font-size:13px;color:#991b1b;margin-bottom:12px"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
       <button onclick="closeAllSheets()" class="btn" style="background:#f3f4f6;color:#374151;border:none">取消</button>
-      <button onclick="submitPurchaseReply()" class="btn btn-primary">確認回覆</button>
+      <button onclick="submitPurchaseReply()" class="btn btn-primary">確認全部回覆</button>
     </div>`;
   openSheet('purchaseSheet');
 }
 
 async function submitPurchaseReply() {
-  const errDiv = document.getElementById('pur-error');
-  const action = document.getElementById('pur-action').value;
-  if (!action) { errDiv.textContent='請選擇處理方式'; errDiv.style.display='block'; return; }
+  const errDiv  = document.getElementById('pur-error');
   errDiv.style.display='none';
   const { arrivalDate, itemNo } = purchaseIdx;
-  const p     = getAllProducts().find(x=>x.arrivalDate===arrivalDate&&x.itemNo===itemNo);
+  const p       = getAllProducts().find(x=>x.arrivalDate===arrivalDate&&x.itemNo===itemNo);
   const purUser = getCurrentUser();
-  p.procAction=action; p.procReply=document.getElementById('pur-reply').value.trim();
-  p.procReplyTime=nowStr(); p.procStaffName=purUser?.name||''; p.status=STATUS.RESOLVED;
+  const items   = p.defectItems || [];
+
+  if (items.length) {
+    // 每筆各自回覆
+    let hasReply = false;
+    items.forEach((item, i) => {
+      const action = document.getElementById(`pur-action-${i}`)?.value;
+      const reply  = document.getElementById(`pur-reply-${i}`)?.value.trim() || '';
+      if (action) { item.procAction=action; item.procReply=reply; item.procStaffName=purUser?.name||''; hasReply=true; }
+    });
+    if (!hasReply) { errDiv.textContent='請至少回覆一筆異常明細'; errDiv.style.display='block'; return; }
+    const allReplied = items.every(item=>item.procAction);
+    p.defectItems=items; p.procStaffName=purUser?.name||''; p.procReplyTime=nowStr();
+    if (allReplied) { p.status=STATUS.RESOLVED; p.procAction='（各別回覆）'; }
+  } else {
+    // 舊格式
+    const action = document.getElementById('pur-action-all')?.value;
+    if (!action) { errDiv.textContent='請選擇處理方式'; errDiv.style.display='block'; return; }
+    p.procAction=action; p.procReply=document.getElementById('pur-reply-all')?.value.trim()||'';
+    p.procReplyTime=nowStr(); p.procStaffName=purUser?.name||''; p.status=STATUS.RESOLVED;
+  }
   let dt = p.defectTime||'';
   if (dt.endsWith('～')) dt += nowHHMM();
   p.defectTime = dt;
   if (p.id) {
-    ProductAPI.reply(p.id, {procAction:action,procReply:p.procReply})
+    ProductAPI.reply(p.id, {procAction:p.procAction||'（各別回覆）', procReply:p.procReply||'', defectItems:p.defectItems})
       .then(async()=>{ await reloadFromFirestore(arrivalDate); renderPurchaseCards(); renderResolvedCards(); updateBadges(); })
       .catch(e=>console.warn('reply:',e.message));
   } else { saveProductsData(); }
