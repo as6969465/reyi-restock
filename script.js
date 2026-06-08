@@ -634,7 +634,7 @@ function renderReportTable() {
         ${hasReplyBtn(p)
           ? `<button onclick="openReplyDetailModal('${p.arrivalDate}','${p.itemNo}')"
               class="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 rounded-lg">查看回覆</button>`
-          : '<span class="text-gray-400 text-xs">待回覆</span>'}
+          : '<span class="text-gray-400 text-xs">—</span>'}
       </td>
     </tr>`).join('');
 }
