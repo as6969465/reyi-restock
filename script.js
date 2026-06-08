@@ -942,10 +942,7 @@ function openReviewModal(arrivalDate, itemNo) {
   document.getElementById('rv-name').textContent     = p.name;
   document.getElementById('rv-qty').textContent      = p.qty;
   document.getElementById('rv-badQty').textContent   = p.badQty;
-  document.getElementById('rv-defectTime').value     = p.defectTime || `${_reviewStartTime}～`;
-  document.getElementById('rv-defectClass').value    = p.defectClass || '其他異常';
-  document.getElementById('rv-defectNote').value     = p.defectNote  || '';
-  renderDefectReasonList('rv-defectReasonList', p.defectReasons||[]);
+  document.getElementById('rv-defectTime').value = p.defectTime || `${_reviewStartTime}～`;
   renderReviewPhotoPanel(p);
   document.getElementById('reviewModalError').classList.add('hidden');
   document.getElementById('reviewModal').classList.remove('hidden');
