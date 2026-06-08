@@ -960,38 +960,88 @@ function renderReviewPhotoPanel(p) {
   const row = document.getElementById('rv-photos-row');
   if (!row) return;
 
-  const items = (p.defectItems||[]).length
-    ? p.defectItems
-    : (p.photos||[]).map((ph,i)=>({photo:ph,category:'',reasons:[(p.defectReasons||[])[i]||''].filter(Boolean),note:''}));
-
-  if (!items.length) { row.innerHTML='<span class="text-xs text-gray-400">無照片</span>'; return; }
+  const items = p.defectItems || [];
+  if (!items.length) { row.innerHTML='<p class="text-xs text-gray-400 py-2">無異常明細</p>'; return; }
   _deskReviewPhotoIdx = Math.min(_deskReviewPhotoIdx, items.length-1);
   const cur = items[_deskReviewPhotoIdx];
+  const i   = _deskReviewPhotoIdx;
 
+  // 縮圖列
   const thumbs = items.map((it, idx) => {
     const active = idx === _deskReviewPhotoIdx;
-    return `<img src="${it.photo||''}" onclick="_deskReviewPhotoIdx=${idx};renderReviewPhotoPanel();"
-      class="object-cover rounded-lg cursor-pointer flex-shrink-0 transition-all"
-      style="width:56px;height:56px;border:2.5px solid ${active?'#f59e0b':'#e5e7eb'};
-        box-shadow:${active?'0 2px 8px rgba(245,158,11,.3)':'none'};
-        ${!it.photo?'background:#f3f4f6;':''}opacity:${active?'1':'0.65'}"
-      ${!it.photo?'':''}/>`;
+    const t = it.photo
+      ? `<img src="${it.photo}" class="w-full h-full object-cover" />`
+      : `<div class="w-full h-full flex items-center justify-center text-gray-400 text-xs">無圖</div>`;
+    return `<div onclick="_deskReviewPhotoIdx=${idx};renderReviewPhotoPanel();"
+      class="flex-shrink-0 cursor-pointer overflow-hidden rounded-lg transition-all"
+      style="width:52px;height:52px;border:2.5px solid ${active?'#2563eb':'#e5e7eb'};
+        background:${active?'#dbeafe':'#f9fafb'};
+        box-shadow:${active?'0 2px 8px rgba(37,99,235,.25)':'none'}">${t}</div>`;
   }).join('');
 
+  // 大分類按鈕（預填 + 可修改）
+  const catBtns = DEFECT_CATEGORIES.map(c =>
+    `<button type="button" onclick="deskRvSetCategory(${i},'${c}')"
+      class="text-xs px-3 py-1.5 rounded-full border transition-colors ${cur.category===c
+        ?'bg-blue-100 border-blue-400 text-blue-600 font-semibold'
+        :'bg-white border-gray-200 text-gray-500 hover:border-blue-300'}">${c}</button>`
+  ).join('');
+
+  // 原因勾選（預填 + 可修改）
+  const subReasons = `<div class="grid gap-0.5 mt-2" style="grid-template-columns:repeat(2,1fr)">
+    ${DEFECT_REASONS.map(r=>{
+      const s=(cur.reasons||[]).includes(r);
+      return `<label class="flex items-center gap-1.5 cursor-pointer py-0.5">
+        <input type="checkbox" ${s?'checked':''} onchange="deskRvToggleReason(${i},'${r}')"
+          class="flex-shrink-0 cursor-pointer" style="width:13px;height:13px;accent-color:#2563eb" />
+        <span class="text-xs text-gray-700">${r}</span>
+      </label>`;
+    }).join('')}
+  </div>`;
+
+  // 照片預覽
+  const photoEl = cur.photo
+    ? `<img src="${cur.photo}" onclick="openPhotoModal([${items.filter(x=>x.photo).map(x=>'\''+x.photo+'\'').join(',')}],'${p.name}',${_deskReviewPhotoIdx})"
+        class="h-14 rounded-lg object-cover cursor-pointer flex-shrink-0" />`
+    : '';
+
   row.innerHTML = `
-    <div class="flex gap-2 overflow-x-auto pb-1 mb-2">${thumbs}</div>
-    <div class="flex gap-3 items-start p-2 bg-orange-50 rounded-lg">
-      ${cur.photo ? `<img src="${cur.photo}" onclick="openPhotoModal([${items.filter(x=>x.photo).map(x=>'\''+x.photo+'\'').join(',')}],'${p.name}',${_deskReviewPhotoIdx})" class="w-16 h-16 object-cover rounded-lg cursor-pointer flex-shrink-0" />` : ''}
-      <div class="flex-1 min-w-0">
-        <div class="text-xs font-bold text-amber-600 mb-1">現場記錄 ${items.length>1?`（${_deskReviewPhotoIdx+1}/${items.length}）`:''}</div>
-        ${cur.category?`<span class="text-xs font-semibold text-gray-700">${cur.category}</span>`:''}
-        <div class="flex flex-wrap gap-1 mt-1">${(cur.reasons||[]).map(r=>`<span class="text-xs px-1.5 py-0.5 bg-red-100 text-red-600 rounded">${r}</span>`).join('')||'<span class="text-xs text-gray-400">未填寫原因</span>'}</div>
-        ${cur.note?`<div class="text-xs text-gray-500 mt-1">${cur.note}</div>`:''}
+    <div class="flex gap-2 items-center overflow-x-auto pb-1 mb-3">${thumbs}</div>
+    <div class="p-3 bg-blue-50 border border-blue-100 rounded-xl">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          ${photoEl}
+          <span class="text-xs text-gray-400">${i+1} / ${items.length}</span>
+        </div>
       </div>
+      <div class="flex gap-1.5 flex-wrap mb-2">${catBtns}</div>
+      ${subReasons}
+      <input type="text" value="${cur.note||''}" placeholder="補充說明（選填）"
+        class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none mt-2"
+        oninput="deskRvSetNote(${i},this.value)" />
     </div>`;
 }
 
-function closeReviewModal() { document.getElementById('reviewModal').classList.add('hidden'); reviewIdx = null; }
+function deskRvSetCategory(idx, cat) {
+  const { arrivalDate, itemNo } = reviewIdx;
+  const p = getDateProducts(arrivalDate).find(x=>x.itemNo===itemNo);
+  if (p?.defectItems?.[idx]) { p.defectItems[idx].category=cat; renderReviewPhotoPanel(p); }
+}
+function deskRvToggleReason(idx, r) {
+  const { arrivalDate, itemNo } = reviewIdx;
+  const p = getDateProducts(arrivalDate).find(x=>x.itemNo===itemNo);
+  if (!p?.defectItems?.[idx]) return;
+  const reasons = p.defectItems[idx].reasons||[];
+  const i = reasons.indexOf(r);
+  if (i>=0) reasons.splice(i,1); else reasons.push(r);
+  p.defectItems[idx].reasons = reasons;
+}
+function deskRvSetNote(idx, val) {
+  const { arrivalDate, itemNo } = reviewIdx;
+  const p = getDateProducts(arrivalDate).find(x=>x.itemNo===itemNo);
+  if (p?.defectItems?.[idx]) p.defectItems[idx].note = val;
+}
+
 function closeReviewModal() { document.getElementById('reviewModal').classList.add('hidden'); reviewIdx = null; }
 
 function submitReview() {
@@ -1003,13 +1053,16 @@ function submitReview() {
   // 保存起始時間（格式 HH:MM～），結束由採購回覆時補入
   let rvDefectTime = document.getElementById('rv-defectTime').value.trim();
   if (!rvDefectTime) rvDefectTime = `${_reviewStartTime}～`;
-  p.defectTime = rvDefectTime;
-  p.defectClass   = document.getElementById('rv-defectClass').value;
-  p.defectReasons = getSelectedReasons('rv-defectReasonList');
-  p.defectNote    = document.getElementById('rv-defectNote').value.trim();
-  p.defectStaff   = rvUser?.name || '';
-  p.procContact   = '';
-  p.status        = STATUS.PROCUREMENT;
+  p.defectTime  = rvDefectTime;
+  p.defectStaff = rvUser?.name || '';
+  p.procContact = '';
+  // 彙整所有照片的最終原因
+  if (p.defectItems?.length) {
+    p.defectReasons = p.defectItems.flatMap(it=>it.reasons||[]).filter(Boolean);
+    p.defectClass   = p.defectItems[0]?.category || p.defectClass || '其他異常';
+    p.defectNote    = p.defectItems.map(it=>it.note).filter(Boolean).join('；');
+  }
+  p.status = STATUS.PROCUREMENT;
   if (p.id) {
     ProductAPI.review(p.id, {
       defectTime: p.defectTime, defectClass: p.defectClass,
