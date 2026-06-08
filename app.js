@@ -3,24 +3,28 @@
  */
 
 // ── 常數 ─────────────────────────────────────────────
-// 大分類
+// 大分類 & 各自子原因（複選）
 const DEFECT_CATEGORIES = ['臨時到貨', '取消到貨', '其他異常'];
-// 其他異常的子原因（複選）
-const DEFECT_REASONS = [
-  '品名不符','數量不符','規格不符',
-  '外箱標示異常','條碼異常','裸瓶','混效期',
-  '商品異常-凹損','商品異常-破損','商品異常-破膜',
-  '商品異常-汙損','商品異常-殘膠','商品異常-未封口',
-  '商品異常-效期模糊','商品異常-(多筆)',
-  '效期異常-效期超允收','效期異常-未來日',
-  '效期異常-無第二條件','效期異常-保存期限不合理',
-  '其他'
-];
+const DEFECT_SUB_REASONS = {
+  '臨時到貨': ['提前到貨','超量到貨','補貨到貨','緊急調貨','其他'],
+  '取消到貨': ['廠商取消','採購取消','訂單錯誤','重複到貨','其他'],
+  '其他異常': [
+    '品名不符','數量不符','規格不符',
+    '外箱標示異常','條碼異常','裸瓶','混效期',
+    '商品異常-凹損','商品異常-破損','商品異常-破膜',
+    '商品異常-汙損','商品異常-殘膠','商品異常-未封口',
+    '商品異常-效期模糊','商品異常-(多筆)',
+    '效期異常-效期超允收','效期異常-未來日',
+    '效期異常-無第二條件','效期異常-保存期限不合理',
+    '其他'
+  ]
+};
+// 向下相容
+const DEFECT_REASONS = DEFECT_SUB_REASONS['其他異常'];
 // 取得顯示用原因文字（供卡片/報表顯示）
 function getDefectDisplay(item) {
   if (!item) return '—';
-  if (item.category === '其他異常' && item.reasons?.length)
-    return item.reasons.join('、');
+  if (item.reasons?.length) return `${item.category}・${item.reasons.join('、')}`;
   return item.category || item.reason || '—';
 }
 const PROC_ACTIONS = ['正常收貨','退貨','換貨','補貨','折讓','報廢','廠商確認後處理','其他'];
@@ -317,17 +321,18 @@ function renderDefectItems(readonly) {
           background:${active?'#dbeafe':'#f8fafc'};color:${active?'#1d4ed8':'#6b7280'};
           font-size:12px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap">${c}</button>`;
     }).join('');
-    // 其他異常子原因（複選）
-    const subReasons = (item.category === '其他異常' && !readonly) ? `
-      <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:3px">
-        ${DEFECT_REASONS.map(r => {
+    // 各大分類都顯示子原因（複選）
+    const subList = DEFECT_SUB_REASONS[item.category] || [];
+    const subReasons = subList.length ? (!readonly
+      ? `<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:3px">${subList.map(r => {
           const sel = (item.reasons||[]).includes(r);
           return `<span onclick="toggleDefectSubReason(${i},'${r}')"
             style="padding:4px 10px;border-radius:16px;border:1.5px solid ${sel?'#2563eb':'#e5e7eb'};
               background:${sel?'#dbeafe':'#f8fafc'};color:${sel?'#1d4ed8':'#6b7280'};
               font-size:11px;font-weight:${sel?'700':'400'};cursor:pointer">${r}</span>`;
-        }).join('')}
-      </div>` : (item.category === '其他異常' && item.reasons?.length ? `<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:3px">${(item.reasons||[]).map(r=>`<span style="padding:3px 8px;border-radius:12px;background:#dbeafe;color:#1d4ed8;font-size:11px">${r}</span>`).join('')}</div>` : '');
+        }).join('')}</div>`
+      : (item.reasons?.length ? `<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:3px">${(item.reasons||[]).map(r=>`<span style="padding:3px 8px;border-radius:12px;background:#dbeafe;color:#1d4ed8;font-size:11px">${r}</span>`).join('')}</div>` : '')
+    ) : '';
     const noteEl = !readonly
       ? `<input placeholder="補充說明（選填）" value="${item.note||''}"
           style="width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:6px 10px;font-size:12px;outline:none;background:#fff;margin-top:6px;font-family:inherit"
@@ -467,7 +472,8 @@ async function saveReceiving() {
   if (isNaN(good)||good<0) { errDiv.textContent='請輸入正確的良品數量'; errDiv.style.display='block'; return; }
   if (bad>0 && _defectItems.length===0) { errDiv.textContent='有不良品時，請新增至少一筆異常明細'; errDiv.style.display='block'; return; }
   if (bad>0 && _defectItems.some(item=>!item.category)) { errDiv.textContent='每筆異常明細都需選擇異常大分類'; errDiv.style.display='block'; return; }
-  if (bad>0 && _defectItems.some(item=>item.category==='其他異常'&&(!item.reasons||!item.reasons.length))) { errDiv.textContent='「其他異常」需至少選擇一個原因'; errDiv.style.display='block'; return; }
+  // 所有大分類都需要至少選一個子原因
+  if (bad>0 && _defectItems.some(item=>item.category&&(!item.reasons||!item.reasons.length))) { errDiv.textContent='請為每筆異常選擇至少一個原因'; errDiv.style.display='block'; return; }
 
   const { date, idx } = currentIdx;
   const p = getDateProducts(date)[idx];
