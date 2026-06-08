@@ -186,6 +186,7 @@ function normalizeProducts(items) {
     procStaffName:  p.proc_staff_name || '',
     operatorName:   p.operator_name || '',
     photos:         p.photos || [],
+    defectItems:    p.defect_items || p.defectItems || [],
     time:           p.recv_time || ''
   }));
 }
@@ -977,7 +978,8 @@ function submitReview() {
   if (p.id) {
     ProductAPI.review(p.id, {
       defectTime: p.defectTime, defectClass: p.defectClass,
-      defectReasons: p.defectReasons, defectNote: p.defectNote
+      defectReasons: p.defectReasons, defectNote: p.defectNote,
+      defectItems: p.defectItems
     }).then(async () => {
       await reloadFromFirestore(arrivalDate);
       renderReviewTable(); updateBadges();

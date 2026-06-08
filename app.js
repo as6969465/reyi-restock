@@ -202,7 +202,7 @@ function normalizeProducts(items) {
     defectStaff:p.defect_staff||p.defectStaff||'', procAction:p.proc_action||p.procAction||'',
     procReply:p.proc_reply||p.procReply||'', procReplyTime:p.proc_reply_time||p.procReplyTime||'',
     procStaffName:p.proc_staff_name||p.procStaffName||'', operatorName:p.operator_name||p.operatorName||'',
-    photos:p.photos||[], time:p.recv_time||p.time||''
+    photos:p.photos||[], defectItems:p.defect_items||p.defectItems||[], time:p.recv_time||p.time||''
   }));
 }
 
