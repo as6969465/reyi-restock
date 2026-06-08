@@ -1155,8 +1155,9 @@ function updateBadges() {
   const purchaseCount = all.filter(p=>p.status===STATUS.PROCUREMENT).length;
   nb('review',   reviewCount);
   nb('purchase', purchaseCount);
-  // 異常回覆頁角標：顯示待採購回覆筆數
-  nb('report',   purchaseCount);
+  // 異常回覆頁角標：採購已回覆的筆數（提醒物流專員查看）
+  const reportCount = all.filter(p=>p.status===STATUS.RESOLVED && p.procAction && p.procAction!=='—').length;
+  nb('report', reportCount);
 }
 
 // ── 匯入 Excel ────────────────────────────────────────

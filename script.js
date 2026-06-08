@@ -705,8 +705,8 @@ function updateBadges() {
   const all = getAllProducts();
   const reviewCount   = all.filter(p => p.status === STATUS.ABNORMAL_PENDING).length;
   const purchaseCount = all.filter(p => p.status === STATUS.PROCUREMENT).length;
-  // 異常回覆頁：顯示「待採購回覆」筆數
-  const reportCount   = purchaseCount;
+  // 異常回覆頁：採購已回覆（已處理）的筆數
+  const reportCount = all.filter(p => p.status === STATUS.RESOLVED && p.procAction && p.procAction !== '—').length;
   const rb = document.getElementById('badge-review');
   const pb = document.getElementById('badge-purchase');
   const rpb = document.getElementById('badge-report');
