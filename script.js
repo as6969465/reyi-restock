@@ -706,13 +706,26 @@ function updateBadges() {
 function openModal(date, idx) {
   currentIdx = { date, idx };
   const p = getDateProducts(date)[idx];
-  // 載入已有的異常明細（每張照片各自原因）
-  _deskDefectItems = (p.defectItems || []).map(item => ({ ...item }));
-  if (!_deskDefectItems.length && p.photos?.length && p.badQty > 0) {
-    _deskDefectItems = p.photos.map((ph, i) => ({
-      photo: ph, reason: (p.defectReasons||[])[i]||'', note: ''
+  // 載入已有的異常明細（含舊格式自動轉換）
+  if ((p.defectItems||[]).length) {
+    _deskDefectItems = p.defectItems.map(item => ({
+      photo:    item.photo    || '',
+      category: item.category || '',
+      reasons:  item.reasons  || (item.reason ? [item.reason] : []),
+      note:     item.note     || ''
     }));
+  } else if (p.photos?.length && p.badQty > 0) {
+    const allReasons = p.defectReasons || [];
+    _deskDefectItems = p.photos.map((ph, i) => ({
+      photo:    ph,
+      category: '',
+      reasons:  allReasons.length > 0 ? (i === 0 ? allReasons : []) : [],
+      note:     i === 0 ? (p.defectNote || '') : ''
+    }));
+  } else {
+    _deskDefectItems = [];
   }
+  _activeDeskDefectIdx = 0;
   document.getElementById('modalTitle').textContent = p.status === STATUS.PENDING ? '驗收登錄' : '修改驗收';
   document.getElementById('m-itemCode').textContent = p.itemNo;
   document.getElementById('m-poNo').textContent     = p.po;

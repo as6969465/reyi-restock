@@ -478,14 +478,27 @@ function openReceiveSheet(date, idx) {
   const p = getDateProducts(date)[idx];
   if (!p) return;
   currentIdx = { date, idx };
-  // 載入已有的異常明細
-  _defectItems = (p.defectItems || []).map(item => ({ ...item }));
-  // 向下相容舊資料：若有 photos 但無 defectItems，轉換
-  if (!_defectItems.length && p.photos?.length && p.badQty > 0) {
-    _defectItems = p.photos.map((ph, i) => ({
-      photo: ph, reason: (p.defectReasons||[])[i] || '', note: ''
+  // 載入已有的異常明細（含舊格式自動轉換）
+  if ((p.defectItems||[]).length) {
+    _defectItems = p.defectItems.map(item => ({
+      photo:    item.photo    || '',
+      category: item.category || '',
+      reasons:  item.reasons  || (item.reason ? [item.reason] : []),
+      note:     item.note     || ''
     }));
+  } else if (p.photos?.length && p.badQty > 0) {
+    // 舊格式備援：照片+原因分開存
+    const allReasons = p.defectReasons || [];
+    _defectItems = p.photos.map((ph, i) => ({
+      photo:    ph,
+      category: '',
+      reasons:  allReasons.length > 0 ? (i === 0 ? allReasons : []) : [],
+      note:     i === 0 ? (p.defectNote || '') : ''
+    }));
+  } else {
+    _defectItems = [];
   }
+  _activeDefectIdx = 0;
 
   const isResolved = p.status === STATUS.RESOLVED;
   document.getElementById('receiveSheetTitle').textContent =
