@@ -337,8 +337,8 @@ function renderDefectItems(readonly) {
       : (item.note ? `<div style="font-size:12px;color:#6b7280;margin-top:4px">${item.note}</div>` : '');
     const replyEl = item.procAction ? `<div style="padding:7px 10px;background:#d1fae5;font-size:12px;color:#065f46;border-top:1px solid #a7f3d0;margin-top:6px;border-radius:8px"><b>採購：</b>${item.procAction}${item.procReply?' — '+item.procReply:''}</div>` : '';
     return `<div style="background:#fef9f9;border-radius:12px;border:1.5px solid #fecaca;margin-bottom:10px;overflow:hidden">
-      <div style="display:flex;align-items:stretch">
-        <div style="flex-shrink:0;width:68px;background:#fff0f0;display:flex;align-items:center;justify-content:center;border-right:1px solid #fecaca;padding:6px 0">${photoEl}</div>
+      <div style="display:flex;align-items:center">
+        <div style="flex-shrink:0;width:68px;display:flex;align-items:center;justify-content:center;padding:8px 6px;align-self:stretch;background:#fff0f0;border-right:1px solid #fecaca">${photoEl}</div>
         <div style="flex:1;padding:6px 10px 8px;min-width:0">
           <div style="display:flex;justify-content:flex-end;margin-bottom:4px">${delBtn}</div>
           <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px">${catBtns}</div>
