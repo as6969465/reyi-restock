@@ -3,13 +3,26 @@
  */
 
 // ── 常數 ─────────────────────────────────────────────
+// 大分類
+const DEFECT_CATEGORIES = ['臨時到貨', '取消到貨', '其他異常'];
+// 其他異常的子原因（複選）
 const DEFECT_REASONS = [
-  '品名不符','數量不符','規格不符','外箱標示異常','條碼異常','裸瓶','混效期',
-  '商品異常-凹損','商品異常-破損','商品異常-破膜','商品異常-汙損','商品異常-殘膠',
-  '商品異常-未封口','商品異常-效期模糊','商品異常-(多筆)',
-  '效期異常-效期超允收','效期異常-未來日','效期異常-無第二條件','效期異常-保存期限不合理',
-  '臨時到貨','取消到貨','其他'
+  '品名不符','數量不符','規格不符',
+  '外箱標示異常','條碼異常','裸瓶','混效期',
+  '商品異常-凹損','商品異常-破損','商品異常-破膜',
+  '商品異常-汙損','商品異常-殘膠','商品異常-未封口',
+  '商品異常-效期模糊','商品異常-(多筆)',
+  '效期異常-效期超允收','效期異常-未來日',
+  '效期異常-無第二條件','效期異常-保存期限不合理',
+  '其他'
 ];
+// 取得顯示用原因文字（供卡片/報表顯示）
+function getDefectDisplay(item) {
+  if (!item) return '—';
+  if (item.category === '其他異常' && item.reasons?.length)
+    return item.reasons.join('、');
+  return item.category || item.reason || '—';
+}
 const PROC_ACTIONS = ['正常收貨','退貨','換貨','補貨','折讓','報廢','廠商確認後處理','其他'];
 const STATUS = { PENDING:'pending', RECEIVED:'received', ABNORMAL:'abnormal_pending', PROCUREMENT:'procurement', RESOLVED:'resolved' };
 const TAB_LABELS = { receiving:'驗收', warehouse:'入庫', review:'檢核', report:'報表', purchase:'待回覆', resolved:'記錄', admin:'設定' };
@@ -290,17 +303,49 @@ function renderDefectItems(readonly) {
     container.innerHTML = '<div style="text-align:center;padding:12px 0 4px;color:#9ca3af;font-size:13px">尚未新增，點上方按鈕新增</div>';
     return;
   }
-  const camSvg = '<svg style="width:22px;height:22px;color:#fca5a5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>';
+  const camSvg = '<svg style="width:20px;height:20px;color:#fca5a5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>';
   container.innerHTML = _defectItems.map((item, i) => {
     const photoEl = item.photo
       ? `<img src="${item.photo}" style="width:76px;height:76px;object-fit:cover;display:block;cursor:pointer" onclick="viewDefectPhoto(${i})" />`
       : `<label style="width:76px;height:76px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:3px">${camSvg}<span style="font-size:10px;color:#fca5a5">上傳</span><input type="file" accept="image/*" class="hidden" onchange="setDefectPhoto(${i},this)" /></label>`;
-    const reasonEl = readonly
-      ? `<span class="badge badge-abnormal" style="font-size:11px">${item.reason||'未選擇'}</span>`
-      : `<select onchange="setDefectReasonSelect(${i},this.value)" style="width:100%;border:1.5px solid #fecaca;border-radius:8px;padding:7px 10px;font-size:13px;outline:none;background:#fff;font-family:inherit;margin-bottom:6px"><option value="">請選擇異常原因</option>${DEFECT_REASONS.map(r=>`<option value="${r}"${item.reason===r?' selected':''}>${r}</option>`).join('')}</select><input placeholder="補充說明（選填）" value="${item.note||''}" style="width:100%;border:1.5px solid #e5e7eb;border-radius:8px;padding:7px 10px;font-size:13px;outline:none;background:#fff;font-family:inherit" oninput="_defectItems[${i}].note=this.value" />`;
     const delBtn = !readonly ? `<button onclick="removeDefectItem(${i})" style="background:none;border:none;color:#fca5a5;cursor:pointer;font-size:16px;line-height:1;padding:0">✕</button>` : '';
-    const replyEl = item.procAction ? `<div style="padding:8px 12px;background:#d1fae5;font-size:12px;color:#065f46;border-top:1px solid #a7f3d0"><b>採購回覆：</b>${item.procAction}${item.procReply?' — '+item.procReply:''}</div>` : '';
-    return `<div style="background:#fef9f9;border-radius:12px;border:1.5px solid #fecaca;margin-bottom:8px;overflow:hidden"><div style="display:flex;align-items:stretch"><div style="flex-shrink:0;width:76px;background:#fff0f0;display:flex;align-items:center;justify-content:center;border-right:1px solid #fecaca">${photoEl}</div><div style="flex:1;padding:10px;min-width:0"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:11px;font-weight:700;color:#9ca3af">異常原因</span>${delBtn}</div>${reasonEl}</div></div>${replyEl}</div>`;
+    // 大分類按鈕
+    const catBtns = DEFECT_CATEGORIES.map(c => {
+      const active = item.category === c;
+      return `<button onclick="${readonly?'':`setDefectCategory(${i},'${c}')`}"
+        style="padding:6px 12px;border-radius:20px;border:1.5px solid ${active?'#2563eb':'#e5e7eb'};
+          background:${active?'#dbeafe':'#f8fafc'};color:${active?'#1d4ed8':'#6b7280'};
+          font-size:12px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap">${c}</button>`;
+    }).join('');
+    // 其他異常子原因（複選）
+    const subReasons = (item.category === '其他異常' && !readonly) ? `
+      <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:3px">
+        ${DEFECT_REASONS.map(r => {
+          const sel = (item.reasons||[]).includes(r);
+          return `<span onclick="toggleDefectSubReason(${i},'${r}')"
+            style="padding:4px 10px;border-radius:16px;border:1.5px solid ${sel?'#2563eb':'#e5e7eb'};
+              background:${sel?'#dbeafe':'#f8fafc'};color:${sel?'#1d4ed8':'#6b7280'};
+              font-size:11px;font-weight:${sel?'700':'400'};cursor:pointer">${r}</span>`;
+        }).join('')}
+      </div>` : (item.category === '其他異常' && item.reasons?.length ? `<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:3px">${(item.reasons||[]).map(r=>`<span style="padding:3px 8px;border-radius:12px;background:#dbeafe;color:#1d4ed8;font-size:11px">${r}</span>`).join('')}</div>` : '');
+    const noteEl = !readonly
+      ? `<input placeholder="補充說明（選填）" value="${item.note||''}"
+          style="width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:6px 10px;font-size:12px;outline:none;background:#fff;margin-top:6px;font-family:inherit"
+          oninput="_defectItems[${i}].note=this.value" />`
+      : (item.note ? `<div style="font-size:12px;color:#6b7280;margin-top:4px">${item.note}</div>` : '');
+    const replyEl = item.procAction ? `<div style="padding:7px 10px;background:#d1fae5;font-size:12px;color:#065f46;border-top:1px solid #a7f3d0;margin-top:4px;border-radius:0 0 10px 10px"><b>採購：</b>${item.procAction}${item.procReply?' — '+item.procReply:''}</div>` : '';
+    return `<div style="background:#fef9f9;border-radius:12px;border:1.5px solid #fecaca;margin-bottom:8px;overflow:hidden">
+      <div style="display:flex;align-items:stretch">
+        <div style="flex-shrink:0;width:76px;background:#fff0f0;display:flex;align-items:center;justify-content:center;border-right:1px solid #fecaca">${photoEl}</div>
+        <div style="flex:1;padding:10px;min-width:0">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
+            <span style="font-size:10px;font-weight:700;color:#9ca3af">異常大分類</span>${delBtn}
+          </div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap">${catBtns}</div>
+          ${subReasons}${noteEl}
+        </div>
+      </div>${replyEl}
+    </div>`;
   }).join('');
 }
 function addDefectItem() {
@@ -309,6 +354,20 @@ function addDefectItem() {
   renderDefectItems(false);
 }
 function removeDefectItem(i) { _defectItems.splice(i,1); renderDefectItems(false); }
+function setDefectCategory(i, cat) {
+  _defectItems[i].category = cat;
+  if (cat !== '其他異常') _defectItems[i].reasons = [];
+  renderDefectItems(false);
+}
+function toggleDefectSubReason(i, r) {
+  const item = _defectItems[i];
+  if (!item.reasons) item.reasons = [];
+  const idx = item.reasons.indexOf(r);
+  if (idx >= 0) item.reasons.splice(idx, 1);
+  else item.reasons.push(r);
+  renderDefectItems(false);
+}
+// 向下相容舊格式
 function setDefectReason(i, r) { _defectItems[i].reason = r; renderDefectItems(false); }
 function setDefectReasonSelect(i, r) { _defectItems[i].reason = r; }
 function setDefectPhoto(i, input) {
@@ -406,8 +465,9 @@ async function saveReceiving() {
   const good = parseInt(document.getElementById('rs-good').value);
   const bad  = parseInt(document.getElementById('rs-bad').value)||0;
   if (isNaN(good)||good<0) { errDiv.textContent='請輸入正確的良品數量'; errDiv.style.display='block'; return; }
-  if (bad>0 && _defectItems.length===0) { errDiv.textContent='有不良品時，請新增至少一筆異常明細（照片+原因）'; errDiv.style.display='block'; return; }
-  if (bad>0 && _defectItems.some(item=>!item.reason)) { errDiv.textContent='每筆異常明細都需選擇異常原因'; errDiv.style.display='block'; return; }
+  if (bad>0 && _defectItems.length===0) { errDiv.textContent='有不良品時，請新增至少一筆異常明細'; errDiv.style.display='block'; return; }
+  if (bad>0 && _defectItems.some(item=>!item.category)) { errDiv.textContent='每筆異常明細都需選擇異常大分類'; errDiv.style.display='block'; return; }
+  if (bad>0 && _defectItems.some(item=>item.category==='其他異常'&&(!item.reasons||!item.reasons.length))) { errDiv.textContent='「其他異常」需至少選擇一個原因'; errDiv.style.display='block'; return; }
 
   const { date, idx } = currentIdx;
   const p = getDateProducts(date)[idx];
@@ -415,7 +475,7 @@ async function saveReceiving() {
   p.received=true; p.goodQty=good; p.badQty=bad;
   p.defectItems  = _defectItems.map(item => ({ ...item, procAction:'', procReply:'', procStaffName:'' }));
   // 向下相容欄位
-  p.defectReasons= _defectItems.map(item=>item.reason).filter(Boolean);
+  p.defectReasons= _defectItems.map(item=>getDefectDisplay(item)).filter(r=>r&&r!=='—');
   p.photos       = _defectItems.map(item=>item.photo).filter(Boolean);
   p.defectNote   = _defectItems.map(item=>item.note).filter(Boolean).join('；');
   p.defectClass  = '其他異常';

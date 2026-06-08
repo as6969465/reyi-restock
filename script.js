@@ -1,4 +1,5 @@
-﻿// ── 異常原因選項 ──────────────────────────────────────
+﻿// ── 異常大分類 & 子原因 ────────────────────────────────
+const DEFECT_CATEGORIES = ['臨時到貨', '取消到貨', '其他異常'];
 const DEFECT_REASONS = [
   '品名不符','數量不符','規格不符',
   '外箱標示異常','條碼異常','裸瓶','混效期',
@@ -7,8 +8,13 @@ const DEFECT_REASONS = [
   '商品異常-效期模糊','商品異常-(多筆)',
   '效期異常-效期超允收','效期異常-未來日',
   '效期異常-無第二條件','效期異常-保存期限不合理',
-  '臨時到貨','取消到貨','其他'
+  '其他'
 ];
+function getDefectDisplay(item) {
+  if (!item) return '—';
+  if (item.category === '其他異常' && item.reasons?.length) return item.reasons.join('、');
+  return item.category || item.reason || '—';
+}
 
 // 流程狀態
 const STATUS = {
@@ -729,40 +735,42 @@ function renderDeskDefectItems() {
     container.innerHTML = '<p class="text-xs text-gray-400 py-2">尚未新增，點右上角按鈕新增</p>';
     return;
   }
-  const REASONS = ['品名不符','數量不符','規格不符','外箱標示異常','條碼異常','裸瓶','混效期','商品異常-凹損','商品異常-破損','商品異常-破膜','商品異常-汙損','商品異常-殘膠','商品異常-未封口','商品異常-效期模糊','商品異常-(多筆)','效期異常-效期超允收','效期異常-未來日','效期異常-無第二條件','效期異常-保存期限不合理','臨時到貨','取消到貨','其他'];
-  container.innerHTML = _deskDefectItems.map((item, i) => `
-    <div class="flex gap-3 items-start p-3 mb-2 bg-red-50 border border-red-100 rounded-xl">
-      <!-- 照片 -->
-      <div class="flex-shrink-0">
-        ${item.photo
-          ? `<img src="${item.photo}" style="width:72px;height:72px;border-radius:8px;object-fit:cover;cursor:pointer" onclick="deskViewDefectPhoto(${i})" />`
-          : `<label style="width:72px;height:72px;border:2px dashed #fca5a5;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;background:#fff">
-              <svg style="width:20px;height:20px;color:#fca5a5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-              <span style="font-size:10px;color:#fca5a5;margin-top:2px">上傳</span>
-              <input type="file" accept="image/*" class="hidden" onchange="deskSetDefectPhoto(${i},this)" />
-            </label>`}
-      </div>
-      <!-- 原因 & 說明 -->
+  container.innerHTML = _deskDefectItems.map((item, i) => {
+    const photoEl = item.photo
+      ? `<img src="${item.photo}" style="width:72px;height:72px;border-radius:8px;object-fit:cover;cursor:pointer" onclick="deskViewDefectPhoto(${i})" />`
+      : `<label style="width:72px;height:72px;border:2px dashed #fca5a5;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;background:#fff"><svg style="width:20px;height:20px;color:#fca5a5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg><span style="font-size:10px;color:#fca5a5;margin-top:2px">上傳</span><input type="file" accept="image/*" class="hidden" onchange="deskSetDefectPhoto(${i},this)" /></label>`;
+    // 大分類按鈕
+    const catBtns = DEFECT_CATEGORIES.map(c =>
+      `<button type="button" onclick="deskSetDefectCategory(${i},'${c}')"
+        class="text-xs px-3 py-1.5 rounded-full border transition-colors ${item.category===c?'bg-red-100 border-red-400 text-red-600 font-semibold':'bg-white border-gray-200 text-gray-500 hover:border-red-300'}">${c}</button>`
+    ).join('');
+    // 其他異常子原因複選
+    const subReasons = item.category === '其他異常' ? `<div class="mt-2 flex flex-wrap gap-1">${DEFECT_REASONS.map(r=>{const s=(item.reasons||[]).includes(r);return `<span onclick="deskToggleSubReason(${i},'${r}')" class="text-xs px-2 py-1 rounded-full cursor-pointer border ${s?'bg-red-100 border-red-400 text-red-600 font-semibold':'bg-gray-50 border-gray-200 text-gray-500'}">${r}</span>`;}).join('')}</div>` : '';
+    return `<div class="flex gap-3 items-start p-3 mb-2 bg-red-50 border border-red-100 rounded-xl">
+      <div class="flex-shrink-0">${photoEl}</div>
       <div class="flex-1 min-w-0">
-        <select onchange="deskSetDefectReason(${i},this.value)"
-          class="w-full border border-red-200 rounded-lg px-2 py-1.5 text-sm mb-1.5 focus:outline-none focus:ring-1 focus:ring-red-400">
-          <option value="">請選擇異常原因</option>
-          ${REASONS.map(r=>`<option value="${r}" ${item.reason===r?'selected':''}>${r}</option>`).join('')}
-        </select>
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-xs font-semibold text-gray-400">異常大分類</span>
+          <button onclick="deskRemoveDefectItem(${i})" class="text-red-300 hover:text-red-500 text-base leading-none">✕</button>
+        </div>
+        <div class="flex gap-1.5 flex-wrap mb-1">${catBtns}</div>
+        ${subReasons}
         <input type="text" value="${item.note||''}" placeholder="補充說明（選填）"
-          class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none"
+          class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none mt-2"
           oninput="_deskDefectItems[${i}].note=this.value" />
       </div>
-      <button onclick="deskRemoveDefectItem(${i})" class="text-red-300 hover:text-red-500 text-lg leading-none pt-1">✕</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function desktopAddDefectItem() {
   if (_deskDefectItems.length >= 6) { alert('最多 6 筆'); return; }
-  _deskDefectItems.push({ photo:'', reason:'', note:'' });
+  _deskDefectItems.push({ photo:'', category:'', reasons:[], note:'' });
   renderDeskDefectItems();
 }
 function deskRemoveDefectItem(i) { _deskDefectItems.splice(i,1); renderDeskDefectItems(); }
+function deskSetDefectCategory(i, cat) { _deskDefectItems[i].category=cat; if(cat!=='其他異常')_deskDefectItems[i].reasons=[]; renderDeskDefectItems(); }
+function deskToggleSubReason(i, r) { const item=_deskDefectItems[i]; if(!item.reasons)item.reasons=[]; const idx=item.reasons.indexOf(r); if(idx>=0)item.reasons.splice(idx,1); else item.reasons.push(r); renderDeskDefectItems(); }
 function deskSetDefectReason(i, r) { _deskDefectItems[i].reason = r; }
 function deskSetDefectPhoto(i, input) {
   const file = input.files[0]; if (!file) return;
@@ -790,7 +798,8 @@ function saveReceiving() {
   const bad  = parseInt(document.getElementById('badQty').value) || 0;
   if (isNaN(good) || good < 0) { errDiv.textContent='請輸入正確的良品數量'; errDiv.classList.remove('hidden'); return; }
   if (bad > 0 && _deskDefectItems.length === 0) { errDiv.textContent='有不良品時，請新增至少一筆異常明細'; errDiv.classList.remove('hidden'); return; }
-  if (bad > 0 && _deskDefectItems.some(item=>!item.reason)) { errDiv.textContent='每筆異常明細都需選擇異常原因'; errDiv.classList.remove('hidden'); return; }
+  if (bad > 0 && _deskDefectItems.some(item=>!item.category)) { errDiv.textContent='每筆異常明細都需選擇異常大分類'; errDiv.classList.remove('hidden'); return; }
+  if (bad > 0 && _deskDefectItems.some(item=>item.category==='其他異常'&&(!item.reasons||!item.reasons.length))) { errDiv.textContent='「其他異常」需至少選擇一個原因'; errDiv.classList.remove('hidden'); return; }
   const { date, idx } = currentIdx;
   const p = getDateProducts(date)[idx];
   const user = getCurrentUser();
@@ -798,7 +807,7 @@ function saveReceiving() {
   p.goodQty       = good;
   p.badQty        = bad;
   p.defectItems   = _deskDefectItems.map(item=>({ ...item, procAction:'', procReply:'', procStaffName:'' }));
-  p.defectReasons = _deskDefectItems.map(item=>item.reason).filter(Boolean);
+  p.defectReasons = _deskDefectItems.map(item=>getDefectDisplay(item)).filter(r=>r&&r!=='—');
   p.photos        = _deskDefectItems.map(item=>item.photo).filter(Boolean);
   p.defectNote    = _deskDefectItems.map(item=>item.note).filter(Boolean).join('；');
   p.defectClass   = '其他異常';
