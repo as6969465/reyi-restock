@@ -1074,33 +1074,150 @@ function submitReview() {
 }
 
 // ── 採購回覆 Modal ────────────────────────────────────
+let _deskPurchasePhotoIdx = 0;
+const PROC_ACTIONS_DESKTOP = ['正常收貨','退貨','換貨','補貨','折讓','報廢','廠商確認後處理','其他'];
+
 function openPurchaseModal(arrivalDate, itemNo) {
   const p = getDateProducts(arrivalDate).find(x => x.itemNo === itemNo);
   if (!p) return;
   purchaseIdx = { arrivalDate, itemNo };
+  _deskPurchasePhotoIdx = 0;
+  // 確保 defectItems 已初始化
+  if (!(p.defectItems?.length)) {
+    const photos  = p.photos || [];
+    const reasons = p.defectReasons || [];
+    p.defectItems = photos.map((ph, i) => ({
+      photo: ph, category: p.defectClass||'', reasons: [...reasons],
+      note: i===0?(p.defectNote||''):'',
+      procAction: '', procReply: '', procStaffName: ''
+    }));
+    if (!p.defectItems.length && p.badQty > 0)
+      p.defectItems = [{ photo:'', category: p.defectClass||'', reasons:[...reasons],
+        note: p.defectNote||'', procAction:'', procReply:'', procStaffName:'' }];
+  } else {
+    // 確保每筆都有 procAction/procReply 欄位
+    p.defectItems.forEach(it => { if (!it.procAction) it.procAction=''; if (!it.procReply) it.procReply=''; });
+  }
   document.getElementById('pur-itemCode').textContent = p.itemNo;
   document.getElementById('pur-cat').textContent      = p.cat;
   document.getElementById('pur-name').textContent     = p.name;
-  document.getElementById('pur-reasons').textContent  = (p.defectReasons||[]).join('、') || '—';
-  document.getElementById('pur-note').textContent     = p.defectNote   || '—';
-  document.getElementById('pur-staff').textContent    = p.defectStaff  || '—';
-  document.getElementById('pur-action').value = p.procAction || '';
-  document.getElementById('pur-reply').value  = p.procReply  || '';
   document.getElementById('purchaseModalError').classList.add('hidden');
+  renderPurchasePhotoPanel(p);
   document.getElementById('purchaseModal').classList.remove('hidden');
+}
+
+function renderPurchasePhotoPanel(p) {
+  if (!p) {
+    const { arrivalDate, itemNo } = purchaseIdx;
+    p = getDateProducts(arrivalDate).find(x=>x.itemNo===itemNo);
+  }
+  if (!p) return;
+  const panel = document.getElementById('pur-photos-panel');
+  if (!panel) return;
+
+  const items = p.defectItems || [];
+  if (!items.length) { panel.innerHTML='<p class="text-xs text-gray-400 py-2">無異常明細</p>'; return; }
+  _deskPurchasePhotoIdx = Math.min(_deskPurchasePhotoIdx, items.length-1);
+  const cur = items[_deskPurchasePhotoIdx];
+  const i   = _deskPurchasePhotoIdx;
+
+  // 縮圖列
+  const thumbs = items.map((it, idx) => {
+    const active = idx === _deskPurchasePhotoIdx;
+    const done   = !!it.procAction;
+    const t = it.photo
+      ? `<img src="${it.photo}" class="w-full h-full object-cover" />`
+      : `<div class="w-full h-full flex items-center justify-center text-xs text-gray-400">無圖</div>`;
+    return `<div onclick="_deskPurchasePhotoIdx=${idx};renderPurchasePhotoPanel();"
+      class="flex-shrink-0 cursor-pointer overflow-hidden rounded-lg transition-all relative"
+      style="width:52px;height:52px;border:2.5px solid ${active?'#2563eb':done?'#34d399':'#e5e7eb'};
+        background:${active?'#dbeafe':done?'#d1fae5':'#f9fafb'};
+        box-shadow:${active?'0 2px 8px rgba(37,99,235,.25)':'none'}">${t}
+      ${done?'<div style="position:absolute;bottom:1px;right:1px;width:14px;height:14px;background:#059669;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;border:1.5px solid #fff">✓</div>':''}
+    </div>`;
+  }).join('');
+
+  // 狀態統計
+  const replied = items.filter(it=>it.procAction).length;
+  const statHtml = items.length > 1
+    ? `<div class="text-xs text-gray-400 mb-2">已回覆 ${replied} / ${items.length} 張</div>` : '';
+
+  // 異常原因（唯讀）
+  const reasonsHtml = (cur.reasons||[]).length
+    ? `<div class="flex flex-wrap gap-1 mb-2">${cur.reasons.map(r=>`<span class="text-xs px-2 py-0.5 bg-red-100 text-red-600 rounded">${r}</span>`).join('')}</div>`
+    : '';
+
+  // 照片預覽
+  const photoEl = cur.photo
+    ? `<img src="${cur.photo}" onclick="openPhotoModal([${items.filter(x=>x.photo).map(x=>'\''+x.photo+'\'').join(',')}],'${p.name}',${_deskPurchasePhotoIdx})"
+        class="h-14 rounded-lg object-cover cursor-pointer flex-shrink-0" />` : '';
+
+  // 回覆輸入
+  const actionOptions = PROC_ACTIONS_DESKTOP.map(v=>`<option value="${v}" ${cur.procAction===v?'selected':''}>${v}</option>`).join('');
+
+  panel.innerHTML = `
+    ${statHtml}
+    <div class="flex gap-2 items-center overflow-x-auto pb-1 mb-3">${thumbs}</div>
+    <div class="p-3 bg-blue-50 border border-blue-100 rounded-xl">
+      <div class="flex items-start gap-2 mb-2">
+        ${photoEl}
+        <div class="flex-1 min-w-0">
+          <div class="text-xs text-gray-400 mb-1">${i+1} / ${items.length}${cur.category?' · '+cur.category:''}</div>
+          ${reasonsHtml}
+          ${cur.note?`<div class="text-xs text-gray-500">${cur.note}</div>`:''}
+        </div>
+      </div>
+      <div class="mb-2">
+        <label class="block text-xs font-medium text-gray-600 mb-1">處理方式 <span class="text-red-500">*</span></label>
+        <select onchange="deskPurSetAction(${i},this.value)"
+          class="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+          <option value="">請選擇處理方式</option>
+          ${actionOptions}
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">回覆說明</label>
+        <textarea rows="2" placeholder="詳細說明..." oninput="deskPurSetReply(${i},this.value)"
+          class="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none resize-none">${cur.procReply||''}</textarea>
+      </div>
+      ${cur.procAction?`<div class="mt-2 text-xs text-green-600 font-medium">✓ 已選擇：${cur.procAction}</div>`:''}
+    </div>`;
+}
+
+function deskPurSetAction(idx, val) {
+  const { arrivalDate, itemNo } = purchaseIdx;
+  const p = getDateProducts(arrivalDate).find(x=>x.itemNo===itemNo);
+  if (p?.defectItems?.[idx]) { p.defectItems[idx].procAction=val; renderPurchasePhotoPanel(p); }
+}
+function deskPurSetReply(idx, val) {
+  const { arrivalDate, itemNo } = purchaseIdx;
+  const p = getDateProducts(arrivalDate).find(x=>x.itemNo===itemNo);
+  if (p?.defectItems?.[idx]) p.defectItems[idx].procReply=val;
 }
 function closePurchaseModal() { document.getElementById('purchaseModal').classList.add('hidden'); purchaseIdx = null; }
 
 function submitPurchaseReply() {
   const errDiv = document.getElementById('purchaseModalError');
   errDiv.classList.add('hidden');
-  const action = document.getElementById('pur-action').value;
-  if (!action) { errDiv.textContent='請選擇處理方式'; errDiv.classList.remove('hidden'); return; }
   const { arrivalDate, itemNo } = purchaseIdx;
   const p = getDateProducts(arrivalDate).find(x => x.itemNo === itemNo);
-  const purUser   = getCurrentUser();
-  p.procAction    = action;
-  p.procReply     = document.getElementById('pur-reply').value.trim();
+  const purUser = getCurrentUser();
+  const items   = p.defectItems || [];
+  // 至少一筆需有回覆
+  const hasAny = items.some(it=>it.procAction) || true; // 允許部分回覆
+  // 未全部回覆時確認
+  const pending = items.filter(it=>!it.procAction);
+  if (pending.length > 0 && items.length > 1) {
+    if (!confirm(`尚有 ${pending.length} 張照片未填寫處理方式，確定送出？`)) return;
+  }
+  if (items.length > 0 && !items[0].procAction && items.length === 1) {
+    errDiv.textContent='請選擇處理方式'; errDiv.classList.remove('hidden'); return;
+  }
+  // 儲存各照片回覆
+  items.forEach(it=>{ if(!it.procStaffName) it.procStaffName=purUser?.name||''; });
+  p.defectItems   = items;
+  p.procAction    = items.map(it=>it.procAction).filter(Boolean).join('、') || '—';
+  p.procReply     = items.map(it=>it.procReply).filter(Boolean).join('；');
   p.procReplyTime = new Date().toLocaleString('zh-TW');
   p.procStaffId   = purUser?.userId || '';
   p.procStaffName = purUser?.name   || '';
