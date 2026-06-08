@@ -323,8 +323,17 @@ function importExcel(input) {
 // ── Firestore 重載（確保多台電腦資料同步）────────────────
 async function reloadFromFirestore(date) {
   try {
-    const items = await ProductAPI.getByDate(date || currentReceivingDate());
-    productsByDate[date || currentReceivingDate()] = normalizeProducts(items);
+    const key  = date || currentReceivingDate();
+    const prev = productsByDate[key] || [];
+    const loaded = normalizeProducts(await ProductAPI.getByDate(key));
+    // 若 Firestore 沒有 defectItems，從本機補回
+    loaded.forEach(p => {
+      if (!p.defectItems?.length) {
+        const local = prev.find(x => x.id === p.id || (x.itemNo === p.itemNo && x.po === p.po));
+        if (local?.defectItems?.length) p.defectItems = local.defectItems;
+      }
+    });
+    productsByDate[key] = loaded;
   } catch(e) { console.warn('Firestore reload failed:', e.message); }
 }
 

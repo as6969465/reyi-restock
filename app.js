@@ -184,8 +184,18 @@ function closeAllSheets() {
 // ── Firestore 重載 ────────────────────────────────────
 async function reloadFromFirestore(date) {
   try {
-    const items = await ProductAPI.getByDate(date || currentReceivingDate());
-    productsByDate[date || currentReceivingDate()] = normalizeProducts(items);
+    const key   = date || currentReceivingDate();
+    const prev  = productsByDate[key] || [];   // 重載前的本機資料
+    const items = await ProductAPI.getByDate(key);
+    const loaded = normalizeProducts(items);
+    // 若 Firestore 沒有 defectItems，從本機資料補回
+    loaded.forEach(p => {
+      if (!p.defectItems?.length) {
+        const local = prev.find(x => x.id === p.id || (x.itemNo === p.itemNo && x.po === p.po));
+        if (local?.defectItems?.length) p.defectItems = local.defectItems;
+      }
+    });
+    productsByDate[key] = loaded;
   } catch(e) { console.warn('reload failed:', e.message); }
 }
 
