@@ -287,47 +287,22 @@ function renderDefectItems(readonly) {
   const container = document.getElementById('rs-defect-items');
   if (!container) return;
   if (!_defectItems.length && !readonly) {
-    container.innerHTML = `<div style="text-align:center;padding:16px;color:#9ca3af;font-size:13px">尚未新增異常明細</div>`;
+    container.innerHTML = '<div style="text-align:center;padding:12px 0 4px;color:#9ca3af;font-size:13px">尚未新增，點上方按鈕新增</div>';
     return;
   }
-  container.innerHTML = _defectItems.map((item, i) => `
-    <div style="background:#fff;border-radius:12px;border:1.5px solid #fee2e2;padding:12px;margin-bottom:10px">
-      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px">
-        <!-- 照片 -->
-        <div style="flex-shrink:0">
-          ${item.photo
-            ? `<img src="${item.photo}" style="width:64px;height:64px;border-radius:10px;object-fit:cover;cursor:pointer"
-                onclick="viewDefectPhoto(${i})" />`
-            : `<label style="width:64px;height:64px;border:2px dashed #fca5a5;border-radius:10px;
-                display:flex;align-items:center;justify-content:center;cursor:pointer;background:#fef2f2">
-                <svg style="width:24px;height:24px;color:#fca5a5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
-                <input type="file" accept="image/*" class="hidden" onchange="setDefectPhoto(${i},this)" />
-              </label>`}
-        </div>
-        <!-- 原因 & 說明 -->
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;flex-wrap:wrap;gap:2px;margin-bottom:6px">
-            ${DEFECT_REASONS.map(r=>`<span class="reason-chip${item.reason===r?' selected':''}"
-              style="font-size:11px;padding:5px 10px;margin:2px"
-              ${readonly?'':'onclick="setDefectReason('+i+',\''+r+'\')"'}>${r}</span>`).join('')}
-          </div>
-          <textarea placeholder="其他說明（選填）"
-            style="width:100%;border:1.5px solid #e5e7eb;border-radius:10px;padding:8px 10px;
-              font-size:13px;resize:none;outline:none;background:#f9fafb;font-family:inherit"
-            rows="2" oninput="_defectItems[${i}].note=this.value" ${readonly?'readonly':''}>${item.note||''}</textarea>
-        </div>
-        ${!readonly ? `<button onclick="removeDefectItem(${i})"
-          style="flex-shrink:0;background:none;border:none;color:#fca5a5;cursor:pointer;font-size:18px;padding:2px">✕</button>` : ''}
-      </div>
-      ${item.procAction ? `<div style="background:#d1fae5;border-radius:8px;padding:8px 10px;font-size:12px;color:#065f46;margin-top:4px">
-        <b>採購回覆：</b>${item.procAction}${item.procReply?' — '+item.procReply:''}
-      </div>` : ''}
-    </div>`).join('');
+  const camSvg = '<svg style="width:22px;height:22px;color:#fca5a5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>';
+  container.innerHTML = _defectItems.map((item, i) => {
+    const photoEl = item.photo
+      ? `<img src="${item.photo}" style="width:76px;height:76px;object-fit:cover;display:block;cursor:pointer" onclick="viewDefectPhoto(${i})" />`
+      : `<label style="width:76px;height:76px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:3px">${camSvg}<span style="font-size:10px;color:#fca5a5">上傳</span><input type="file" accept="image/*" class="hidden" onchange="setDefectPhoto(${i},this)" /></label>`;
+    const reasonEl = readonly
+      ? `<span class="badge badge-abnormal" style="font-size:11px">${item.reason||'未選擇'}</span>`
+      : `<select onchange="setDefectReasonSelect(${i},this.value)" style="width:100%;border:1.5px solid #fecaca;border-radius:8px;padding:7px 10px;font-size:13px;outline:none;background:#fff;font-family:inherit;margin-bottom:6px"><option value="">請選擇異常原因</option>${DEFECT_REASONS.map(r=>`<option value="${r}"${item.reason===r?' selected':''}>${r}</option>`).join('')}</select><input placeholder="補充說明（選填）" value="${item.note||''}" style="width:100%;border:1.5px solid #e5e7eb;border-radius:8px;padding:7px 10px;font-size:13px;outline:none;background:#fff;font-family:inherit" oninput="_defectItems[${i}].note=this.value" />`;
+    const delBtn = !readonly ? `<button onclick="removeDefectItem(${i})" style="background:none;border:none;color:#fca5a5;cursor:pointer;font-size:16px;line-height:1;padding:0">✕</button>` : '';
+    const replyEl = item.procAction ? `<div style="padding:8px 12px;background:#d1fae5;font-size:12px;color:#065f46;border-top:1px solid #a7f3d0"><b>採購回覆：</b>${item.procAction}${item.procReply?' — '+item.procReply:''}</div>` : '';
+    return `<div style="background:#fef9f9;border-radius:12px;border:1.5px solid #fecaca;margin-bottom:8px;overflow:hidden"><div style="display:flex;align-items:stretch"><div style="flex-shrink:0;width:76px;background:#fff0f0;display:flex;align-items:center;justify-content:center;border-right:1px solid #fecaca">${photoEl}</div><div style="flex:1;padding:10px;min-width:0"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:11px;font-weight:700;color:#9ca3af">異常原因</span>${delBtn}</div>${reasonEl}</div></div>${replyEl}</div>`;
+  }).join('');
 }
-
 function addDefectItem() {
   if (_defectItems.length >= 6) { alert('最多新增 6 筆異常明細'); return; }
   _defectItems.push({ photo: '', reason: '', note: '' });
@@ -335,6 +310,7 @@ function addDefectItem() {
 }
 function removeDefectItem(i) { _defectItems.splice(i,1); renderDefectItems(false); }
 function setDefectReason(i, r) { _defectItems[i].reason = r; renderDefectItems(false); }
+function setDefectReasonSelect(i, r) { _defectItems[i].reason = r; }
 function setDefectPhoto(i, input) {
   const file = input.files[0]; if (!file) return;
   compressImage(file, 800*1024).then(dataUrl => { _defectItems[i].photo=dataUrl; renderDefectItems(false); });
