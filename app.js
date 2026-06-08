@@ -1029,9 +1029,15 @@ async function submitPurchaseReply() {
     p.procAction=action; p.procReply=document.getElementById('pur-reply-all')?.value.trim()||'';
     p.procReplyTime=nowStr(); p.procStaffName=purUser?.name||''; p.procReplyUnread=true; p.status=STATUS.RESOLVED;
   }
-  let dt = p.defectTime||'';
-  if (dt.endsWith('～')) dt += nowHHMM();
-  p.defectTime = dt;
+  // 每次採購回覆都更新連動時間結束（最後一筆回覆為最終時間）
+  const nowT = nowHHMM();
+  if (p.defectTime) {
+    p.defectTime = p.defectTime.includes('～')
+      ? p.defectTime.split('～')[0] + '～' + nowT
+      : p.defectTime + '～' + nowT;
+  } else {
+    p.defectTime = '～' + nowT;
+  }
   if (p.id) {
     ProductAPI.reply(p.id, {procAction:p.procAction||'（各別回覆）', procReply:p.procReply||'', defectItems:p.defectItems})
       .then(async()=>{ await reloadFromFirestore(arrivalDate); renderPurchaseCards(); renderResolvedCards(); updateBadges(); })

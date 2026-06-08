@@ -1273,9 +1273,20 @@ function submitPurchaseReply() {
   // 全部回覆完才轉已處理，否則仍維持待採購
   const allReplied = items.length > 0 && items.every(it=>it.procAction);
   p.status = allReplied ? STATUS.RESOLVED : STATUS.PROCUREMENT;
+  // 每次回覆都更新連動時間結束（取最後一筆採購回覆時間）
+  const nowT = nowHHMM();
+  if (p.defectTime) {
+    if (p.defectTime.includes('～')) {
+      p.defectTime = p.defectTime.split('～')[0] + '～' + nowT;
+    } else {
+      p.defectTime = p.defectTime + '～' + nowT;
+    }
+  } else {
+    p.defectTime = '～' + nowT;
+  }
   const replyArrivalDate = arrivalDate;
   if (p.id) {
-    ProductAPI.reply(p.id, { procAction: p.procAction, procReply: p.procReply, defectItems: p.defectItems })
+    ProductAPI.reply(p.id, { procAction: p.procAction, procReply: p.procReply, defectItems: p.defectItems, defectTime: p.defectTime })
       .then(async () => {
         await reloadFromFirestore(replyArrivalDate);
         renderPurchaseTable(); renderResolvedTable(); updateBadges();
