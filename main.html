@@ -621,10 +621,10 @@
         <div id="defectSection" class="hidden mb-4 border-t border-red-100 pt-3">
           <div class="flex items-center justify-between mb-2">
             <p class="text-xs font-semibold text-red-500 uppercase tracking-wide">異常明細</p>
-            <button onclick="desktopAddDefectItem()" type="button"
-              class="text-xs bg-red-50 hover:bg-red-100 text-red-500 px-3 py-1.5 rounded-lg transition-colors">
-              ＋ 新增照片+原因
-            </button>
+            <label class="text-xs bg-red-50 hover:bg-red-100 text-red-500 px-3 py-1.5 rounded-lg transition-colors cursor-pointer">
+              ＋ 匯入照片
+              <input type="file" accept="image/*" multiple class="hidden" onchange="batchAddDeskDefectPhotos(this)" />
+            </label>
           </div>
           <div id="desktopDefectItems"></div>
           <p class="text-xs text-gray-400 mt-1">每張照片可個別設定異常原因，供採購單位各別回覆</p>
