@@ -77,9 +77,9 @@
     <div id="reviewListContainer" class="card-list" style="flex:1"></div>
   </div>
 
-  <!-- 異常報表 -->
+  <!-- 異常回覆 -->
   <div id="page-report" class="app-page">
-    <div class="page-header"><h1>異常報表</h1><p>商品異常回覆商流</p></div>
+    <div class="page-header"><h1>異常回覆</h1><p>商品異常回覆商流</p></div>
     <div style="padding:12px;display:flex;gap:8px">
       <input type="date" id="rp-from" onchange="renderReportCards()" style="flex:1;border:1.5px solid #e5e7eb;border-radius:12px;padding:10px;font-size:14px;outline:none" />
       <span style="align-self:center;color:#9ca3af">～</span>
@@ -174,7 +174,7 @@
         <span class="reason-chip" data-tab="receiving" onclick="toggleRoleTab(this)">當日驗收作業</span>
         <span class="reason-chip" data-tab="warehouse" onclick="toggleRoleTab(this)">入庫清單</span>
         <span class="reason-chip" data-tab="review" onclick="toggleRoleTab(this)">異常檢核</span>
-        <span class="reason-chip" data-tab="report" onclick="toggleRoleTab(this)">異常報表</span>
+        <span class="reason-chip" data-tab="report" onclick="toggleRoleTab(this)">異常回覆</span>
         <span class="reason-chip" data-tab="purchase" onclick="toggleRoleTab(this)">待回覆清單</span>
         <span class="reason-chip" data-tab="resolved" onclick="toggleRoleTab(this)">已處理記錄</span>
       </div>

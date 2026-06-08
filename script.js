@@ -28,7 +28,7 @@ const STATUS = {
 // ── 帳號管理 ─────────────────────────────────────────
 const TAB_LABELS = {
   receiving:'當日驗收作業', warehouse:'入庫清單',
-  review:'異常檢核', report:'異常報表',
+  review:'異常檢核', report:'異常回覆',
   purchase:'待回覆清單', resolved:'已處理記錄'
 };
 
@@ -705,10 +705,14 @@ function updateBadges() {
   const all = getAllProducts();
   const reviewCount   = all.filter(p => p.status === STATUS.ABNORMAL_PENDING).length;
   const purchaseCount = all.filter(p => p.status === STATUS.PROCUREMENT).length;
+  // 異常回覆頁：顯示「待採購回覆」筆數
+  const reportCount   = purchaseCount;
   const rb = document.getElementById('badge-review');
   const pb = document.getElementById('badge-purchase');
-  if (rb) { rb.textContent = reviewCount;   rb.classList.toggle('hidden', reviewCount===0); }
-  if (pb) { pb.textContent = purchaseCount; pb.classList.toggle('hidden', purchaseCount===0); }
+  const rpb = document.getElementById('badge-report');
+  if (rb)  { rb.textContent  = reviewCount;   rb.classList.toggle('hidden',  reviewCount===0); }
+  if (pb)  { pb.textContent  = purchaseCount; pb.classList.toggle('hidden',  purchaseCount===0); }
+  if (rpb) { rpb.textContent = reportCount;   rpb.classList.toggle('hidden', reportCount===0); }
 }
 
 // ── 驗收 Modal ────────────────────────────────────────
