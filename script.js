@@ -1,20 +1,15 @@
-﻿// ── 異常大分類 & 各自子原因 ────────────────────────────
+﻿// ── 異常大分類（三選一）& 原因（固定清單複選，與分類無關）──
 const DEFECT_CATEGORIES = ['臨時到貨', '取消到貨', '其他異常'];
-const DEFECT_SUB_REASONS = {
-  '臨時到貨': ['提前到貨','超量到貨','補貨到貨','緊急調貨','其他'],
-  '取消到貨': ['廠商取消','採購取消','訂單錯誤','重複到貨','其他'],
-  '其他異常': [
-    '品名不符','數量不符','規格不符',
-    '外箱標示異常','條碼異常','裸瓶','混效期',
-    '商品異常-凹損','商品異常-破損','商品異常-破膜',
-    '商品異常-汙損','商品異常-殘膠','商品異常-未封口',
-    '商品異常-效期模糊','商品異常-(多筆)',
-    '效期異常-效期超允收','效期異常-未來日',
-    '效期異常-無第二條件','效期異常-保存期限不合理',
-    '其他'
-  ]
-};
-const DEFECT_REASONS = DEFECT_SUB_REASONS['其他異常'];
+const DEFECT_REASONS = [
+  '品名不符','數量不符','規格不符','外箱標示異常','條碼異常',
+  '臨時到貨','取消到貨',
+  '商品異常-(多筆)','商品異常-殘膠','商品異常-汙損','商品異常-破膜',
+  '商品異常-凹損','商品異常-破損','商品異常-未封口','商品異常-效期模糊',
+  '裸瓶','混效期',
+  '效期異常-無第二條件','效期異常-未來日','效期異常-效期超允收','效期異常-保存期限不合理',
+  '其他'
+];
+const DEFECT_SUB_REASONS = {};
 function getDefectDisplay(item) {
   if (!item) return '—';
   if (item.reasons?.length) return `${item.category}・${item.reasons.join('、')}`;
@@ -749,9 +744,8 @@ function renderDeskDefectItems() {
       `<button type="button" onclick="deskSetDefectCategory(${i},'${c}')"
         class="text-xs px-3 py-1.5 rounded-full border transition-colors ${item.category===c?'bg-red-100 border-red-400 text-red-600 font-semibold':'bg-white border-gray-200 text-gray-500 hover:border-red-300'}">${c}</button>`
     ).join('');
-    // 各大分類都顯示子原因複選
-    const subList = DEFECT_SUB_REASONS[item.category] || [];
-    const subReasons = subList.length ? `<div class="mt-2 flex flex-wrap gap-1">${subList.map(r=>{const s=(item.reasons||[]).includes(r);return `<span onclick="deskToggleSubReason(${i},'${r}')" class="text-xs px-2 py-1 rounded-full cursor-pointer border ${s?'bg-blue-100 border-blue-400 text-blue-600 font-semibold':'bg-gray-50 border-gray-200 text-gray-500'}">${r}</span>`;}).join('')}</div>` : '';
+    // 原因固定清單，與分類無關，複選
+    const subReasons = `<div class="mt-2 flex flex-wrap gap-1">${DEFECT_REASONS.map(r=>{const s=(item.reasons||[]).includes(r);return `<span onclick="deskToggleSubReason(${i},'${r}')" class="text-xs px-2 py-1 rounded-full cursor-pointer border ${s?'bg-blue-100 border-blue-400 text-blue-600 font-semibold':'bg-gray-50 border-gray-200 text-gray-500'}">${r}</span>`;}).join('')}</div>`;
     return `<div class="flex gap-3 items-start p-3 mb-2 bg-red-50 border border-red-100 rounded-xl">
       <div class="flex-shrink-0">${photoEl}</div>
       <div class="flex-1 min-w-0">
@@ -805,7 +799,7 @@ function saveReceiving() {
   if (isNaN(good) || good < 0) { errDiv.textContent='請輸入正確的良品數量'; errDiv.classList.remove('hidden'); return; }
   if (bad > 0 && _deskDefectItems.length === 0) { errDiv.textContent='有不良品時，請新增至少一筆異常明細'; errDiv.classList.remove('hidden'); return; }
   if (bad > 0 && _deskDefectItems.some(item=>!item.category)) { errDiv.textContent='每筆異常明細都需選擇異常大分類'; errDiv.classList.remove('hidden'); return; }
-  if (bad > 0 && _deskDefectItems.some(item=>item.category&&(!item.reasons||!item.reasons.length))) { errDiv.textContent='請為每筆異常選擇至少一個原因'; errDiv.classList.remove('hidden'); return; }
+  // 原因為選填
   const { date, idx } = currentIdx;
   const p = getDateProducts(date)[idx];
   const user = getCurrentUser();
