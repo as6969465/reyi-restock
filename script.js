@@ -1288,7 +1288,7 @@ function submitPurchaseReply() {
   }
   const replyArrivalDate = arrivalDate;
   if (p.id) {
-    ProductAPI.reply(p.id, { procAction: p.procAction, procReply: p.procReply, defectItems: p.defectItems, defectTime: p.defectTime })
+    ProductAPI.reply(p.id, { procAction: p.procAction, procReply: p.procReply, defectItems: p.defectItems, defectTime: p.defectTime, status: p.status })
       .then(async () => {
         await reloadFromFirestore(replyArrivalDate);
         renderPurchaseTable(); renderResolvedTable(); updateBadges();

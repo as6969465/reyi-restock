@@ -1040,7 +1040,7 @@ async function submitPurchaseReply() {
     p.defectTime = '～' + nowT;
   }
   if (p.id) {
-    ProductAPI.reply(p.id, {procAction:p.procAction||'（各別回覆）', procReply:p.procReply||'', defectItems:p.defectItems})
+    ProductAPI.reply(p.id, {procAction:p.procAction||'（各別回覆）', procReply:p.procReply||'', defectItems:p.defectItems, status:p.status, defectTime:p.defectTime})
       .then(async()=>{ await reloadFromFirestore(arrivalDate); renderPurchaseCards(); renderResolvedCards(); updateBadges(); })
       .catch(e=>console.warn('reply:',e.message));
   } else { saveProductsData(); }
