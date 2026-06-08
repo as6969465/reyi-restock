@@ -232,8 +232,8 @@ function switchTab(name) {
     document.getElementById(`page-${t}`)?.classList.toggle('hidden', t !== name);
     const btn = document.getElementById(`tab-${t}`);
     if (!btn) return;
-    if (t === name) { btn.classList.add('border-indigo-600','text-indigo-600'); btn.classList.remove('border-transparent','text-gray-500'); }
-    else            { btn.classList.remove('border-indigo-600','text-indigo-600'); btn.classList.add('border-transparent','text-gray-500'); }
+    if (t === name) { btn.classList.add('border-blue-600','text-blue-600'); btn.classList.remove('border-transparent','text-gray-500'); }
+    else            { btn.classList.remove('border-blue-600','text-blue-600'); btn.classList.add('border-transparent','text-gray-500'); }
   });
   const gdf = document.getElementById('globalDateFilter');
   if (name === 'receiving') { gdf.classList.add('hidden'); gdf.classList.remove('flex'); renderProductTable(); updateStats(); }
@@ -410,7 +410,7 @@ function renderProductTable() {
   }
   tbody.innerHTML = list.map((p, i) => `
     <tr class="${p.status !== STATUS.PENDING ? 'received-row' : 'hover:bg-gray-50'} border-b border-gray-100">
-      <td class="px-4 py-3"><input type="checkbox" data-idx="${i}" onchange="onRowCheck()" class="row-check accent-indigo-600 w-4 h-4 cursor-pointer" /></td>
+      <td class="px-4 py-3"><input type="checkbox" data-idx="${i}" onchange="onRowCheck()" class="row-check accent-blue-600 w-4 h-4 cursor-pointer" /></td>
       <td class="px-4 py-3 text-gray-500">${p.seq}</td>
       <td class="px-4 py-3 font-mono text-xs">${p.po}</td>
       <td class="px-4 py-3">${p.cat}</td>
@@ -433,7 +433,7 @@ function renderProductTable() {
       </td>
       <td class="px-4 py-3 text-center">
         ${p.status === STATUS.PENDING
-          ? `<button onclick="startDesktopReceiving('${date}',${i})" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-1.5 rounded-lg">驗收</button>`
+          ? `<button onclick="startDesktopReceiving('${date}',${i})" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg">驗收</button>`
           : p.status === STATUS.RESOLVED
             ? '<span class="text-xs text-gray-400">已處理</span>'
             : `<button onclick="openModal('${date}',${i})" class="bg-gray-200 hover:bg-gray-300 text-gray-600 text-xs px-3 py-1.5 rounded-lg">修改</button>`}
@@ -634,7 +634,7 @@ function renderReviewTable() {
       <td class="px-4 py-3 text-xs">${p.cat}</td>
       <td class="px-4 py-3 text-right">${p.qty}</td>
       <td class="px-4 py-3 text-right text-red-500 font-medium">${p.badQty}</td>
-      <td class="px-4 py-3 text-center">${p.photos.length>0 ? `<span class="text-indigo-600 text-xs cursor-pointer" onclick="viewPhotos('${p.arrivalDate}','${p.itemNo}')">${p.photos.length} 張</span>` : '<span class="text-gray-400 text-xs">無</span>'}</td>
+      <td class="px-4 py-3 text-center">${p.photos.length>0 ? `<span class="text-blue-600 text-xs cursor-pointer" onclick="viewPhotos('${p.arrivalDate}','${p.itemNo}')">${p.photos.length} 張</span>` : '<span class="text-gray-400 text-xs">無</span>'}</td>
       <td class="px-4 py-3 text-center">${statusBadge(p.status)}</td>
       <td class="px-4 py-3 text-center">
         ${p.status === STATUS.RESOLVED
@@ -732,7 +732,7 @@ function renderPurchaseTable() {
       <td class="px-4 py-3 text-xs">${(p.defectReasons||[]).map(r=>`<span class="inline-block bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full mr-1">${r}</span>`).join('')||'—'}</td>
       <td class="px-4 py-3 text-xs text-gray-600 max-w-[120px] truncate" title="${p.defectNote||''}">${p.defectNote||'—'}</td>
       <td class="px-4 py-3 text-xs text-gray-600">${p.defectStaff||'—'}</td>
-      <td class="px-4 py-3 text-center">${p.photos.length>0 ? `<span class="text-indigo-600 text-xs cursor-pointer" onclick="viewPhotos('${p.arrivalDate}','${p.itemNo}')">${p.photos.length} 張</span>` : '<span class="text-gray-400 text-xs">無</span>'}</td>
+      <td class="px-4 py-3 text-center">${p.photos.length>0 ? `<span class="text-blue-600 text-xs cursor-pointer" onclick="viewPhotos('${p.arrivalDate}','${p.itemNo}')">${p.photos.length} 張</span>` : '<span class="text-gray-400 text-xs">無</span>'}</td>
       <td class="px-4 py-3 text-center">
         <button onclick="openPurchaseModal('${p.arrivalDate}','${p.itemNo}')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg">回覆</button>
       </td>
