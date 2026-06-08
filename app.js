@@ -464,22 +464,24 @@ function renderWarehouseCards() {
   let list = getAllProducts().filter(p=>p.status!==STATUS.PENDING);
   if (from) list = list.filter(p=>!p.arrivalDate||p.arrivalDate>=from);
   if (to)   list = list.filter(p=>!p.arrivalDate||p.arrivalDate<=to);
-  if (!list.length) { container.innerHTML='<div class="empty-state"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:64px;height:64px;opacity:.3"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><p style="font-size:15px;font-weight:600;margin-top:12px">尚無已驗收資料</p></div>'; return; }
+  if (!list.length) { container.innerHTML='<div class="empty-state"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><p>尚無已驗收資料</p></div>'; return; }
   container.innerHTML = list.map(p => `
-    <div class="product-card slide-up">
-      <div class="product-card-header">
-        <div style="flex:1"><div style="font-size:15px;font-weight:700;color:#111">${p.name}</div>
-        <div style="font-size:12px;color:#6b7280">${p.arrivalDate||'—'} · ${p.itemNo||'—'}</div></div>
-        ${p.badQty>0 ? '<span class="badge badge-abnormal">有異常</span>' : '<span class="badge badge-done">正常</span>'}
-      </div>
-      <div class="product-card-footer">
-        <div style="display:flex;gap:16px">
-          <div><div style="font-size:11px;color:#9ca3af">良品</div><div style="font-size:16px;font-weight:700;color:#059669">${p.goodQty}</div></div>
-          <div><div style="font-size:11px;color:#9ca3af">不良品</div><div style="font-size:16px;font-weight:700;color:#dc2626">${p.badQty}</div></div>
+    <div class="product-card slide-up" data-status="${p.status}">
+      <div class="product-card-inner">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">
+          <div style="font-size:15px;font-weight:700;color:#111;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</div>
+          <div style="flex-shrink:0">${p.badQty>0 ? '<span class="badge badge-abnormal">有異常</span>' : '<span class="badge badge-done">正常</span>'}</div>
         </div>
-        ${p.photos.length>0 ? `<span style="color:#2563eb;font-size:13px;cursor:pointer" onclick="viewPhotos('${p.arrivalDate}','${p.itemNo}')">${p.photos.length} 張照片</span>` : ''}
+        <div style="font-size:12px;color:#9ca3af;margin-bottom:8px">${p.arrivalDate||'—'} · ${p.itemNo||'—'}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;gap:20px">
+            <div><div style="font-size:10px;color:#9ca3af;margin-bottom:2px">良品</div><div style="font-size:18px;font-weight:800;color:#059669;line-height:1">${p.goodQty}</div></div>
+            <div><div style="font-size:10px;color:#9ca3af;margin-bottom:2px">不良品</div><div style="font-size:18px;font-weight:800;color:#dc2626;line-height:1">${p.badQty}</div></div>
+          </div>
+          ${p.photos?.length>0 ? `<span style="color:#2563eb;font-size:13px;cursor:pointer;flex-shrink:0" onclick="viewPhotos('${p.arrivalDate}','${p.itemNo}')">${p.photos.length} 張照片 ›</span>` : ''}
+        </div>
+        ${p.defectReasons?.length>0 ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px">${p.defectReasons.map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')}</div>` : ''}
       </div>
-      ${p.defectReasons?.length>0 ? `<div style="padding:0 16px 12px;display:flex;flex-wrap:wrap;gap:4px">${p.defectReasons.map(r=>`<span class="badge badge-abnormal" style="font-size:11px">${r}</span>`).join('')}</div>` : ''}
     </div>`).join('');
 }
 
@@ -497,15 +499,19 @@ function renderReviewCards() {
   s('rev-stat-pending',pending); s('rev-stat-proc',proc); s('rev-stat-done',done);
   updateBadges();
   if (!list.length) { container.innerHTML='<div class="empty-state"><p>尚無異常資料</p></div>'; return; }
+  const stBadge = {'abnormal_pending':'<span class="badge badge-abnormal">待檢核</span>','procurement':'<span class="badge badge-proc">待採購</span>','resolved':'<span class="badge badge-resolved">已處理</span>'};
   container.innerHTML = list.map(p => `
-    <div class="product-card slide-up" onclick="${p.status!==STATUS.RESOLVED?`openReviewSheet('${p.arrivalDate}','${p.itemNo}')`:``}" style="${p.status===STATUS.RESOLVED?'opacity:.7':''}">
-      <div class="product-card-header">
-        <div style="flex:1"><div style="font-size:15px;font-weight:700;color:#111">${p.name}</div>
-        <div style="font-size:12px;color:#6b7280">${p.arrivalDate||'—'} · 不良：${p.badQty} 件</div></div>
-        <span class="badge ${p.status===STATUS.RESOLVED?'badge-resolved':p.status===STATUS.PROCUREMENT?'badge-proc':'badge-abnormal'}">${{abnormal_pending:'待檢核',procurement:'待採購',resolved:'已處理'}[p.status]||p.status}</span>
+    <div class="product-card slide-up" data-status="${p.status}"
+      onclick="${p.status!==STATUS.RESOLVED?`openReviewSheet('${p.arrivalDate}','${p.itemNo}')`:``}">
+      <div class="product-card-inner">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">
+          <div style="font-size:15px;font-weight:700;color:#111;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</div>
+          <div style="flex-shrink:0">${stBadge[p.status]||''}</div>
+        </div>
+        <div style="font-size:12px;color:#9ca3af;margin-bottom:6px">${p.arrivalDate||'—'} · 不良：<b style="color:#dc2626">${p.badQty}</b> 件</div>
+        ${p.defectReasons?.length>0 ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">${p.defectReasons.map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')}</div>` : ''}
+        ${p.photos?.length>0 ? `<span style="color:#2563eb;font-size:13px;cursor:pointer" onclick="event.stopPropagation();viewPhotos('${p.arrivalDate}','${p.itemNo}')">${p.photos.length} 張照片 ›</span>` : ''}
       </div>
-      ${p.defectReasons?.length>0 ? `<div style="padding:0 16px 12px;display:flex;flex-wrap:wrap;gap:4px">${p.defectReasons.map(r=>`<span class="badge badge-abnormal" style="font-size:11px">${r}</span>`).join('')}</div>` : ''}
-      ${p.photos.length>0 ? `<div style="padding:0 16px 12px"><span style="color:#2563eb;font-size:13px;cursor:pointer" onclick="event.stopPropagation();viewPhotos('${p.arrivalDate}','${p.itemNo}')">${p.photos.length} 張照片 ›</span></div>` : ''}
     </div>`).join('');
 }
 
@@ -583,17 +589,17 @@ function renderReportCards() {
   if (to)   list = list.filter(p=>!p.arrivalDate||p.arrivalDate<=to);
   if (!list.length) { container.innerHTML='<div class="empty-state"><p>尚無異常記錄</p></div>'; return; }
   container.innerHTML = list.map(p => `
-    <div class="product-card slide-up">
-      <div class="product-card-header">
-        <div style="flex:1"><div style="font-size:15px;font-weight:700;color:#111">${p.name}</div>
-        <div style="font-size:12px;color:#6b7280">${p.arrivalDate||'—'} · ${p.defectTime||'—'}</div></div>
-        <span class="badge" style="background:#fee2e2;color:#991b1b;font-size:11px">${p.defectClass||'其他異常'}</span>
-      </div>
-      <div style="padding:0 16px 10px">
-        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">${(p.defectReasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:11px">${r}</span>`).join('')||'—'}</div>
-        ${p.defectNote?`<div style="font-size:13px;color:#6b7280;margin-bottom:4px">${p.defectNote}</div>`:''}
+    <div class="product-card slide-up" data-status="${p.status}">
+      <div class="product-card-inner">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">
+          <div style="font-size:15px;font-weight:700;color:#111;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</div>
+          <span class="badge badge-abnormal" style="font-size:10px;flex-shrink:0">${p.defectClass||'其他異常'}</span>
+        </div>
+        <div style="font-size:12px;color:#9ca3af;margin-bottom:6px">${p.arrivalDate||'—'} · ${p.defectTime||'—'}</div>
+        ${(p.defectReasons||[]).length>0 ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">${p.defectReasons.map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')}</div>` : ''}
+        ${p.defectNote ? `<div style="font-size:12px;color:#6b7280;margin-bottom:4px">${p.defectNote}</div>` : ''}
         <div style="font-size:12px;color:#9ca3af">物流專員：${p.defectStaff||'—'}</div>
-        ${p.procAction?`<div style="margin-top:6px;padding:8px;background:#d1fae5;border-radius:10px;font-size:13px;font-weight:600;color:#065f46">採購回覆：${p.procAction}${p.procReply?'・'+p.procReply:''}</div>`:''}
+        ${p.procAction ? `<div style="margin-top:8px;padding:8px 10px;background:#d1fae5;border-radius:10px;font-size:13px;font-weight:700;color:#065f46">採購回覆：${p.procAction}${p.procReply?'<br><span style="font-weight:400;font-size:12px">'+p.procReply+'</span>':''}</div>` : ''}
       </div>
     </div>`).join('');
 }
@@ -608,17 +614,18 @@ function renderPurchaseCards() {
   updateBadges();
   if (!list.length) { container.innerHTML='<div class="empty-state"><p style="font-size:15px;font-weight:600">尚無待回覆項目</p></div>'; return; }
   container.innerHTML = list.map(p => `
-    <div class="product-card slide-up" onclick="openPurchaseSheet('${p.arrivalDate}','${p.itemNo}')">
-      <div class="product-card-header">
-        <div style="flex:1"><div style="font-size:15px;font-weight:700;color:#111">${p.name}</div>
-        <div style="font-size:12px;color:#6b7280">${p.arrivalDate||'—'} · 不良：${p.badQty} 件</div></div>
-        <span class="badge badge-proc">待回覆</span>
-      </div>
-      <div style="padding:0 16px 12px">
-        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">${(p.defectReasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:11px">${r}</span>`).join('')||'—'}</div>
-        <div style="font-size:12px;color:#9ca3af">物流專員：${p.defectStaff||'—'}</div>
-        ${p.defectNote?`<div style="font-size:13px;color:#6b7280;margin-top:4px">${p.defectNote}</div>`:''}
-        ${p.photos.length>0?`<span style="color:#2563eb;font-size:13px;cursor:pointer;display:block;margin-top:6px" onclick="event.stopPropagation();viewPhotos('${p.arrivalDate}','${p.itemNo}')">${p.photos.length} 張照片 ›</span>`:''}
+    <div class="product-card slide-up" data-status="${p.status}" onclick="openPurchaseSheet('${p.arrivalDate}','${p.itemNo}')">
+      <div class="product-card-inner">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">
+          <div style="font-size:15px;font-weight:700;color:#111;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</div>
+          <span class="badge badge-proc" style="flex-shrink:0">待回覆</span>
+        </div>
+        <div style="font-size:12px;color:#9ca3af;margin-bottom:6px">${p.arrivalDate||'—'} · 不良：<b style="color:#dc2626">${p.badQty}</b> 件</div>
+        ${(p.defectReasons||[]).length>0 ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">${p.defectReasons.map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')}</div>` : ''}
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="font-size:12px;color:#9ca3af">物流專員：${p.defectStaff||'—'}</div>
+          ${p.photos?.length>0 ? `<span style="color:#2563eb;font-size:13px;cursor:pointer" onclick="event.stopPropagation();viewPhotos('${p.arrivalDate}','${p.itemNo}')">${p.photos.length} 張照片 ›</span>` : ''}
+        </div>
       </div>
     </div>`).join('');
 }
@@ -729,17 +736,17 @@ function renderResolvedCards() {
   const list = getAllProducts().filter(p=>p.status===STATUS.RESOLVED);
   if (!list.length) { container.innerHTML='<div class="empty-state"><p>尚無已處理記錄</p></div>'; return; }
   container.innerHTML = list.map(p => `
-    <div class="product-card slide-up">
-      <div class="product-card-header">
-        <div style="flex:1"><div style="font-size:15px;font-weight:700;color:#111">${p.name}</div>
-        <div style="font-size:12px;color:#6b7280">${p.arrivalDate||'—'} · ${p.defectTime||'—'}</div></div>
-        <span class="badge badge-resolved">已處理</span>
-      </div>
-      <div style="padding:0 16px 12px">
-        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${(p.defectReasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:11px">${r}</span>`).join('')}</div>
-        <div style="padding:10px;background:#d1fae5;border-radius:10px;font-size:14px;font-weight:700;color:#065f46">${p.procAction}</div>
-        ${p.procReply?`<div style="font-size:13px;color:#6b7280;margin-top:6px">${p.procReply}</div>`:''}
-        <div style="font-size:12px;color:#9ca3af;margin-top:4px">物流：${p.defectStaff||'—'} · 採購：${p.procStaffName||'—'}</div>
+    <div class="product-card slide-up" data-status="${p.status}">
+      <div class="product-card-inner">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">
+          <div style="font-size:15px;font-weight:700;color:#111;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</div>
+          <span class="badge badge-resolved" style="flex-shrink:0">已處理</span>
+        </div>
+        <div style="font-size:12px;color:#9ca3af;margin-bottom:6px">${p.arrivalDate||'—'} · ${p.defectTime||'—'}</div>
+        ${(p.defectReasons||[]).length>0 ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${p.defectReasons.map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')}</div>` : ''}
+        <div style="padding:8px 10px;background:#d1fae5;border-radius:10px;font-size:14px;font-weight:700;color:#065f46;margin-bottom:6px">${p.procAction||'—'}</div>
+        ${p.procReply ? `<div style="font-size:13px;color:#6b7280;margin-bottom:4px">${p.procReply}</div>` : ''}
+        <div style="font-size:11px;color:#9ca3af">物流：${p.defectStaff||'—'} · 採購：${p.procStaffName||'—'}</div>
       </div>
     </div>`).join('');
 }
