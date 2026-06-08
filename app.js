@@ -212,7 +212,7 @@ function normalizeProducts(items) {
     defectStaff:p.defect_staff||p.defectStaff||'', procAction:p.proc_action||p.procAction||'',
     procReply:p.proc_reply||p.procReply||'', procReplyTime:p.proc_reply_time||p.procReplyTime||'',
     procStaffName:p.proc_staff_name||p.procStaffName||'', operatorName:p.operator_name||p.operatorName||'',
-    photos:p.photos||[], defectItems:p.defect_items||p.defectItems||[], time:p.recv_time||p.time||''
+    photos:p.photos||[], defectItems:p.defect_items||p.defectItems||[], procReplyUnread:!!(p.proc_reply_unread||p.procReplyUnread), time:p.recv_time||p.time||''
   }));
 }
 
@@ -862,6 +862,12 @@ function renderReportCards() {
 function openReplyDetail(arrivalDate, itemNo) {
   const p = getAllProducts().find(x=>x.arrivalDate===arrivalDate&&x.itemNo===itemNo);
   if (!p) return;
+  // 查看後清除未讀標記並同步 Firestore
+  if (p.procReplyUnread) {
+    p.procReplyUnread = false;
+    if (p.id) ProductAPI._clearUnread(p.id).catch(()=>{});
+    updateBadges();
+  }
   const items = p.defectItems || [];
   const body = document.getElementById('replyDetailBody');
   if (!body) return;
@@ -1006,14 +1012,14 @@ async function submitPurchaseReply() {
     });
     if (!hasReply) { errDiv.textContent='請至少回覆一筆異常明細'; errDiv.style.display='block'; return; }
     const allReplied = items.every(item=>item.procAction);
-    p.defectItems=items; p.procStaffName=purUser?.name||''; p.procReplyTime=nowStr();
+    p.defectItems=items; p.procStaffName=purUser?.name||''; p.procReplyTime=nowStr(); p.procReplyUnread=true;
     if (allReplied) { p.status=STATUS.RESOLVED; p.procAction='（各別回覆）'; }
   } else {
     // 舊格式
     const action = document.getElementById('pur-action-all')?.value;
     if (!action) { errDiv.textContent='請選擇處理方式'; errDiv.style.display='block'; return; }
     p.procAction=action; p.procReply=document.getElementById('pur-reply-all')?.value.trim()||'';
-    p.procReplyTime=nowStr(); p.procStaffName=purUser?.name||''; p.status=STATUS.RESOLVED;
+    p.procReplyTime=nowStr(); p.procStaffName=purUser?.name||''; p.procReplyUnread=true; p.status=STATUS.RESOLVED;
   }
   let dt = p.defectTime||'';
   if (dt.endsWith('～')) dt += nowHHMM();
@@ -1210,8 +1216,8 @@ function updateBadges() {
   const purchaseCount = all.filter(p=>p.status===STATUS.PROCUREMENT).length;
   nb('review',   reviewCount);
   nb('purchase', purchaseCount);
-  // 異常回覆頁角標：採購已回覆的筆數（提醒物流專員查看）
-  const reportCount = all.filter(p=>p.status===STATUS.RESOLVED && p.procAction && p.procAction!=='—').length;
+  // 異常回覆頁角標：採購已回覆但尚未查看（procReplyUnread）
+  const reportCount = all.filter(p=>p.procReplyUnread).length;
   nb('report', reportCount);
 }
 

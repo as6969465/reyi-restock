@@ -187,6 +187,7 @@ function normalizeProducts(items) {
     operatorName:   p.operator_name || '',
     photos:         p.photos || [],
     defectItems:    p.defect_items || p.defectItems || [],
+    procReplyUnread: !!(p.proc_reply_unread || p.procReplyUnread),
     time:           p.recv_time || ''
   }));
 }
@@ -641,6 +642,11 @@ function renderReportTable() {
 function openReplyDetailModal(arrivalDate, itemNo) {
   const p = getAllProducts().find(x=>x.arrivalDate===arrivalDate&&x.itemNo===itemNo);
   if (!p) return;
+  if (p.procReplyUnread) {
+    p.procReplyUnread = false;
+    if (p.id) ProductAPI._clearUnread(p.id).catch(()=>{});
+    updateBadges();
+  }
   const items = p.defectItems || [];
   const title = document.getElementById('replyDetailTitle');
   const body  = document.getElementById('replyDetailBody');
@@ -747,8 +753,8 @@ function updateBadges() {
   const all = getAllProducts();
   const reviewCount   = all.filter(p => p.status === STATUS.ABNORMAL_PENDING).length;
   const purchaseCount = all.filter(p => p.status === STATUS.PROCUREMENT).length;
-  // 異常回覆頁：採購已回覆（已處理）的筆數
-  const reportCount = all.filter(p => p.status === STATUS.RESOLVED && p.procAction && p.procAction !== '—').length;
+  // 異常回覆頁角標：採購已回覆但尚未查看
+  const reportCount = all.filter(p => p.procReplyUnread).length;
   const rb = document.getElementById('badge-review');
   const pb = document.getElementById('badge-purchase');
   const rpb = document.getElementById('badge-report');
@@ -1264,10 +1270,11 @@ function submitPurchaseReply() {
   p.defectItems   = items;
   p.procAction    = items.map(it=>it.procAction).filter(Boolean).join('、') || '—';
   p.procReply     = items.map(it=>it.procReply).filter(Boolean).join('；');
-  p.procReplyTime = new Date().toLocaleString('zh-TW');
-  p.procStaffId   = purUser?.userId || '';
-  p.procStaffName = purUser?.name   || '';
-  p.status        = STATUS.RESOLVED;
+  p.procReplyTime    = new Date().toLocaleString('zh-TW');
+  p.procStaffId      = purUser?.userId || '';
+  p.procStaffName    = purUser?.name   || '';
+  p.procReplyUnread  = true;  // 採購回覆後設未讀
+  p.status           = STATUS.RESOLVED;
   const replyArrivalDate = arrivalDate;
   if (p.id) {
     ProductAPI.reply(p.id, { procAction: p.procAction, procReply: p.procReply, defectItems: p.defectItems })
