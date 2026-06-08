@@ -749,8 +749,7 @@ function renderDeskDefectItems() {
     return `<div class="flex gap-3 items-start p-3 mb-2 bg-red-50 border border-red-100 rounded-xl">
       <div class="flex-shrink-0">${photoEl}</div>
       <div class="flex-1 min-w-0">
-        <div class="flex justify-between items-center mb-2">
-          <span class="text-xs font-semibold text-gray-400">異常大分類</span>
+        <div class="flex justify-end mb-2">
           <button onclick="deskRemoveDefectItem(${i})" class="text-red-300 hover:text-red-500 text-base leading-none">✕</button>
         </div>
         <div class="flex gap-1.5 flex-wrap mb-1">${catBtns}</div>

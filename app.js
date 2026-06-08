@@ -340,11 +340,8 @@ function renderDefectItems(readonly) {
       <div style="display:flex;align-items:stretch">
         <div style="flex-shrink:0;width:72px;background:#fff0f0;display:flex;align-items:center;justify-content:center;border-right:1px solid #fecaca">${photoEl}</div>
         <div style="flex:1;padding:10px;min-width:0">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <span style="font-size:10px;font-weight:700;color:#9ca3af">① 異常分類</span>${delBtn}
-          </div>
-          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">${catBtns}</div>
-          <div style="font-size:10px;font-weight:700;color:#9ca3af;margin-bottom:4px">② 原因（複選）</div>
+          <div style="display:flex;justify-content:flex-end;margin-bottom:8px">${delBtn}</div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">${catBtns}</div>
           ${reasonChips}${noteEl}
         </div>
       </div>${replyEl}
