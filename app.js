@@ -263,7 +263,7 @@ function renderProductCards() {
     return;
   }
   container.innerHTML = list.map((p, i) => `
-    <div class="product-card slide-up" data-status="${p.status}" onclick="openReceiveSheet('${date}',${i})">
+    <div class="product-card slide-up" data-status="${p.status}" onclick="startReceiving('${date}',${i})">
       <div class="product-card-inner">
         <div class="product-card-name">${p.name}</div>
         <div class="product-card-sub">${p.itemNo||'—'} · ${p.cat||'—'}</div>
@@ -496,6 +496,46 @@ function viewDefectPhoto(i) {
 }
 
 // ── 驗收 Sheet 開啟 ───────────────────────────────────
+// ── 驗收前先選業務屬性 ───────────────────────────────
+function startReceiving(date, idx) {
+  const attrs = getBizAttrs();
+  // 若無業務屬性設定，直接開驗收
+  if (!attrs.length) { openReceiveSheet(date, idx); return; }
+
+  const p    = getDateProducts(date)[idx];
+  const body = document.getElementById('bizAttrSelectBody');
+  if (!body) { openReceiveSheet(date, idx); return; }
+
+  const chips = attrs.map(a => {
+    const active = p.bizAttr === a.name;
+    return `<button onclick="selectBizAttrAndReceive('${date}',${idx},'${a.name}')"
+      style="width:100%;text-align:left;padding:14px 16px;border-radius:14px;border:1.5px solid ${active?'#2563eb':'#e5e7eb'};
+        background:${active?'#dbeafe':'#f9fafb'};color:${active?'#1d4ed8':'#374151'};
+        font-size:15px;font-weight:${active?'700':'500'};cursor:pointer;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      ${a.name}
+      ${active ? '<span style="color:#2563eb;font-size:18px">✓</span>' : ''}
+    </button>`;
+  }).join('');
+
+  body.innerHTML = `
+    ${chips}
+    <button onclick="selectBizAttrAndReceive('${date}',${idx},'')"
+      style="width:100%;text-align:center;padding:12px;border-radius:14px;border:1.5px solid #e5e7eb;
+        background:#f9fafb;color:#9ca3af;font-size:14px;cursor:pointer;margin-top:4px">
+      略過（不選擇）
+    </button>`;
+
+  openSheet('bizAttrSelectSheet');
+}
+
+function selectBizAttrAndReceive(date, idx, attrName) {
+  const p   = getDateProducts(date)[idx];
+  p.bizAttr = attrName;
+  closeAllSheets();
+  // 短暫延遲讓 Sheet 關閉動畫完成
+  setTimeout(() => openReceiveSheet(date, idx), 200);
+}
+
 function openReceiveSheet(date, idx) {
   const p = getDateProducts(date)[idx];
   if (!p) return;
@@ -527,20 +567,17 @@ function openReceiveSheet(date, idx) {
     p.status===STATUS.PENDING ? '驗收登錄' : (isResolved ? '已處理（唯讀）' : '修改驗收');
 
   const body  = document.getElementById('receiveSheetBody');
-  const attrs = getBizAttrs();
-  const bizChips = attrs.map(a => {
-    const active = p.bizAttr === a.name;
-    return `<span onclick="rs_setBizAttr('${a.name}')"
-      style="padding:6px 14px;border-radius:20px;border:1.5px solid ${active?'#2563eb':'#e5e7eb'};
-        background:${active?'#dbeafe':'#f8fafc'};color:${active?'#1d4ed8':'#6b7280'};
-        font-size:13px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap">${a.name}</span>`;
-  }).join('');
+  // 已選業務屬性顯示（唯讀，需修改請關閉重新點選）
+  const bizTag = p.bizAttr
+    ? `<div style="margin-bottom:12px;display:flex;align-items:center;gap:8px">
+        <span style="font-size:11px;color:#9ca3af">業務屬性</span>
+        <span style="padding:4px 12px;background:#dbeafe;color:#1d4ed8;border-radius:20px;font-size:13px;font-weight:600">${p.bizAttr}</span>
+        <button onclick="changeBizAttr('${date}',${idx})" style="font-size:12px;color:#9ca3af;background:none;border:none;cursor:pointer;text-decoration:underline">更改</button>
+      </div>`
+    : '';
 
   body.innerHTML = `
-    ${attrs.length ? `<div style="margin-bottom:14px">
-      <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px">業務屬性</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px" id="rs-biz-chips">${bizChips}</div>
-    </div>` : ''}
+    ${bizTag}
     <div style="background:#f9fafb;border-radius:14px;padding:14px;margin-bottom:16px">
       <div style="font-size:16px;font-weight:700;color:#111;margin-bottom:6px">${p.name}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px;color:#6b7280">
@@ -586,6 +623,11 @@ function openReceiveSheet(date, idx) {
 
   renderDefectItems(isResolved);
   openSheet('receiveSheet');
+}
+
+function changeBizAttr(date, idx) {
+  closeAllSheets();
+  setTimeout(() => startReceiving(date, idx), 200);
 }
 
 function rs_setBizAttr(name) {

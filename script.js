@@ -433,7 +433,7 @@ function renderProductTable() {
       </td>
       <td class="px-4 py-3 text-center">
         ${p.status === STATUS.PENDING
-          ? `<button onclick="openModal('${date}',${i})" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-1.5 rounded-lg">驗收</button>`
+          ? `<button onclick="startDesktopReceiving('${date}',${i})" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-1.5 rounded-lg">驗收</button>`
           : p.status === STATUS.RESOLVED
             ? '<span class="text-xs text-gray-400">已處理</span>'
             : `<button onclick="openModal('${date}',${i})" class="bg-gray-200 hover:bg-gray-300 text-gray-600 text-xs px-3 py-1.5 rounded-lg">修改</button>`}
@@ -828,6 +828,38 @@ function openModal(date, idx) {
   document.getElementById('receiveModal').classList.remove('hidden');
 }
 function closeModal() { document.getElementById('receiveModal').classList.add('hidden'); currentIdx = null; }
+
+function startDesktopReceiving(date, idx) {
+  const attrs = getBizAttrs();
+  if (!attrs.length) { openModal(date, idx); return; }
+
+  const p = getDateProducts(date)[idx];
+  const modal = document.getElementById('bizAttrSelectModal');
+  const body  = document.getElementById('bizAttrSelectModalBody');
+  if (!modal || !body) { openModal(date, idx); return; }
+
+  body.innerHTML = attrs.map(a => {
+    const active = p.bizAttr === a.name;
+    return `<div onclick="desktopSelectBizAttr('${date}',${idx},'${a.name}')"
+      class="flex items-center justify-between p-3 mb-2 rounded-xl border cursor-pointer hover:bg-blue-50 transition-colors
+        ${active?'bg-blue-50 border-blue-400':'bg-white border-gray-200'}">
+      <span class="font-medium ${active?'text-blue-700':'text-gray-700'}">${a.name}</span>
+      ${active?'<span class="text-blue-600 text-lg">✓</span>':''}
+    </div>`;
+  }).join('') + `<div onclick="desktopSelectBizAttr('${date}',${idx},'')"
+    class="flex items-center justify-center p-3 rounded-xl border border-dashed border-gray-200 cursor-pointer hover:bg-gray-50 text-gray-400 text-sm">
+    略過（不選擇）
+  </div>`;
+
+  modal.classList.remove('hidden');
+}
+
+function desktopSelectBizAttr(date, idx, attrName) {
+  const p   = getDateProducts(date)[idx];
+  p.bizAttr = attrName;
+  document.getElementById('bizAttrSelectModal').classList.add('hidden');
+  openModal(date, idx);
+}
 
 function desktopSetBizAttr(date, idx, name, el) {
   const p = getDateProducts(date)[idx];
