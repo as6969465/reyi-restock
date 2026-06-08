@@ -620,7 +620,7 @@ function renderReportTable() {
   if (!list.length) { tbody.innerHTML='<tr><td colspan="11" class="px-4 py-12 text-center text-gray-400 text-sm">尚無異常記錄</td></tr>'; return; }
   const hasReplyBtn = p => p.status===STATUS.RESOLVED && p.procAction && p.procAction!=='—';
   tbody.innerHTML = list.map(p => `
-    <tr class="border-b border-gray-100 hover:bg-red-50">
+    <tr class="border-b border-gray-100 hover:bg-red-50" style="${p.procReplyUnread?'background:#f3f4f6':''}">
       <td class="px-4 py-3 text-xs text-gray-500">${p.arrivalDate||'—'}</td>
       <td class="px-4 py-3 text-xs text-gray-500">${p.defectTime||'—'}</td>
       <td class="px-4 py-3"><span class="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-xs">${p.defectClass||'其他異常'}</span></td>

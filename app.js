@@ -835,8 +835,10 @@ function renderReportCards() {
   container.innerHTML = list.map(p => {
     const hasReply = p.status===STATUS.RESOLVED && p.procAction && p.procAction!=='—';
     const itemCount = (p.defectItems||[]).length;
+    const unread    = !!p.procReplyUnread;
     return `
     <div class="product-card slide-up" data-status="${p.status}"
+      style="${unread?'background:#f3f4f6;border-left-color:#9ca3af':''}"
       ${hasReply?`onclick="openReplyDetail('${p.arrivalDate}','${p.itemNo}')"`:''}
       style="${hasReply?'cursor:pointer':''}">
       <div class="product-card-inner">
