@@ -618,7 +618,7 @@ function renderReportTable() {
   const tbody = document.getElementById('reportTableBody');
   const list  = getFilteredAllProducts().filter(p => p.badQty > 0);
   if (!list.length) { tbody.innerHTML='<tr><td colspan="11" class="px-4 py-12 text-center text-gray-400 text-sm">尚無異常記錄</td></tr>'; return; }
-  const hasReplyBtn = p => p.status===STATUS.RESOLVED && p.procAction && p.procAction!=='—';
+  const hasReplyBtn = p => (p.defectItems||[]).some(it=>it.procAction) || (p.procAction && p.procAction!=='—');
   tbody.innerHTML = list.map(p => `
     <tr class="border-b border-gray-100 hover:bg-red-50" style="${p.procReplyUnread?'background:#f3f4f6':''}">
       <td class="px-4 py-3 text-xs text-gray-500">${p.arrivalDate||'—'}</td>
@@ -1256,26 +1256,23 @@ function submitPurchaseReply() {
   const p = getDateProducts(arrivalDate).find(x => x.itemNo === itemNo);
   const purUser = getCurrentUser();
   const items   = p.defectItems || [];
-  // 至少一筆需有回覆
-  const hasAny = items.some(it=>it.procAction) || true; // 允許部分回覆
-  // 未全部回覆時確認
-  const pending = items.filter(it=>!it.procAction);
-  if (pending.length > 0 && items.length > 1) {
-    if (!confirm(`尚有 ${pending.length} 張照片未填寫處理方式，確定送出？`)) return;
+  // 至少一張需有回覆才能送出
+  const repliedItems = items.filter(it=>it.procAction);
+  if (repliedItems.length === 0) {
+    errDiv.textContent='請至少為一張照片選擇處理方式'; errDiv.classList.remove('hidden'); return;
   }
-  if (items.length > 0 && !items[0].procAction && items.length === 1) {
-    errDiv.textContent='請選擇處理方式'; errDiv.classList.remove('hidden'); return;
-  }
-  // 儲存各照片回覆
-  items.forEach(it=>{ if(!it.procStaffName) it.procStaffName=purUser?.name||''; });
-  p.defectItems   = items;
-  p.procAction    = items.map(it=>it.procAction).filter(Boolean).join('、') || '—';
-  p.procReply     = items.map(it=>it.procReply).filter(Boolean).join('；');
+  // 儲存各照片回覆（已填的更新人員，未填的保留原樣）
+  items.forEach(it=>{ if(it.procAction && !it.procStaffName) it.procStaffName=purUser?.name||''; });
+  p.defectItems      = items;
+  p.procAction       = items.map(it=>it.procAction).filter(Boolean).join('、') || '—';
+  p.procReply        = items.map(it=>it.procReply).filter(Boolean).join('；');
   p.procReplyTime    = new Date().toLocaleString('zh-TW');
   p.procStaffId      = purUser?.userId || '';
   p.procStaffName    = purUser?.name   || '';
-  p.procReplyUnread  = true;  // 採購回覆後設未讀
-  p.status           = STATUS.RESOLVED;
+  p.procReplyUnread  = true;  // 有回覆後設未讀（讓異常回覆頁角標出現）
+  // 全部回覆完才轉已處理，否則仍維持待採購
+  const allReplied = items.length > 0 && items.every(it=>it.procAction);
+  p.status = allReplied ? STATUS.RESOLVED : STATUS.PROCUREMENT;
   const replyArrivalDate = arrivalDate;
   if (p.id) {
     ProductAPI.reply(p.id, { procAction: p.procAction, procReply: p.procReply, defectItems: p.defectItems })

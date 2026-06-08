@@ -833,7 +833,7 @@ function renderReportCards() {
   if (to)   list = list.filter(p=>!p.arrivalDate||p.arrivalDate<=to);
   if (!list.length) { container.innerHTML='<div class="empty-state"><p>尚無異常記錄</p></div>'; return; }
   container.innerHTML = list.map(p => {
-    const hasReply = p.status===STATUS.RESOLVED && p.procAction && p.procAction!=='—';
+    const hasReply = (p.defectItems||[]).some(it=>it.procAction) || (p.procAction && p.procAction!=='—');
     const itemCount = (p.defectItems||[]).length;
     const unread    = !!p.procReplyUnread;
     return `
@@ -1014,9 +1014,14 @@ async function submitPurchaseReply() {
       if (action) { item.procAction=action; item.procReply=reply; item.procStaffName=purUser?.name||''; hasReply=true; }
     });
     if (!hasReply) { errDiv.textContent='請至少回覆一筆異常明細'; errDiv.style.display='block'; return; }
-    const allReplied = items.every(item=>item.procAction);
-    p.defectItems=items; p.procStaffName=purUser?.name||''; p.procReplyTime=nowStr(); p.procReplyUnread=true;
-    if (allReplied) { p.status=STATUS.RESOLVED; p.procAction='（各別回覆）'; }
+    const allReplied = items.length > 0 && items.every(item=>item.procAction);
+    p.defectItems    = items;
+    p.procStaffName  = purUser?.name||'';
+    p.procReplyTime  = nowStr();
+    p.procReplyUnread= true;   // 有回覆即設未讀，通知物流查看
+    // 全部回覆完才轉已處理，否則保持待採購
+    p.status    = allReplied ? STATUS.RESOLVED : STATUS.PROCUREMENT;
+    p.procAction= items.map(it=>it.procAction).filter(Boolean).join('、') || '';
   } else {
     // 舊格式
     const action = document.getElementById('pur-action-all')?.value;
