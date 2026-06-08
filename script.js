@@ -669,7 +669,8 @@ function openReplyDetailModal(arrivalDate, itemNo) {
           <div class="px-3 py-2 ${item.procAction?'bg-green-50':'bg-gray-50'} border-t border-gray-100">
             ${item.procAction
               ? `<div class="text-sm font-semibold text-green-700">✓ ${item.procAction}</div>
-                 ${item.procReply?`<div class="text-xs text-green-600 mt-0.5">${item.procReply}</div>`:''}`
+                 ${item.procReply?`<div class="text-xs text-green-600 mt-0.5">${item.procReply}</div>`:''}
+                 <div class="text-xs text-gray-400 mt-0.5">回覆時間：${item.procReplyTime||'—'}</div>`
               : `<div class="text-xs text-gray-400">尚未回覆</div>`}
           </div>
         </div>`)
@@ -1262,7 +1263,8 @@ function submitPurchaseReply() {
     errDiv.textContent='請至少為一張照片選擇處理方式'; errDiv.classList.remove('hidden'); return;
   }
   // 儲存各照片回覆（已填的更新人員，未填的保留原樣）
-  items.forEach(it=>{ if(it.procAction && !it.procStaffName) it.procStaffName=purUser?.name||''; });
+  const nowTs = new Date().toLocaleString('zh-TW');
+  items.forEach(it=>{ if(it.procAction) { if(!it.procStaffName) it.procStaffName=purUser?.name||''; if(!it.procReplyTime) it.procReplyTime=nowTs; } });
   p.defectItems      = items;
   p.procAction       = items.map(it=>it.procAction).filter(Boolean).join('、') || '—';
   p.procReply        = items.map(it=>it.procReply).filter(Boolean).join('；');

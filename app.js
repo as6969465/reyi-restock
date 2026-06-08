@@ -892,7 +892,8 @@ function openReplyDetail(arrivalDate, itemNo) {
           <div style="padding:10px 12px;background:${item.procAction?'#d1fae5':'#f3f4f6'};border-top:1px solid #e5e7eb">
             ${item.procAction
               ? `<div style="font-size:13px;font-weight:700;color:#065f46">✓ ${item.procAction}</div>
-                 ${item.procReply?`<div style="font-size:12px;color:#047857;margin-top:2px">${item.procReply}</div>`:''}`
+                 ${item.procReply?`<div style="font-size:12px;color:#047857;margin-top:2px">${item.procReply}</div>`:''}
+                 <div style="font-size:11px;color:#9ca3af;margin-top:3px">回覆時間：${item.procReplyTime||'—'}</div>`
               : `<div style="font-size:12px;color:#9ca3af">尚未回覆</div>`}
           </div>
         </div>`)
@@ -1011,7 +1012,7 @@ async function submitPurchaseReply() {
     items.forEach((item, i) => {
       const action = document.getElementById(`pur-action-${i}`)?.value;
       const reply  = document.getElementById(`pur-reply-${i}`)?.value.trim() || '';
-      if (action) { item.procAction=action; item.procReply=reply; item.procStaffName=purUser?.name||''; hasReply=true; }
+      if (action) { item.procAction=action; item.procReply=reply; item.procStaffName=purUser?.name||''; item.procReplyTime=nowStr(); hasReply=true; }
     });
     if (!hasReply) { errDiv.textContent='請至少回覆一筆異常明細'; errDiv.style.display='block'; return; }
     const allReplied = items.length > 0 && items.every(item=>item.procAction);
