@@ -62,6 +62,7 @@ let reviewIdx      = null;
 let purchaseIdx    = null;
 let editUserIdx    = null;
 let uploadedPhotos = [];
+let _deskDefectItems = []; // 桌機版：每張照片各自原因 [{photo, reason, note}]
 let _photoList = [], _photoIdx = 0;
 let _reviewStartTime = '';
 
@@ -696,9 +697,14 @@ function updateBadges() {
 // ── 驗收 Modal ────────────────────────────────────────
 function openModal(date, idx) {
   currentIdx = { date, idx };
-  _modalStartTime = nowHHMM();
   const p = getDateProducts(date)[idx];
-  uploadedPhotos = p.received ? [...p.photos] : [];
+  // 載入已有的異常明細（每張照片各自原因）
+  _deskDefectItems = (p.defectItems || []).map(item => ({ ...item }));
+  if (!_deskDefectItems.length && p.photos?.length && p.badQty > 0) {
+    _deskDefectItems = p.photos.map((ph, i) => ({
+      photo: ph, reason: (p.defectReasons||[])[i]||'', note: ''
+    }));
+  }
   document.getElementById('modalTitle').textContent = p.status === STATUS.PENDING ? '驗收登錄' : '修改驗收';
   document.getElementById('m-itemCode').textContent = p.itemNo;
   document.getElementById('m-poNo').textContent     = p.po;
@@ -706,17 +712,68 @@ function openModal(date, idx) {
   document.getElementById('m-spec').textContent     = p.spec;
   document.getElementById('m-barcode').textContent  = p.barcode;
   document.getElementById('m-qty').textContent      = p.qty;
-  document.getElementById('goodQty').value  = p.received ? p.goodQty : p.qty;
-  document.getElementById('badQty').value   = p.received ? p.badQty  : '';
-  document.getElementById('defectClass').value  = p.defectClass || '其他異常';
-  document.getElementById('defectNote').value   = p.defectNote  || '';
-  renderDefectReasonList('defectReasonList', p.defectReasons||[]);
-  document.getElementById('defectSection').classList.toggle('hidden', !p.received || p.badQty<=0);
+  document.getElementById('goodQty').value = p.received ? p.goodQty : p.qty;
+  document.getElementById('badQty').value  = p.received ? p.badQty  : '';
+  document.getElementById('defectSection').classList.toggle('hidden', !p.received || p.badQty <= 0);
   document.getElementById('modalError').classList.add('hidden');
-  renderPhotoSlots();
+  renderDeskDefectItems();
   document.getElementById('receiveModal').classList.remove('hidden');
 }
 function closeModal() { document.getElementById('receiveModal').classList.add('hidden'); currentIdx = null; }
+
+// ── 桌機版異常明細（每張照片各自原因）────────────────
+function renderDeskDefectItems() {
+  const container = document.getElementById('desktopDefectItems');
+  if (!container) return;
+  if (!_deskDefectItems.length) {
+    container.innerHTML = '<p class="text-xs text-gray-400 py-2">尚未新增，點右上角按鈕新增</p>';
+    return;
+  }
+  const REASONS = ['品名不符','數量不符','規格不符','外箱標示異常','條碼異常','裸瓶','混效期','商品異常-凹損','商品異常-破損','商品異常-破膜','商品異常-汙損','商品異常-殘膠','商品異常-未封口','商品異常-效期模糊','商品異常-(多筆)','效期異常-效期超允收','效期異常-未來日','效期異常-無第二條件','效期異常-保存期限不合理','臨時到貨','取消到貨','其他'];
+  container.innerHTML = _deskDefectItems.map((item, i) => `
+    <div class="flex gap-3 items-start p-3 mb-2 bg-red-50 border border-red-100 rounded-xl">
+      <!-- 照片 -->
+      <div class="flex-shrink-0">
+        ${item.photo
+          ? `<img src="${item.photo}" style="width:72px;height:72px;border-radius:8px;object-fit:cover;cursor:pointer" onclick="deskViewDefectPhoto(${i})" />`
+          : `<label style="width:72px;height:72px;border:2px dashed #fca5a5;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;background:#fff">
+              <svg style="width:20px;height:20px;color:#fca5a5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              <span style="font-size:10px;color:#fca5a5;margin-top:2px">上傳</span>
+              <input type="file" accept="image/*" class="hidden" onchange="deskSetDefectPhoto(${i},this)" />
+            </label>`}
+      </div>
+      <!-- 原因 & 說明 -->
+      <div class="flex-1 min-w-0">
+        <select onchange="deskSetDefectReason(${i},this.value)"
+          class="w-full border border-red-200 rounded-lg px-2 py-1.5 text-sm mb-1.5 focus:outline-none focus:ring-1 focus:ring-red-400">
+          <option value="">請選擇異常原因</option>
+          ${REASONS.map(r=>`<option value="${r}" ${item.reason===r?'selected':''}>${r}</option>`).join('')}
+        </select>
+        <input type="text" value="${item.note||''}" placeholder="補充說明（選填）"
+          class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none"
+          oninput="_deskDefectItems[${i}].note=this.value" />
+      </div>
+      <button onclick="deskRemoveDefectItem(${i})" class="text-red-300 hover:text-red-500 text-lg leading-none pt-1">✕</button>
+    </div>`).join('');
+}
+
+function desktopAddDefectItem() {
+  if (_deskDefectItems.length >= 6) { alert('最多 6 筆'); return; }
+  _deskDefectItems.push({ photo:'', reason:'', note:'' });
+  renderDeskDefectItems();
+}
+function deskRemoveDefectItem(i) { _deskDefectItems.splice(i,1); renderDeskDefectItems(); }
+function deskSetDefectReason(i, r) { _deskDefectItems[i].reason = r; }
+function deskSetDefectPhoto(i, input) {
+  const file = input.files[0]; if (!file) return;
+  compressImage(file, 800*1024).then(dataUrl => { _deskDefectItems[i].photo=dataUrl; renderDeskDefectItems(); });
+}
+function deskViewDefectPhoto(i) {
+  const item = _deskDefectItems[i];
+  if (!item?.photo) return;
+  const w = window.open();
+  w.document.write(`<img src="${item.photo}" style="max-width:100%;height:auto" />`);
+}
 
 function onBadQtyInput() {
   const { date, idx } = currentIdx;
@@ -732,31 +789,32 @@ function saveReceiving() {
   const good = parseInt(document.getElementById('goodQty').value);
   const bad  = parseInt(document.getElementById('badQty').value) || 0;
   if (isNaN(good) || good < 0) { errDiv.textContent='請輸入正確的良品數量'; errDiv.classList.remove('hidden'); return; }
-  const reasons = getSelectedReasons('defectReasonList');
-  if (bad > 0 && reasons.length===0) { errDiv.textContent='有不良品時，請至少選擇一個異常原因'; errDiv.classList.remove('hidden'); return; }
+  if (bad > 0 && _deskDefectItems.length === 0) { errDiv.textContent='有不良品時，請新增至少一筆異常明細'; errDiv.classList.remove('hidden'); return; }
+  if (bad > 0 && _deskDefectItems.some(item=>!item.reason)) { errDiv.textContent='每筆異常明細都需選擇異常原因'; errDiv.classList.remove('hidden'); return; }
   const { date, idx } = currentIdx;
   const p = getDateProducts(date)[idx];
+  const user = getCurrentUser();
   p.received      = true;
   p.goodQty       = good;
   p.badQty        = bad;
-  // 連動時間由物流專員起始，現場人員不處理
-  const user = getCurrentUser();
-  p.defectClass    = document.getElementById('defectClass').value;
-  p.defectReasons  = reasons;
-  p.defectNote     = document.getElementById('defectNote').value.trim();
-  p.defectStaff    = user?.name || '';
-  p.photos         = [...uploadedPhotos];
-  p.time           = new Date().toLocaleString('zh-TW');
-  p.operatorId     = user?.userId || user?.roleId || '';
-  p.operatorName   = user?.name  || '';
-  p.status         = bad > 0 ? STATUS.ABNORMAL_PENDING : STATUS.RECEIVED;
+  p.defectItems   = _deskDefectItems.map(item=>({ ...item, procAction:'', procReply:'', procStaffName:'' }));
+  p.defectReasons = _deskDefectItems.map(item=>item.reason).filter(Boolean);
+  p.photos        = _deskDefectItems.map(item=>item.photo).filter(Boolean);
+  p.defectNote    = _deskDefectItems.map(item=>item.note).filter(Boolean).join('；');
+  p.defectClass   = '其他異常';
+  p.defectStaff   = user?.name || '';
+  p.time          = new Date().toLocaleString('zh-TW');
+  p.operatorId    = user?.userId || '';
+  p.operatorName  = user?.name  || '';
+  p.status        = bad > 0 ? STATUS.ABNORMAL_PENDING : STATUS.RECEIVED;
 
   // 呼叫後端 API 後重載 Firestore 資料（確保多台同步）
   const receiveDate = date;
   if (p.id) {
     ProductAPI.receive(p.id, {
-      goodQty: good, badQty: bad, defectReasons: reasons,
-      defectNote: p.defectNote, defectClass: p.defectClass, photos: p.photos
+      goodQty: good, badQty: bad, defectReasons: p.defectReasons,
+      defectNote: p.defectNote, defectClass: p.defectClass, photos: p.photos,
+      defectItems: p.defectItems
     }).then(async () => {
       await reloadFromFirestore(receiveDate);
       renderProductTable(); updateStats(); updateBadges();
