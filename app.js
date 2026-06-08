@@ -685,27 +685,50 @@ function renderReviewSheetBody(p) {
         box-shadow:${active?'0 2px 8px rgba(245,158,11,.3)':'none'};transition:all .15s">${t}</div>`;
   }).join('');
 
-  // 當前照片的現場記錄
+  // 當前照片＋可編輯的分類/原因（預填驗收時的資料）
+  const i = _reviewPhotoIdx;
+  // 分類按鈕（預填，可修改）
+  const catBtns = DEFECT_CATEGORIES.map(c => {
+    const active = cur?.category === c;
+    return `<button onclick="rvSetCategory(${i},'${c}')"
+      style="padding:6px 14px;border-radius:20px;border:1.5px solid ${active?'#f59e0b':'#e5e7eb'};
+        background:${active?'#fef3c7':'#f8fafc'};color:${active?'#92400e':'#6b7280'};
+        font-size:12px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap">${c}</button>`;
+  }).join('');
+  // 原因勾選（預填，可修改）
+  const reasonChips = `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:3px 8px;margin-top:6px">
+    ${DEFECT_REASONS.map(r => {
+      const sel = (cur?.reasons||[]).includes(r);
+      return `<label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:2px 0">
+        <input type="checkbox" ${sel?'checked':''} onchange="rvToggleReason(${i},'${r}')"
+          style="width:14px;height:14px;accent-color:#f59e0b;flex-shrink:0;cursor:pointer" />
+        <span style="font-size:12px;color:#374151;line-height:1.3">${r}</span>
+      </label>`;
+    }).join('')}
+  </div>`;
+
   const curPhotoBlock = hasPhotos ? `
     <div style="display:flex;gap:8px;align-items:center;overflow-x:auto;padding-bottom:6px;margin-bottom:10px">
       ${thumbs}
     </div>
-    <div style="background:#fff7ed;border-radius:12px;padding:12px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-start">
-      ${cur?.photo ? `<img src="${cur.photo}" style="width:72px;height:72px;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:pointer"
-        onclick="viewPhotos('${reviewIdx.arrivalDate}','${reviewIdx.itemNo}',${_reviewPhotoIdx})" />` : ''}
-      <div style="flex:1;min-width:0">
-        <div style="font-size:10px;font-weight:700;color:#d97706;margin-bottom:4px">現場記錄 ${items.length>1?`（${_reviewPhotoIdx+1}/${items.length}）`:''}</div>
-        ${cur?.category?`<span style="font-size:12px;font-weight:600;color:#374151">${cur.category}</span>`:''}
-        <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">
-          ${(cur?.reasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')||'<span style="font-size:12px;color:#9ca3af">未填寫原因</span>'}
+    <div style="background:#fffbeb;border-radius:12px;border:1.5px solid #fde68a;padding:12px;margin-bottom:10px">
+      <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px">
+        ${cur?.photo ? `<img src="${cur.photo}" style="width:64px;height:64px;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:pointer"
+          onclick="viewPhotos('${reviewIdx.arrivalDate}','${reviewIdx.itemNo}',${_reviewPhotoIdx})" />` : ''}
+        <div>
+          <div style="font-size:10px;font-weight:700;color:#92400e;margin-bottom:4px">
+            照片 ${items.length>1?`${_reviewPhotoIdx+1}/${items.length} `:''}<span style="font-weight:400;color:#b45309">（可修改原因後確認）</span>
+          </div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap">${catBtns}</div>
         </div>
-        ${cur?.note?`<div style="font-size:12px;color:#6b7280;margin-top:4px">${cur.note}</div>`:''}
       </div>
+      ${reasonChips}
+      <input id="rv-cur-note" value="${cur?.note||''}" placeholder="補充說明（選填）"
+        style="width:100%;margin-top:8px;border:1px solid #e5e7eb;border-radius:8px;padding:7px 10px;font-size:12px;outline:none;background:#fff;font-family:inherit"
+        oninput="rvSetNote(${i},this.value)" />
     </div>` : `
-    <div style="background:#fff7ed;border-radius:12px;padding:12px;margin-bottom:12px">
-      <div style="font-size:12px;font-weight:700;color:#d97706;margin-bottom:6px">現場記錄</div>
-      <div style="font-size:15px;font-weight:700;color:#111;margin-bottom:4px">${p.name}</div>
-      <div style="font-size:13px;color:#6b7280;margin-bottom:6px">不良品：${p.badQty} 件</div>
+    <div style="background:#fffbeb;border-radius:12px;padding:12px;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:6px">現場記錄</div>
       <div style="display:flex;flex-wrap:wrap;gap:3px">${(p.defectReasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')||'無'}</div>
     </div>`;
 
@@ -722,6 +745,24 @@ function renderReviewSheetBody(p) {
     </div>`;
 }
 
+// 專員修改各照片的分類/原因/說明（直接修改 p.defectItems）
+function rvSetCategory(idx, cat) {
+  const p = getAllProducts().find(x=>x.arrivalDate===reviewIdx.arrivalDate&&x.itemNo===reviewIdx.itemNo);
+  if (p?.defectItems?.[idx]) { p.defectItems[idx].category=cat; renderReviewSheetBody(p); }
+}
+function rvToggleReason(idx, r) {
+  const p = getAllProducts().find(x=>x.arrivalDate===reviewIdx.arrivalDate&&x.itemNo===reviewIdx.itemNo);
+  if (!p?.defectItems?.[idx]) return;
+  const reasons = p.defectItems[idx].reasons||[];
+  const i = reasons.indexOf(r);
+  if (i>=0) reasons.splice(i,1); else reasons.push(r);
+  p.defectItems[idx].reasons = reasons;
+}
+function rvSetNote(idx, val) {
+  const p = getAllProducts().find(x=>x.arrivalDate===reviewIdx.arrivalDate&&x.itemNo===reviewIdx.itemNo);
+  if (p?.defectItems?.[idx]) p.defectItems[idx].note = val;
+}
+
 async function submitReview() {
   const { arrivalDate, itemNo } = reviewIdx;
   const p     = getAllProducts().find(x=>x.arrivalDate===arrivalDate&&x.itemNo===itemNo);
@@ -730,6 +771,10 @@ async function submitReview() {
   if (!dt) dt = `${_reviewStartTime}～`;
   p.defectTime  = dt;
   p.defectStaff = rvUser?.name||'';
+  // 同步 defectReasons 為各照片原因的彙整（向下相容）
+  if (p.defectItems?.length) {
+    p.defectReasons = p.defectItems.flatMap(it=>it.reasons||[]).filter(Boolean);
+  }
   p.status      = STATUS.PROCUREMENT;
   if (p.id) {
     ProductAPI.review(p.id, {defectTime:p.defectTime,defectClass:p.defectClass,defectReasons:p.defectReasons,defectNote:p.defectNote})
