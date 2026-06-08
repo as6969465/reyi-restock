@@ -646,6 +646,7 @@ function openReplyDetailModal(arrivalDate, itemNo) {
     p.procReplyUnread = false;
     if (p.id) ProductAPI._clearUnread(p.id).catch(()=>{});
     updateBadges();
+    renderReportTable(); // 重繪報表列，底色恢復白色
   }
   const items = p.defectItems || [];
   const title = document.getElementById('replyDetailTitle');

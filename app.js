@@ -869,6 +869,7 @@ function openReplyDetail(arrivalDate, itemNo) {
     p.procReplyUnread = false;
     if (p.id) ProductAPI._clearUnread(p.id).catch(()=>{});
     updateBadges();
+    renderReportCards(); // 重繪卡片，底色恢復白色
   }
   const items = p.defectItems || [];
   const body = document.getElementById('replyDetailBody');
