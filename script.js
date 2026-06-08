@@ -744,8 +744,8 @@ function renderDeskDefectItems() {
       `<button type="button" onclick="deskSetDefectCategory(${i},'${c}')"
         class="text-xs px-3 py-1.5 rounded-full border transition-colors ${item.category===c?'bg-red-100 border-red-400 text-red-600 font-semibold':'bg-white border-gray-200 text-gray-500 hover:border-red-300'}">${c}</button>`
     ).join('');
-    // 原因固定清單，與分類無關，複選
-    const subReasons = `<div class="mt-2 flex flex-wrap gap-1">${DEFECT_REASONS.map(r=>{const s=(item.reasons||[]).includes(r);return `<span onclick="deskToggleSubReason(${i},'${r}')" class="text-xs px-2 py-1 rounded-full cursor-pointer border ${s?'bg-blue-100 border-blue-400 text-blue-600 font-semibold':'bg-gray-50 border-gray-200 text-gray-500'}">${r}</span>`;}).join('')}</div>`;
+    // 原因固定清單，勾選框網格對齊
+    const subReasons = `<div class="mt-2 grid" style="grid-template-columns:repeat(2,1fr);gap:2px 12px">${DEFECT_REASONS.map(r=>{const s=(item.reasons||[]).includes(r);return `<label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:2px 0"><input type="checkbox" ${s?'checked':''} onchange="deskToggleSubReason(${i},'${r}')" style="width:14px;height:14px;accent-color:#2563eb;flex-shrink:0;cursor:pointer" /><span style="font-size:12px;color:#374151;line-height:1.4">${r}</span></label>`;}).join('')}</div>`;
     return `<div class="flex gap-3 items-start p-3 mb-2 bg-red-50 border border-red-100 rounded-xl">
       <div class="flex-shrink-0">${photoEl}</div>
       <div class="flex-1 min-w-0">

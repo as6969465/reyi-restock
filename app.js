@@ -317,15 +317,16 @@ function renderDefectItems(readonly) {
           background:${active?'#dbeafe':'#f8fafc'};color:${active?'#1d4ed8':'#6b7280'};
           font-size:12px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap;flex-shrink:0">${c}</button>`;
     }).join('');
-    // 原因（固定清單，複選，與分類無關）
+    // 原因（固定清單，勾選框網格對齊）
     const reasonChips = !readonly
-      ? `<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px">
+      ? `<div style="margin-top:8px;display:grid;grid-template-columns:repeat(2,1fr);gap:3px 8px">
           ${DEFECT_REASONS.map(r => {
             const sel = (item.reasons||[]).includes(r);
-            return `<span onclick="toggleDefectSubReason(${i},'${r}')"
-              style="padding:4px 10px;border-radius:16px;border:1.5px solid ${sel?'#2563eb':'#e5e7eb'};
-                background:${sel?'#dbeafe':'#f8fafc'};color:${sel?'#1d4ed8':'#6b7280'};
-                font-size:11px;font-weight:${sel?'700':'400'};cursor:pointer;white-space:nowrap">${r}</span>`;
+            return `<label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:3px 0">
+              <input type="checkbox" ${sel?'checked':''} onchange="toggleDefectSubReason(${i},'${r}')"
+                style="width:14px;height:14px;accent-color:#2563eb;flex-shrink:0;cursor:pointer" />
+              <span style="font-size:12px;color:#374151;line-height:1.3">${r}</span>
+            </label>`;
           }).join('')}
          </div>`
       : ((item.reasons||[]).length ? `<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">${(item.reasons||[]).map(r=>`<span style="padding:3px 8px;border-radius:12px;background:#dbeafe;color:#1d4ed8;font-size:11px">${r}</span>`).join('')}</div>` : '');
