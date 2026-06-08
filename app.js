@@ -380,12 +380,17 @@ function renderDefectItems(readonly) {
       </label>` : '<span style="font-size:12px;color:#9ca3af">未上傳</span>');
 
   container.innerHTML = `
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;overflow-x:auto;padding-bottom:2px">
-      ${thumbs}
-      ${!readonly ? `<button onclick="addDefectItem()"
-        style="width:52px;height:52px;border-radius:10px;flex-shrink:0;border:2px dashed #e5e7eb;
-          background:#f8fafc;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px;color:#9ca3af;line-height:1">
-        +</button>` : ''}
+    <div style="margin-bottom:10px">
+      <div style="display:flex;gap:8px;align-items:center;overflow-x:auto;padding-bottom:6px;margin-bottom:6px">
+        ${thumbs}
+        ${!readonly ? `<label style="width:52px;height:52px;border-radius:10px;flex-shrink:0;border:2px dashed #e5e7eb;
+          background:#f8fafc;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:2px">
+          <span style="font-size:20px;color:#9ca3af;line-height:1">+</span>
+          <span style="font-size:9px;color:#9ca3af">照片</span>
+          <input type="file" accept="image/*" multiple class="hidden" onchange="batchAddDefectPhotos(this)" />
+        </label>` : ''}
+      </div>
+      ${!readonly && _defectItems.length === 0 ? `<p style="font-size:12px;color:#9ca3af;text-align:center">點 + 可一次選取多張照片</p>` : ''}
     </div>
     <div style="background:#fef9f9;border-radius:14px;border:1.5px solid #fecaca;padding:12px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -415,6 +420,28 @@ function addDefectItem() {
   _defectItems.push({ photo: '', category: '', reasons: [], note: '' });
   _activeDefectIdx = _defectItems.length - 1;
   renderDefectItems(false);
+}
+
+// 批次匯入多張照片，每張建立一筆異常明細
+function batchAddDefectPhotos(input) {
+  const files = Array.from(input.files);
+  const remaining = 6 - _defectItems.length;
+  if (!files.length) return;
+  if (remaining <= 0) { alert('最多 6 筆，已達上限'); input.value=''; return; }
+  const toProcess = files.slice(0, remaining);
+  let done = 0;
+  const firstNewIdx = _defectItems.length;
+  toProcess.forEach(file => {
+    compressImage(file, 800*1024).then(dataUrl => {
+      _defectItems.push({ photo: dataUrl, category: '', reasons: [], note: '' });
+      done++;
+      if (done === toProcess.length) {
+        _activeDefectIdx = firstNewIdx;
+        renderDefectItems(false);
+      }
+    });
+  });
+  input.value = '';
 }
 function removeDefectItem(i) { _defectItems.splice(i,1); if(_activeDefectIdx>=_defectItems.length)_activeDefectIdx=Math.max(0,_defectItems.length-1); renderDefectItems(false); }
 function setDefectCategory(i, cat) {
@@ -492,7 +519,10 @@ function openReceiveSheet(date, idx) {
     <div id="rs-defect" style="${(!p.received&&!(p.badQty>0))?'display:none':''}">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <div style="font-size:13px;font-weight:700;color:#dc2626">異常明細</div>
-        ${!isResolved ? `<button onclick="addDefectItem()" class="btn btn-sm btn-danger">＋ 新增異常照片</button>` : ''}
+        ${!isResolved ? `<label class="btn btn-sm btn-danger" style="cursor:pointer">
+          ＋ 匯入照片
+          <input type="file" accept="image/*" multiple class="hidden" onchange="batchAddDefectPhotos(this)" />
+        </label>` : ''}
       </div>
       <div id="rs-defect-items"></div>
       ${!isResolved ? `<p style="font-size:11px;color:#9ca3af;margin-top:4px;margin-bottom:12px">每張照片可選擇對應的異常原因，供採購單位個別回覆</p>` : ''}
