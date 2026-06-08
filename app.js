@@ -832,20 +832,75 @@ function renderReportCards() {
   if (from) list = list.filter(p=>!p.arrivalDate||p.arrivalDate>=from);
   if (to)   list = list.filter(p=>!p.arrivalDate||p.arrivalDate<=to);
   if (!list.length) { container.innerHTML='<div class="empty-state"><p>尚無異常記錄</p></div>'; return; }
-  container.innerHTML = list.map(p => `
-    <div class="product-card slide-up" data-status="${p.status}">
+  container.innerHTML = list.map(p => {
+    const hasReply = p.status===STATUS.RESOLVED && p.procAction && p.procAction!=='—';
+    const itemCount = (p.defectItems||[]).length;
+    return `
+    <div class="product-card slide-up" data-status="${p.status}"
+      ${hasReply?`onclick="openReplyDetail('${p.arrivalDate}','${p.itemNo}')"`:''}
+      style="${hasReply?'cursor:pointer':''}">
       <div class="product-card-inner">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">
           <div style="font-size:15px;font-weight:700;color:#111;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</div>
-          <span class="badge badge-abnormal" style="font-size:10px;flex-shrink:0">${p.defectClass||'其他異常'}</span>
+          ${hasReply
+            ? `<span class="badge badge-resolved" style="font-size:10px;flex-shrink:0">已回覆${itemCount>0?' ('+itemCount+'張)':''}</span>`
+            : `<span class="badge badge-abnormal" style="font-size:10px;flex-shrink:0">待回覆</span>`}
         </div>
         <div style="font-size:12px;color:#9ca3af;margin-bottom:6px">${p.arrivalDate||'—'} · ${p.defectTime||'—'}</div>
         ${(p.defectReasons||[]).length>0 ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">${p.defectReasons.map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')}</div>` : ''}
-        ${p.defectNote ? `<div style="font-size:12px;color:#6b7280;margin-bottom:4px">${p.defectNote}</div>` : ''}
         <div style="font-size:12px;color:#9ca3af">物流專員：${p.defectStaff||'—'}</div>
-        ${p.procAction ? `<div style="margin-top:8px;padding:8px 10px;background:#d1fae5;border-radius:10px;font-size:13px;font-weight:700;color:#065f46">採購回覆：${p.procAction}${p.procReply?'<br><span style="font-weight:400;font-size:12px">'+p.procReply+'</span>':''}</div>` : ''}
+        ${hasReply
+          ? `<div style="margin-top:8px;padding:8px 10px;background:#d1fae5;border-radius:10px;font-size:12px;color:#065f46;display:flex;justify-content:space-between;align-items:center">
+              <span style="font-weight:600">點擊查看各照片回覆 ›</span>
+             </div>`
+          : ''}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+}
+
+function openReplyDetail(arrivalDate, itemNo) {
+  const p = getAllProducts().find(x=>x.arrivalDate===arrivalDate&&x.itemNo===itemNo);
+  if (!p) return;
+  const items = p.defectItems || [];
+  const body = document.getElementById('replyDetailBody');
+  if (!body) return;
+
+  const content = items.length
+    ? items.map((item, i) => `
+        <div style="border:1.5px solid #e5e7eb;border-radius:12px;overflow:hidden;margin-bottom:10px">
+          <div style="display:flex;gap:10px;padding:12px;align-items:flex-start">
+            ${item.photo ? `<img src="${item.photo}" style="width:60px;height:60px;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:pointer"
+              onclick="viewPhotos('${arrivalDate}','${itemNo}',${i})" />` : ''}
+            <div style="flex:1;min-width:0">
+              <div style="font-size:11px;color:#9ca3af;margin-bottom:4px">照片 ${i+1} / ${items.length}${item.category?' · '+item.category:''}</div>
+              <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:4px">
+                ${(item.reasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')||'—'}
+              </div>
+              ${item.note?`<div style="font-size:11px;color:#6b7280">${item.note}</div>`:''}
+            </div>
+          </div>
+          <div style="padding:10px 12px;background:${item.procAction?'#d1fae5':'#f3f4f6'};border-top:1px solid #e5e7eb">
+            ${item.procAction
+              ? `<div style="font-size:13px;font-weight:700;color:#065f46">✓ ${item.procAction}</div>
+                 ${item.procReply?`<div style="font-size:12px;color:#047857;margin-top:2px">${item.procReply}</div>`:''}`
+              : `<div style="font-size:12px;color:#9ca3af">尚未回覆</div>`}
+          </div>
+        </div>`)
+      .join('')
+    : `<div style="padding:10px;background:#d1fae5;border-radius:10px;font-size:13px;color:#065f46">
+        <b>採購回覆：</b>${p.procAction||'—'}${p.procReply?'<br>'+p.procReply:''}
+       </div>`;
+
+  body.innerHTML = `
+    <div style="margin-bottom:12px">
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">${p.name}</div>
+      <div style="font-size:12px;color:#9ca3af">${p.arrivalDate||'—'} · 物流專員：${p.defectStaff||'—'}</div>
+    </div>
+    ${content}
+    <button onclick="closeAllSheets()" class="btn btn-secondary" style="width:100%;margin-top:4px">關閉</button>`;
+
+  openSheet('replyDetailSheet');
 }
 
 // ══════════════════════════════════════════════════════

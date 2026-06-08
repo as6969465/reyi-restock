@@ -617,6 +617,7 @@ function renderReportTable() {
   const tbody = document.getElementById('reportTableBody');
   const list  = getFilteredAllProducts().filter(p => p.badQty > 0);
   if (!list.length) { tbody.innerHTML='<tr><td colspan="11" class="px-4 py-12 text-center text-gray-400 text-sm">尚無異常記錄</td></tr>'; return; }
+  const hasReplyBtn = p => p.status===STATUS.RESOLVED && p.procAction && p.procAction!=='—';
   tbody.innerHTML = list.map(p => `
     <tr class="border-b border-gray-100 hover:bg-red-50">
       <td class="px-4 py-3 text-xs text-gray-500">${p.arrivalDate||'—'}</td>
@@ -628,10 +629,51 @@ function renderReportTable() {
       <td class="px-4 py-3 text-xs">${(p.defectReasons||[]).map(r=>`<span class="inline-block bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full mr-1 mb-0.5">${r}</span>`).join('')||'—'}</td>
       <td class="px-4 py-3 text-xs text-gray-600 max-w-[140px] truncate" title="${p.defectNote||''}">${p.defectNote||'—'}</td>
       <td class="px-4 py-3 text-xs text-gray-600">${p.defectStaff||'—'}</td>
-      <td class="px-4 py-3 text-xs text-gray-600">${p.procStaffName||'—'}</td>
-      <td class="px-4 py-3 text-xs text-gray-600">${p.procAction ? `<span class="font-medium">${p.procAction}</span>${p.procReply ? '<br><span class="text-gray-400">'+p.procReply+'</span>' : ''}` : '—'}</td>
-      <td class="px-4 py-3 text-center">${p.photos.length>0 ? `<span class="text-indigo-600 text-xs cursor-pointer" onclick="viewPhotos('${p.arrivalDate}','${p.itemNo}')">${p.photos.length} 張</span>` : '<span class="text-gray-400 text-xs">無</span>'}</td>
+      <td class="px-4 py-3 text-center">
+        ${hasReplyBtn(p)
+          ? `<button onclick="openReplyDetailModal('${p.arrivalDate}','${p.itemNo}')"
+              class="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 rounded-lg">查看回覆</button>`
+          : '<span class="text-gray-400 text-xs">待回覆</span>'}
+      </td>
     </tr>`).join('');
+}
+
+function openReplyDetailModal(arrivalDate, itemNo) {
+  const p = getAllProducts().find(x=>x.arrivalDate===arrivalDate&&x.itemNo===itemNo);
+  if (!p) return;
+  const items = p.defectItems || [];
+  const title = document.getElementById('replyDetailTitle');
+  const body  = document.getElementById('replyDetailBody');
+  if (title) title.textContent = p.name;
+  if (!body) return;
+
+  const content = items.length
+    ? items.map((item, i) => `
+        <div class="border border-gray-200 rounded-xl overflow-hidden mb-3">
+          <div class="flex gap-3 p-3 items-start">
+            ${item.photo ? `<img src="${item.photo}" onclick="openPhotoModal([${items.filter(x=>x.photo).map(x=>'\''+x.photo+'\'').join(',')}],'${p.name}',${i})"
+              class="w-14 h-14 object-cover rounded-lg cursor-pointer flex-shrink-0" />` : ''}
+            <div class="flex-1 min-w-0">
+              <div class="text-xs text-gray-400 mb-1">照片 ${i+1} / ${items.length}${item.category?' · '+item.category:''}</div>
+              <div class="flex flex-wrap gap-1">${(item.reasons||[]).map(r=>`<span class="text-xs px-1.5 py-0.5 bg-red-100 text-red-600 rounded">${r}</span>`).join('')||'—'}</div>
+              ${item.note?`<div class="text-xs text-gray-500 mt-1">${item.note}</div>`:''}
+            </div>
+          </div>
+          <div class="px-3 py-2 ${item.procAction?'bg-green-50':'bg-gray-50'} border-t border-gray-100">
+            ${item.procAction
+              ? `<div class="text-sm font-semibold text-green-700">✓ ${item.procAction}</div>
+                 ${item.procReply?`<div class="text-xs text-green-600 mt-0.5">${item.procReply}</div>`:''}`
+              : `<div class="text-xs text-gray-400">尚未回覆</div>`}
+          </div>
+        </div>`)
+      .join('')
+    : `<div class="p-3 bg-green-50 rounded-xl text-sm font-semibold text-green-700">採購回覆：${p.procAction||'—'}${p.procReply?'<br><span class="font-normal text-xs">'+p.procReply+'</span>':''}</div>`;
+
+  body.innerHTML = `
+    <div class="text-xs text-gray-400 mb-3">${p.arrivalDate||'—'} · 物流：${p.defectStaff||'—'} · 採購：${p.procStaffName||'—'}</div>
+    ${content}`;
+
+  document.getElementById('replyDetailModal').classList.remove('hidden');
 }
 
 // ── 5. 待採購回覆 ─────────────────────────────────────
