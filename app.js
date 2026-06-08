@@ -701,30 +701,46 @@ async function saveReceiving() {
 function renderWarehouseCards() {
   const container = document.getElementById('warehouseListContainer');
   if (!container) return;
-  const from = document.getElementById('wh-from')?.value;
-  const to   = document.getElementById('wh-to')?.value;
+  // 填充業務屬性篩選
+  const bizSel = document.getElementById('wh-biz-app-filter');
+  if (bizSel) {
+    const attrs = getBizAttrs(); const cur = bizSel.value;
+    bizSel.innerHTML = '<option value="">全部屬性</option>' +
+      attrs.map(a=>`<option value="${a.name}" ${cur===a.name?'selected':''}>${a.name}</option>`).join('');
+  }
+  const from      = document.getElementById('wh-from')?.value;
+  const to        = document.getElementById('wh-to')?.value;
+  const bizFilter = bizSel?.value || '';
   let list = getAllProducts().filter(p=>p.status!==STATUS.PENDING);
-  if (from) list = list.filter(p=>!p.arrivalDate||p.arrivalDate>=from);
-  if (to)   list = list.filter(p=>!p.arrivalDate||p.arrivalDate<=to);
+  if (from)      list = list.filter(p=>!p.arrivalDate||p.arrivalDate>=from);
+  if (to)        list = list.filter(p=>!p.arrivalDate||p.arrivalDate<=to);
+  if (bizFilter) list = list.filter(p=>p.bizAttr===bizFilter);
   if (!list.length) { container.innerHTML='<div class="empty-state"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><p>尚無已驗收資料</p></div>'; return; }
-  container.innerHTML = list.map(p => `
+  container.innerHTML = list.map(p => {
+    const hasReply = p.badQty>0 && ((p.defectItems||[]).some(it=>it.procAction)||(p.procAction&&p.procAction!=='—'));
+    return `
     <div class="product-card slide-up" data-status="${p.status}">
       <div class="product-card-inner">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">
           <div style="font-size:15px;font-weight:700;color:#111;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</div>
           <div style="flex-shrink:0">${p.badQty>0 ? '<span class="badge badge-abnormal">有異常</span>' : '<span class="badge badge-done">正常</span>'}</div>
         </div>
+        ${p.bizAttr ? `<span style="font-size:11px;background:#dbeafe;color:#1d4ed8;border-radius:12px;padding:2px 8px;margin-bottom:6px;display:inline-block;font-weight:600">${p.bizAttr}</span>` : ''}
         <div style="font-size:12px;color:#9ca3af;margin-bottom:8px">${p.arrivalDate||'—'} · ${p.itemNo||'—'}</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <div style="display:flex;gap:20px">
             <div><div style="font-size:10px;color:#9ca3af;margin-bottom:2px">良品</div><div style="font-size:18px;font-weight:800;color:#059669;line-height:1">${p.goodQty}</div></div>
             <div><div style="font-size:10px;color:#9ca3af;margin-bottom:2px">不良品</div><div style="font-size:18px;font-weight:800;color:#dc2626;line-height:1">${p.badQty}</div></div>
           </div>
-          ${p.photos?.length>0 ? `<span style="color:#2563eb;font-size:13px;cursor:pointer;flex-shrink:0" onclick="viewPhotos('${p.arrivalDate}','${p.itemNo}')">${p.photos.length} 張照片 ›</span>` : ''}
+          ${p.badQty>0
+            ? (hasReply
+                ? `<span style="color:#059669;font-size:13px;cursor:pointer;flex-shrink:0" onclick="openReplyDetail('${p.arrivalDate}','${p.itemNo}')">查看採購回覆 ›</span>`
+                : `<span style="color:#d97706;font-size:12px;flex-shrink:0">待採購回覆</span>`)
+            : ''}
         </div>
-        ${p.defectReasons?.length>0 ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px">${p.defectReasons.map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')}</div>` : ''}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 // ══════════════════════════════════════════════════════

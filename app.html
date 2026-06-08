@@ -57,10 +57,16 @@
   <!-- 入庫清單 -->
   <div id="page-warehouse" class="app-page">
     <div class="page-header"><h1>入庫清單</h1><p>已驗收商品</p></div>
-    <div style="padding:12px;display:flex;gap:8px">
-      <input type="date" id="wh-from" onchange="renderWarehouseCards()" style="flex:1;border:1.5px solid #e5e7eb;border-radius:12px;padding:10px;font-size:14px;outline:none" />
-      <span style="align-self:center;color:#9ca3af">～</span>
-      <input type="date" id="wh-to" onchange="renderWarehouseCards()" style="flex:1;border:1.5px solid #e5e7eb;border-radius:12px;padding:10px;font-size:14px;outline:none" />
+    <div style="padding:10px 12px 0;display:flex;gap:8px;align-items:center">
+      <input type="date" id="wh-from" onchange="renderWarehouseCards()" style="flex:1;border:1.5px solid #e5e7eb;border-radius:12px;padding:9px;font-size:13px;outline:none" />
+      <span style="color:#9ca3af;flex-shrink:0">～</span>
+      <input type="date" id="wh-to" onchange="renderWarehouseCards()" style="flex:1;border:1.5px solid #e5e7eb;border-radius:12px;padding:9px;font-size:13px;outline:none" />
+    </div>
+    <div style="padding:8px 12px 0">
+      <select id="wh-biz-app-filter" onchange="renderWarehouseCards()"
+        style="width:100%;border:1.5px solid #e5e7eb;border-radius:12px;padding:9px 12px;font-size:13px;outline:none;background:#fff">
+        <option value="">全部業務屬性</option>
+      </select>
     </div>
     <div id="warehouseListContainer" class="card-list" style="flex:1"></div>
     <div style="padding:12px"><button onclick="exportWarehouseList()" class="btn" style="width:100%;background:#059669;color:#fff;border:none">匯出入庫清單</button></div>

@@ -198,26 +198,33 @@
 
   <!-- ===== 2. 入庫清單 (現場人員) ===== -->
   <div id="page-warehouse" class="p-6 hidden">
-    <div class="flex items-center justify-between mb-5">
+    <div class="flex items-center justify-between mb-3">
       <div><h2 class="text-lg font-semibold text-gray-800">入庫清單</h2>
         <p class="text-xs text-gray-500 mt-0.5">已驗收商品清單，供入庫人員使用</p></div>
       <button onclick="exportWarehouseList()" class="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>匯出清單
       </button>
     </div>
+    <!-- 業務屬性篩選 -->
+    <div class="flex gap-3 mb-4 items-center">
+      <label class="text-xs text-gray-500 whitespace-nowrap">業務屬性</label>
+      <select id="wh-biz-filter" onchange="renderWarehouseTable()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <option value="">全部</option>
+      </select>
+    </div>
     <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-sm whitespace-nowrap">
           <thead><tr class="bg-gray-50 border-b border-gray-200">
             <th class="text-left px-4 py-3 font-medium text-gray-600">到貨日</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">業務屬性</th>
             <th class="text-left px-4 py-3 font-medium text-gray-600">品號</th>
             <th class="text-left px-4 py-3 font-medium text-gray-600">條碼</th>
             <th class="text-left px-4 py-3 font-medium text-gray-600">品名</th>
             <th class="text-right px-4 py-3 font-medium text-gray-600">採購數量</th>
             <th class="text-right px-4 py-3 font-medium text-gray-600">良品數量</th>
             <th class="text-right px-4 py-3 font-medium text-gray-600">不良品數量</th>
-            <th class="text-left px-4 py-3 font-medium text-gray-600">不良原因</th>
-            <th class="text-center px-4 py-3 font-medium text-gray-600">照片</th>
+            <th class="text-center px-4 py-3 font-medium text-gray-600">採購回覆</th>
             <th class="text-left px-4 py-3 font-medium text-gray-600">驗收時間</th>
           </tr></thead>
           <tbody id="warehouseTableBody"><tr><td colspan="10" class="px-4 py-12 text-center text-gray-400 text-sm">尚無已驗收資料</td></tr></tbody>

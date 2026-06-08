@@ -574,21 +574,43 @@ function updateStats() {
 // ── 2. 入庫清單 ───────────────────────────────────────
 function renderWarehouseTable() {
   const tbody = document.getElementById('warehouseTableBody');
-  const list  = getFilteredAllProducts().filter(p => p.status !== STATUS.PENDING);
+  // 填充業務屬性篩選下拉
+  const bizSel = document.getElementById('wh-biz-filter');
+  if (bizSel) {
+    const attrs  = getBizAttrs();
+    const curVal = bizSel.value;
+    bizSel.innerHTML = '<option value="">全部</option>' +
+      attrs.map(a=>`<option value="${a.name}" ${curVal===a.name?'selected':''}>${a.name}</option>`).join('');
+  }
+  const bizFilter = bizSel?.value || '';
+  let list = getFilteredAllProducts().filter(p => p.status !== STATUS.PENDING);
+  if (bizFilter) list = list.filter(p => p.bizAttr === bizFilter);
   if (!list.length) { tbody.innerHTML='<tr><td colspan="10" class="px-4 py-12 text-center text-gray-400 text-sm">尚無已驗收資料</td></tr>'; return; }
-  tbody.innerHTML = list.map(p => `
+  tbody.innerHTML = list.map(p => {
+    const hasReply = p.badQty > 0 && ((p.defectItems||[]).some(it=>it.procAction)||(p.procAction&&p.procAction!=='—'));
+    return `
     <tr class="border-b border-gray-100 hover:bg-gray-50">
       <td class="px-4 py-3 text-xs text-gray-400">${p.arrivalDate||'—'}</td>
+      <td class="px-4 py-3 text-xs">
+        ${p.bizAttr ? `<span class="bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded-full text-xs font-medium">${p.bizAttr}</span>` : '<span class="text-gray-400">—</span>'}
+      </td>
       <td class="px-4 py-3 font-mono text-xs">${p.itemNo}</td>
       <td class="px-4 py-3 font-mono text-xs">${p.barcode}</td>
       <td class="px-4 py-3 font-medium">${p.name}</td>
       <td class="px-4 py-3 text-right">${p.qty}</td>
       <td class="px-4 py-3 text-right text-green-600 font-medium">${p.goodQty}</td>
       <td class="px-4 py-3 text-right ${p.badQty>0?'text-red-500 font-medium':'text-gray-400'}">${p.badQty}</td>
-      <td class="px-4 py-3 text-xs text-gray-600">${(p.defectReasons||[]).join('、')||'—'}</td>
-      <td class="px-4 py-3 text-center">${p.photos.length>0 ? `<span class="text-indigo-600 text-xs cursor-pointer" onclick="viewPhotos('${p.arrivalDate}','${p.itemNo}')">${p.photos.length} 張</span>` : '<span class="text-gray-400 text-xs">無</span>'}</td>
+      <td class="px-4 py-3 text-center">
+        ${p.badQty > 0
+          ? (hasReply
+              ? `<button onclick="openReplyDetailModal('${p.arrivalDate}','${p.itemNo}')"
+                  class="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 rounded-lg">查看回覆</button>`
+              : `<span class="text-amber-500 text-xs font-medium">待採購回覆</span>`)
+          : '<span class="text-gray-400 text-xs">—</span>'}
+      </td>
       <td class="px-4 py-3 text-xs text-gray-500">${p.time}</td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 // ── 3. 異常檢核 (物流專員) ────────────────────────────
