@@ -49,6 +49,18 @@ let uploadedPhotos = [];
 let _photoList = [], _photoIdx = 0;
 let _reviewStartTime = '';
 
+// ── 業務屬性 ──────────────────────────────────────────
+function getBizAttrs() { return JSON.parse(localStorage.getItem('rr_biz_attrs') || '[]'); }
+function saveBizAttrs(attrs) { localStorage.setItem('rr_biz_attrs', JSON.stringify(attrs)); }
+async function loadBizAttrs() {
+  try {
+    const attrs = await BizAttrAPI.list();
+    saveBizAttrs(attrs);
+    return attrs;
+  } catch(e) { return getBizAttrs(); }
+}
+
+
 function nowStr()  { return new Date().toLocaleString('zh-TW'); }
 function nowHHMM() { const d=new Date(); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
 function getDateProducts(date) { return productsByDate[date] || []; }
@@ -514,8 +526,21 @@ function openReceiveSheet(date, idx) {
   document.getElementById('receiveSheetTitle').textContent =
     p.status===STATUS.PENDING ? '驗收登錄' : (isResolved ? '已處理（唯讀）' : '修改驗收');
 
-  const body = document.getElementById('receiveSheetBody');
+  const body  = document.getElementById('receiveSheetBody');
+  const attrs = getBizAttrs();
+  const bizChips = attrs.map(a => {
+    const active = p.bizAttr === a.name;
+    return `<span onclick="rs_setBizAttr('${a.name}')"
+      style="padding:6px 14px;border-radius:20px;border:1.5px solid ${active?'#2563eb':'#e5e7eb'};
+        background:${active?'#dbeafe':'#f8fafc'};color:${active?'#1d4ed8':'#6b7280'};
+        font-size:13px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap">${a.name}</span>`;
+  }).join('');
+
   body.innerHTML = `
+    ${attrs.length ? `<div style="margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px">業務屬性</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px" id="rs-biz-chips">${bizChips}</div>
+    </div>` : ''}
     <div style="background:#f9fafb;border-radius:14px;padding:14px;margin-bottom:16px">
       <div style="font-size:16px;font-weight:700;color:#111;margin-bottom:6px">${p.name}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px;color:#6b7280">
@@ -563,6 +588,27 @@ function openReceiveSheet(date, idx) {
   openSheet('receiveSheet');
 }
 
+function rs_setBizAttr(name) {
+  const { date, idx } = currentIdx;
+  const p = getDateProducts(date)[idx];
+  p.bizAttr = (p.bizAttr === name) ? '' : name; // 點同一個取消選擇
+  // 重繪 chips
+  const chips = document.getElementById('rs-biz-chips');
+  if (chips) {
+    getBizAttrs().forEach(a => {
+      chips.querySelectorAll('span').forEach(el => {
+        if (el.textContent === a.name) {
+          const active = p.bizAttr === a.name;
+          el.style.borderColor  = active ? '#2563eb' : '#e5e7eb';
+          el.style.background   = active ? '#dbeafe' : '#f8fafc';
+          el.style.color        = active ? '#1d4ed8' : '#6b7280';
+          el.style.fontWeight   = active ? '700' : '500';
+        }
+      });
+    });
+  }
+}
+
 function onRsBadInput() {
   const bad  = parseInt(document.getElementById('rs-bad')?.value)||0;
   if (currentIdx) {
@@ -597,6 +643,7 @@ async function saveReceiving() {
   p.defectNote   = _defectItems.map(item=>item.note).filter(Boolean).join('；');
   p.defectClass  = '其他異常';
   p.defectStaff=user?.name||''; p.time=nowStr(); p.operatorName=user?.name||'';
+  // bizAttr 已在 rs_setBizAttr 即時更新，無需再次設定
   p.status = bad>0 ? STATUS.ABNORMAL : STATUS.RECEIVED;
   if (p.id) {
     ProductAPI.receive(p.id, {goodQty:good,badQty:bad,defectReasons:p.defectReasons,defectNote:p.defectNote,defectClass:p.defectClass,photos:p.photos,defectItems:p.defectItems})
@@ -1076,13 +1123,55 @@ function renderResolvedCards() {
 // ══════════════════════════════════════════════════════
 async function loadAndRenderAdmin() {
   try {
-    const [roles, users] = await Promise.all([RoleAPI.list(), UserAPI.list()]);
-    saveRoles(roles); saveUsers(users);
+    const [roles, users, attrs] = await Promise.all([RoleAPI.list(), UserAPI.list(), (BizAttrAPI?.list?.()||Promise.resolve([]))]);
+    saveRoles(roles); saveUsers(users); if(attrs.length) saveBizAttrs(attrs);
   } catch(e) { console.warn('admin load:', e.message); }
-  renderRoleCards(); renderUserCards(); refreshRoleOptions();
+  renderRoleCards(); renderUserCards(); refreshRoleOptions(); renderBizAttrCards();
   const user = getCurrentUser();
   const el = document.getElementById('userDisplay-a');
   if (el) el.textContent = `${user?.name||''} · ${getRoleName(currentRole)}`;
+}
+
+// ── 業務屬性管理 ─────────────────────────────────────
+function renderBizAttrCards() {
+  const container = document.getElementById('bizAttrListContainer');
+  if (!container) return;
+  const attrs = getBizAttrs();
+  if (!attrs.length) { container.innerHTML='<div style="padding:8px 16px;font-size:13px;color:#9ca3af">尚無業務屬性，請新增</div>'; return; }
+  container.innerHTML = `<div style="padding:8px 16px;display:flex;flex-wrap:wrap;gap:8px">
+    ${attrs.map((a,i) => `
+      <div style="display:flex;align-items:center;gap:6px;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:20px;padding:6px 12px">
+        <span style="font-size:13px;font-weight:600;color:#1d4ed8">${a.name}</span>
+        <button onclick="deleteBizAttr('${a.id||i}')" style="background:none;border:none;color:#93c5fd;cursor:pointer;font-size:14px;line-height:1;padding:0">✕</button>
+      </div>`).join('')}
+  </div>`;
+}
+
+async function addBizAttr() {
+  const input = document.getElementById('bizAttrInput');
+  const name  = input?.value.trim();
+  if (!name) return;
+  try {
+    const newAttr = await BizAttrAPI.create(name);
+    const attrs   = getBizAttrs();
+    attrs.push(newAttr);
+    saveBizAttrs(attrs);
+    input.value = '';
+    renderBizAttrCards();
+  } catch(e) { alert(e.message); }
+}
+
+async function deleteBizAttr(idOrIdx) {
+  if (!confirm('確定刪除此業務屬性？')) return;
+  const attrs = getBizAttrs();
+  const idx   = attrs.findIndex(a => a.id === idOrIdx || String(attrs.indexOf(a)) === String(idOrIdx));
+  if (idx < 0) return;
+  try {
+    if (attrs[idx].id) await BizAttrAPI.delete(attrs[idx].id);
+    attrs.splice(idx, 1);
+    saveBizAttrs(attrs);
+    renderBizAttrCards();
+  } catch(e) { alert(e.message); }
 }
 
 function renderRoleCards() {

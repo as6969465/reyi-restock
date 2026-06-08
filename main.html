@@ -355,6 +355,24 @@
   <!-- ===== 帳號管理 (管理員) ===== -->
   <div id="page-admin" class="p-6 hidden space-y-8">
 
+    <!-- 業務屬性管理 -->
+    <div>
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-800">業務屬性</h2>
+          <p class="text-xs text-gray-500 mt-0.5">設定驗收時可選擇的業務屬性</p>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 p-4">
+        <div id="desktopBizAttrList" class="flex flex-wrap gap-2 mb-3"></div>
+        <div class="flex gap-2">
+          <input id="desktopBizAttrInput" type="text" placeholder="輸入新業務屬性名稱"
+            class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          <button onclick="desktopAddBizAttr()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-2 rounded-lg">新增</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 角色管理 -->
     <div>
       <div class="flex items-center justify-between mb-4">
@@ -593,6 +611,11 @@
         </button>
       </div>
       <div class="px-6 py-4">
+        <!-- 業務屬性選擇 -->
+        <div id="m-biz-wrap" class="mb-4 hidden">
+          <p class="text-xs font-semibold text-gray-500 mb-2">業務屬性</p>
+          <div id="m-biz-attrs" class="flex flex-wrap gap-2"></div>
+        </div>
         <div class="bg-gray-50 rounded-xl p-4 mb-5">
           <div class="grid grid-cols-2 gap-2 text-sm">
             <div><span class="text-gray-500">品號：</span><span id="m-itemCode" class="font-medium"></span></div>

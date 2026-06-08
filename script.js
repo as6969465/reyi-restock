@@ -73,6 +73,18 @@ let _activeDeskDefectIdx = 0;
 let _photoList = [], _photoIdx = 0;
 let _reviewStartTime = '';
 
+// ── 業務屬性 ──────────────────────────────────────────
+function getBizAttrs() { return JSON.parse(localStorage.getItem('rr_biz_attrs') || '[]'); }
+function saveBizAttrs(attrs) { localStorage.setItem('rr_biz_attrs', JSON.stringify(attrs)); }
+async function loadBizAttrs() {
+  try {
+    const attrs = await BizAttrAPI.list();
+    saveBizAttrs(attrs);
+    return attrs;
+  } catch(e) { return getBizAttrs(); }
+}
+
+
 function nowHHMM() {
   const d = new Date();
   return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
@@ -790,6 +802,18 @@ function openModal(date, idx) {
   }
   _activeDeskDefectIdx = 0;
   document.getElementById('modalTitle').textContent = p.status === STATUS.PENDING ? '驗收登錄' : '修改驗收';
+  // 業務屬性選擇區
+  const bizContainer = document.getElementById('m-biz-attrs');
+  if (bizContainer) {
+    const attrs = getBizAttrs();
+    bizContainer.innerHTML = attrs.map(a => {
+      const active = p.bizAttr === a.name;
+      return `<span onclick="desktopSetBizAttr('${date}',${idx},'${a.name}',this)"
+        class="text-xs px-3 py-1.5 rounded-full cursor-pointer border transition-colors
+          ${active?'bg-blue-100 border-blue-400 text-blue-700 font-semibold':'bg-gray-50 border-gray-200 text-gray-500 hover:border-blue-300'}">${a.name}</span>`;
+    }).join('');
+    bizContainer.parentElement.style.display = attrs.length ? '' : 'none';
+  }
   document.getElementById('m-itemCode').textContent = p.itemNo;
   document.getElementById('m-poNo').textContent     = p.po;
   document.getElementById('m-itemName').textContent = p.name;
@@ -804,6 +828,16 @@ function openModal(date, idx) {
   document.getElementById('receiveModal').classList.remove('hidden');
 }
 function closeModal() { document.getElementById('receiveModal').classList.add('hidden'); currentIdx = null; }
+
+function desktopSetBizAttr(date, idx, name, el) {
+  const p = getDateProducts(date)[idx];
+  p.bizAttr = (p.bizAttr === name) ? '' : name;
+  // 更新所有 chips 樣式
+  el.parentElement.querySelectorAll('span').forEach(chip => {
+    const active = chip.textContent.trim() === p.bizAttr;
+    chip.className = `text-xs px-3 py-1.5 rounded-full cursor-pointer border transition-colors ${active?'bg-blue-100 border-blue-400 text-blue-700 font-semibold':'bg-gray-50 border-gray-200 text-gray-500 hover:border-blue-300'}`;
+  });
+}
 
 // ── 桌機版異常明細（頁面切換模式，與 App 版一致）──────
 function renderDeskDefectItems() {
@@ -1393,12 +1427,46 @@ function closePhotoModal(event) {
 // ── 管理頁載入 ───────────────────────────────────────
 async function loadAndRenderAdmin() {
   try {
-    const [roles, users] = await Promise.all([RoleAPI.list(), UserAPI.list()]);
-    saveRoles(roles);
-    saveUsers(users);
+    const [roles, users, attrs] = await Promise.all([RoleAPI.list(), UserAPI.list(), (window.BizAttrAPI?.list?.()||Promise.resolve([]))]);
+    saveRoles(roles); saveUsers(users); if(attrs.length) saveBizAttrs(attrs);
   } catch(e) { console.warn('admin load:', e.message); }
-  renderRoleTable();
-  renderUserTable();
+  renderRoleTable(); renderUserTable(); renderDesktopBizAttrList();
+}
+
+// ── 業務屬性管理 ─────────────────────────────────────
+function renderDesktopBizAttrList() {
+  const el = document.getElementById('desktopBizAttrList');
+  if (!el) return;
+  const attrs = getBizAttrs();
+  el.innerHTML = attrs.length
+    ? attrs.map((a,i) => `
+        <div class="flex items-center gap-1.5 bg-blue-50 border border-blue-200 rounded-full px-3 py-1.5">
+          <span class="text-sm font-medium text-blue-700">${a.name}</span>
+          <button onclick="desktopDeleteBizAttr('${a.id||i}')" class="text-blue-300 hover:text-blue-500 text-sm leading-none">✕</button>
+        </div>`).join('')
+    : '<span class="text-sm text-gray-400">尚無業務屬性</span>';
+}
+
+async function desktopAddBizAttr() {
+  const input = document.getElementById('desktopBizAttrInput');
+  const name  = input?.value.trim();
+  if (!name) return;
+  try {
+    const newAttr = await BizAttrAPI.create(name);
+    const attrs   = getBizAttrs(); attrs.push(newAttr); saveBizAttrs(attrs);
+    input.value = ''; renderDesktopBizAttrList();
+  } catch(e) { alert(e.message); }
+}
+
+async function desktopDeleteBizAttr(idOrIdx) {
+  if (!confirm('確定刪除此業務屬性？')) return;
+  const attrs = getBizAttrs();
+  const idx   = attrs.findIndex(a => a.id === idOrIdx || String(attrs.indexOf(a)) === String(idOrIdx));
+  if (idx < 0) return;
+  try {
+    if (attrs[idx].id) await BizAttrAPI.delete(attrs[idx].id);
+    attrs.splice(idx,1); saveBizAttrs(attrs); renderDesktopBizAttrList();
+  } catch(e) { alert(e.message); }
 }
 
 // ── 角色管理 CRUD ─────────────────────────────────────
