@@ -645,59 +645,92 @@ function renderReviewCards() {
     </div>`).join('');
 }
 
+let _reviewPhotoIdx = 0;
+
 function openReviewSheet(arrivalDate, itemNo) {
   const p = getAllProducts().find(x=>x.arrivalDate===arrivalDate && x.itemNo===itemNo);
   if (!p) return;
   reviewIdx = { arrivalDate, itemNo };
   _reviewStartTime = nowHHMM();
+  _reviewPhotoIdx = 0;
+  renderReviewSheetBody(p);
+  openSheet('reviewSheet');
+}
+
+function renderReviewSheetBody(p) {
+  if (!p) { p = getAllProducts().find(x=>x.arrivalDate===reviewIdx.arrivalDate&&x.itemNo===reviewIdx.itemNo); }
+  if (!p) return;
   const body = document.getElementById('reviewSheetBody');
-  body.innerHTML = `
-    <div style="background:#fff7ed;border-radius:14px;padding:14px;margin-bottom:16px">
-      <div style="font-size:12px;font-weight:700;color:#d97706;margin-bottom:8px">現場記錄</div>
-      <div style="font-size:15px;font-weight:700;color:#111;margin-bottom:4px">${p.name}</div>
-      <div style="font-size:13px;color:#6b7280;margin-bottom:8px">不良品：${p.badQty} 件</div>
-      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">${(p.defectReasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:11px">${r}</span>`).join('')||'無'}</div>
-      ${p.defectNote?`<div style="font-size:13px;color:#6b7280">${p.defectNote}</div>`:''}
-      ${p.photos.length>0?`<div style="margin-top:8px;display:flex;gap:6px;overflow-x:auto">${p.photos.map((s,i)=>`<img src="${s}" onclick="viewPhotos('${arrivalDate}','${itemNo}',${i})" style="width:60px;height:60px;border-radius:8px;object-fit:cover;flex-shrink:0" />`).join('')}</div>`:''}
+
+  // 取得照片＋原因清單（支援新格式 defectItems 與舊格式）
+  const items = (p.defectItems||[]).length
+    ? p.defectItems
+    : (p.photos||[]).map((ph,i)=>({
+        photo:ph, category:'', reasons:[(p.defectReasons||[])[i]||''].filter(Boolean), note:''
+      }));
+
+  const hasPhotos = items.length > 0;
+  _reviewPhotoIdx = Math.min(_reviewPhotoIdx, Math.max(0, items.length-1));
+  const cur = items[_reviewPhotoIdx];
+
+  // 頂部縮圖列
+  const thumbs = items.map((it, idx) => {
+    const active = idx === _reviewPhotoIdx;
+    const t = it.photo
+      ? `<img src="${it.photo}" style="width:100%;height:100%;object-fit:cover;display:block" />`
+      : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:10px">無圖</div>`;
+    return `<div onclick="_reviewPhotoIdx=${idx};renderReviewSheetBody();"
+      style="width:52px;height:52px;border-radius:10px;flex-shrink:0;cursor:pointer;overflow:hidden;
+        border:2.5px solid ${active?'#f59e0b':'#e5e7eb'};background:${active?'#fef3c7':'#f9fafb'};
+        box-shadow:${active?'0 2px 8px rgba(245,158,11,.3)':'none'};transition:all .15s">${t}</div>`;
+  }).join('');
+
+  // 當前照片的現場記錄
+  const curPhotoBlock = hasPhotos ? `
+    <div style="display:flex;gap:8px;align-items:center;overflow-x:auto;padding-bottom:6px;margin-bottom:10px">
+      ${thumbs}
     </div>
-    <div style="margin-bottom:12px">
+    <div style="background:#fff7ed;border-radius:12px;padding:12px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-start">
+      ${cur?.photo ? `<img src="${cur.photo}" style="width:72px;height:72px;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:pointer"
+        onclick="viewPhotos('${reviewIdx.arrivalDate}','${reviewIdx.itemNo}',${_reviewPhotoIdx})" />` : ''}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:10px;font-weight:700;color:#d97706;margin-bottom:4px">現場記錄 ${items.length>1?`（${_reviewPhotoIdx+1}/${items.length}）`:''}</div>
+        ${cur?.category?`<span style="font-size:12px;font-weight:600;color:#374151">${cur.category}</span>`:''}
+        <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">
+          ${(cur?.reasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')||'<span style="font-size:12px;color:#9ca3af">未填寫原因</span>'}
+        </div>
+        ${cur?.note?`<div style="font-size:12px;color:#6b7280;margin-top:4px">${cur.note}</div>`:''}
+      </div>
+    </div>` : `
+    <div style="background:#fff7ed;border-radius:12px;padding:12px;margin-bottom:12px">
+      <div style="font-size:12px;font-weight:700;color:#d97706;margin-bottom:6px">現場記錄</div>
+      <div style="font-size:15px;font-weight:700;color:#111;margin-bottom:4px">${p.name}</div>
+      <div style="font-size:13px;color:#6b7280;margin-bottom:6px">不良品：${p.badQty} 件</div>
+      <div style="display:flex;flex-wrap:wrap;gap:3px">${(p.defectReasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')||'無'}</div>
+    </div>`;
+
+  body.innerHTML = `
+    ${curPhotoBlock}
+    <div style="margin-bottom:10px">
       <label class="field-label">連動時間</label>
       <input id="rv-time" class="input" value="${p.defectTime||_reviewStartTime+'～'}" placeholder="09:00～09:30" />
     </div>
-    <div style="margin-bottom:12px">
-      <label class="field-label">異常分類</label>
-      <select id="rv-class" class="input">
-        ${['其他異常','效期異常','數量異常','品名異常'].map(v=>`<option ${p.defectClass===v?'selected':''}>${v}</option>`).join('')}
-      </select>
-    </div>
-    <div style="margin-bottom:12px">
-      <label class="field-label">異常原因（可複選）</label>
-      <div style="display:flex;flex-wrap:wrap;gap:2px">${DEFECT_REASONS.map(r=>`<span class="reason-chip ${(p.defectReasons||[]).includes(r)?'selected':''}" onclick="toggleReason(this)">${r}</span>`).join('')}</div>
-    </div>
-    <div style="margin-bottom:20px">
-      <label class="field-label">補充說明</label>
-      <textarea id="rv-note" class="input" rows="2" style="resize:none">${p.defectNote||''}</textarea>
-    </div>
-    <div id="rv-error" style="display:none;padding:12px;background:#fee2e2;border-radius:12px;font-size:13px;color:#991b1b;margin-bottom:12px"></div>
+    <div id="rv-error" style="display:none;padding:12px;background:#fee2e2;border-radius:12px;font-size:13px;color:#991b1b;margin-bottom:10px"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <button onclick="closeAllSheets()" class="btn" style="background:#f3f4f6;color:#374151;border:none">取消</button>
       <button onclick="submitReview()" class="btn" style="background:#f59e0b;color:#fff;border:none">確認・轉採購</button>
     </div>`;
-  openSheet('reviewSheet');
 }
 
 async function submitReview() {
   const { arrivalDate, itemNo } = reviewIdx;
   const p     = getAllProducts().find(x=>x.arrivalDate===arrivalDate&&x.itemNo===itemNo);
   const rvUser= getCurrentUser();
-  let dt = document.getElementById('rv-time').value.trim();
+  let dt = document.getElementById('rv-time')?.value.trim() || '';
   if (!dt) dt = `${_reviewStartTime}～`;
-  p.defectTime    = dt;
-  p.defectClass   = document.getElementById('rv-class').value;
-  p.defectReasons = [...document.querySelectorAll('#reviewSheet .reason-chip.selected')].map(el=>el.textContent);
-  p.defectNote    = document.getElementById('rv-note').value.trim();
-  p.defectStaff   = rvUser?.name||'';
-  p.status        = STATUS.PROCUREMENT;
+  p.defectTime  = dt;
+  p.defectStaff = rvUser?.name||'';
+  p.status      = STATUS.PROCUREMENT;
   if (p.id) {
     ProductAPI.review(p.id, {defectTime:p.defectTime,defectClass:p.defectClass,defectReasons:p.defectReasons,defectNote:p.defectNote})
       .then(async()=>{ await reloadFromFirestore(arrivalDate); renderReviewCards(); updateBadges(); })

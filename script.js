@@ -892,32 +892,70 @@ function saveReceiving() {
 }
 
 // ── 異常檢核 Modal (物流專員) ─────────────────────────
+let _deskReviewPhotoIdx = 0;
+
 function openReviewModal(arrivalDate, itemNo) {
   const list = getDateProducts(arrivalDate);
   const p = list.find(x => x.itemNo === itemNo);
   if (!p) return;
   reviewIdx = { arrivalDate, itemNo };
   _reviewStartTime = nowHHMM();
+  _deskReviewPhotoIdx = 0;
   document.getElementById('rv-itemCode').textContent = p.itemNo;
   document.getElementById('rv-cat').textContent      = p.cat;
   document.getElementById('rv-name').textContent     = p.name;
   document.getElementById('rv-qty').textContent      = p.qty;
   document.getElementById('rv-badQty').textContent   = p.badQty;
-  document.getElementById('rv-reasons').textContent  = (p.defectReasons||[]).join('、') || '未填寫';
-  document.getElementById('rv-note').textContent     = p.defectNote || '—';
-  // 現場照片
-  const row = document.getElementById('rv-photos-row');
-  row.innerHTML = p.photos.map((src,i) => `<img src="${src}" onclick="openPhotoModal([${p.photos.map(s=>'\''+s+'\'').join(',')}],'${p.name}',${i})" class="w-16 h-16 object-cover rounded-lg cursor-pointer border border-gray-200" />`).join('') || '<span class="text-xs text-gray-400">無照片</span>';
-  // 預填
-  // 連動時間：起始由專員開啟檢核時記錄，結束由採購回覆時補入
-  document.getElementById('rv-defectTime').value = p.defectTime || `${_reviewStartTime}～`;
-  document.getElementById('rv-defectClass').value   = p.defectClass || '其他異常';
-  document.getElementById('rv-defectNote').value    = p.defectNote  || '';
-  // 物流回覆專員與採購聯絡人由登入帳號自動記錄，不需手動輸入
+  document.getElementById('rv-defectTime').value     = p.defectTime || `${_reviewStartTime}～`;
+  document.getElementById('rv-defectClass').value    = p.defectClass || '其他異常';
+  document.getElementById('rv-defectNote').value     = p.defectNote  || '';
   renderDefectReasonList('rv-defectReasonList', p.defectReasons||[]);
+  renderReviewPhotoPanel(p);
   document.getElementById('reviewModalError').classList.add('hidden');
   document.getElementById('reviewModal').classList.remove('hidden');
 }
+
+function renderReviewPhotoPanel(p) {
+  if (!p) {
+    const { arrivalDate, itemNo } = reviewIdx;
+    p = getDateProducts(arrivalDate).find(x=>x.itemNo===itemNo);
+  }
+  if (!p) return;
+  const row = document.getElementById('rv-photos-row');
+  if (!row) return;
+
+  const items = (p.defectItems||[]).length
+    ? p.defectItems
+    : (p.photos||[]).map((ph,i)=>({photo:ph,category:'',reasons:[(p.defectReasons||[])[i]||''].filter(Boolean),note:''}));
+
+  if (!items.length) { row.innerHTML='<span class="text-xs text-gray-400">無照片</span>'; return; }
+  _deskReviewPhotoIdx = Math.min(_deskReviewPhotoIdx, items.length-1);
+  const cur = items[_deskReviewPhotoIdx];
+
+  const thumbs = items.map((it, idx) => {
+    const active = idx === _deskReviewPhotoIdx;
+    return `<img src="${it.photo||''}" onclick="_deskReviewPhotoIdx=${idx};renderReviewPhotoPanel();"
+      class="object-cover rounded-lg cursor-pointer flex-shrink-0 transition-all"
+      style="width:56px;height:56px;border:2.5px solid ${active?'#f59e0b':'#e5e7eb'};
+        box-shadow:${active?'0 2px 8px rgba(245,158,11,.3)':'none'};
+        ${!it.photo?'background:#f3f4f6;':''}opacity:${active?'1':'0.65'}"
+      ${!it.photo?'':''}/>`;
+  }).join('');
+
+  row.innerHTML = `
+    <div class="flex gap-2 overflow-x-auto pb-1 mb-2">${thumbs}</div>
+    <div class="flex gap-3 items-start p-2 bg-orange-50 rounded-lg">
+      ${cur.photo ? `<img src="${cur.photo}" onclick="openPhotoModal([${items.filter(x=>x.photo).map(x=>'\''+x.photo+'\'').join(',')}],'${p.name}',${_deskReviewPhotoIdx})" class="w-16 h-16 object-cover rounded-lg cursor-pointer flex-shrink-0" />` : ''}
+      <div class="flex-1 min-w-0">
+        <div class="text-xs font-bold text-amber-600 mb-1">現場記錄 ${items.length>1?`（${_deskReviewPhotoIdx+1}/${items.length}）`:''}</div>
+        ${cur.category?`<span class="text-xs font-semibold text-gray-700">${cur.category}</span>`:''}
+        <div class="flex flex-wrap gap-1 mt-1">${(cur.reasons||[]).map(r=>`<span class="text-xs px-1.5 py-0.5 bg-red-100 text-red-600 rounded">${r}</span>`).join('')||'<span class="text-xs text-gray-400">未填寫原因</span>'}</div>
+        ${cur.note?`<div class="text-xs text-gray-500 mt-1">${cur.note}</div>`:''}
+      </div>
+    </div>`;
+}
+
+function closeReviewModal() { document.getElementById('reviewModal').classList.add('hidden'); reviewIdx = null; }
 function closeReviewModal() { document.getElementById('reviewModal').classList.add('hidden'); reviewIdx = null; }
 
 function submitReview() {
