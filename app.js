@@ -325,118 +325,67 @@ function renderDefectItems(readonly) {
   const container = document.getElementById('rs-defect-items');
   if (!container) return;
   if (!_defectItems.length && !readonly) {
-    container.innerHTML = '<div style="text-align:center;padding:16px 0;color:#9ca3af;font-size:13px">尚未新增，點下方按鈕新增</div>';
+    container.innerHTML = '<div style="text-align:center;padding:12px 0 4px;color:#9ca3af;font-size:13px">尚未新增，點上方按鈕新增</div>';
     return;
   }
-  if (!_defectItems.length) { container.innerHTML = ''; return; }
-  _activeDefectIdx = Math.min(_activeDefectIdx, _defectItems.length - 1);
-  if (_activeDefectIdx < 0) _activeDefectIdx = 0;
-  const item = _defectItems[_activeDefectIdx];
-  const i    = _activeDefectIdx;
 
-  // 頂部照片縮圖列
-  const camSvg = '<svg style=\"width:18px;height:18px\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M15 13a3 3 0 11-6 0 3 3 0 016 0z\"/></svg>';
-  const thumbs = _defectItems.map((it, idx) => {
-    const active = idx === _activeDefectIdx;
-    const t = it.photo
-      ? `<img src="${it.photo}" style="width:100%;height:100%;object-fit:cover;display:block" />`
-      : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:${active?'#2563eb':'#fca5a5'}">${camSvg}</div>`;
-    return `<div onclick="switchDefectItem(${idx})"
-      style="width:52px;height:52px;border-radius:10px;flex-shrink:0;cursor:pointer;overflow:hidden;
-        border:2.5px solid ${active?'#2563eb':'#fecaca'};
-        background:${active?'#dbeafe':'#fff0f0'};
-        box-shadow:${active?'0 2px 8px rgba(37,99,235,.25)':'none'};
-        transition:all .15s">${t}</div>`;
-  }).join('');
+  // 取得不良品總數
+  const badQty = parseInt(document.getElementById('rs-bad')?.value) || 0;
+  const totalEntered = _defectItems.reduce((s,it)=>(s+(parseInt(it.qty)||0)),0);
+  const isMatch = badQty > 0 && totalEntered === badQty;
 
-  // 大分類按鈕
-  const catBtns = DEFECT_CATEGORIES.map(c => {
-    const active = item.category === c;
-    return `<button onclick="${readonly?'':`setDefectCategory(${i},'${c}')`}"
-      style="padding:7px 14px;border-radius:20px;border:1.5px solid ${active?'#2563eb':'#e5e7eb'};
-        background:${active?'#dbeafe':'#f8fafc'};color:${active?'#1d4ed8':'#6b7280'};
-        font-size:13px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap">${c}</button>`;
-  }).join('');
+  const camSvg = '<svg style="width:20px;height:20px;color:#fca5a5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>';
 
-  // 原因勾選
-  const reasonChips = !readonly
-    ? `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:3px 8px;margin-top:8px">
-        ${DEFECT_REASONS.map(r => {
-          const sel = (item.reasons||[]).includes(r);
-          return `<label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:3px 0">
-            <input type="checkbox" ${sel?'checked':''} onchange="toggleDefectSubReason(${i},'${r}')"
-              style="width:14px;height:14px;accent-color:#2563eb;flex-shrink:0;cursor:pointer" />
-            <span style="font-size:12px;color:#374151;line-height:1.3">${r}</span>
-          </label>`;
-        }).join('')}
-       </div>`
-    : ((item.reasons||[]).length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">${(item.reasons||[]).map(r=>`<span style="padding:3px 8px;border-radius:12px;background:#dbeafe;color:#1d4ed8;font-size:11px">${r}</span>`).join('')}</div>` : '');
+  // 數量統計列
+  const statsEl = !readonly ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:8px 12px;background:${isMatch?'#d1fae5':'#fef3c7'};border-radius:10px">
+    <span style="font-size:12px;color:${isMatch?'#065f46':'#92400e'}">
+      ${isMatch?'✓':'⚠'} 數量合計：<b>${totalEntered}</b> / ${badQty}（不良品數）
+    </span>
+  </div>` : '';
 
-  const noteEl = !readonly
-    ? `<input placeholder="補充說明（選填）" value="${item.note||''}"
-        style="width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px;font-size:13px;outline:none;background:#fff;margin-top:8px;font-family:inherit"
-        oninput="_defectItems[${i}].note=this.value" />`
-    : (item.note ? `<div style="font-size:12px;color:#6b7280;margin-top:4px">${item.note}</div>` : '');
-
-  const replyEl = item.procAction
-    ? `<div style="padding:8px 10px;background:#d1fae5;font-size:12px;color:#065f46;border-radius:8px;margin-top:8px"><b>採購：</b>${item.procAction}${item.procReply?' — '+item.procReply:''}</div>`
-    : '';
-
-  // 照片上傳（當前項目）
-  const photoMain = item.photo
-    ? `<div style="position:relative;display:inline-block;flex-shrink:0">
-        <img src="${item.photo}" style="height:64px;border-radius:8px;object-fit:cover;display:block;cursor:pointer"
-          onclick="viewDefectPhoto(${i})" />
-        ${!readonly ? `<button onclick="clearDefectPhoto(${i})"
-          style="position:absolute;top:-5px;right:-5px;width:16px;height:16px;background:#ef4444;color:#fff;border:none;border-radius:50%;font-size:10px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center">✕</button>` : ''}
-      </div>`
-    : (!readonly ? `<label style="height:64px;padding:0 14px;border:2px dashed #fca5a5;border-radius:8px;background:#fff5f5;
-        display:inline-flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:3px;flex-shrink:0">
-        <svg style="width:20px;height:20px;color:#fca5a5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
-        </svg>
-        <span style="font-size:10px;color:#fca5a5">點擊上傳</span>
-        <input type="file" accept="image/*" class="hidden" onchange="setDefectPhoto(${i},this)" />
-      </label>` : '<span style="font-size:12px;color:#9ca3af">未上傳</span>');
-
-  container.innerHTML = `
-    <div style="margin-bottom:10px">
-      <div style="display:flex;gap:8px;align-items:center;overflow-x:auto;padding-bottom:6px;margin-bottom:6px">
-        ${thumbs}
-        ${!readonly ? `<label style="width:52px;height:52px;border-radius:10px;flex-shrink:0;border:2px dashed #e5e7eb;
-          background:#f8fafc;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:2px">
-          <span style="font-size:20px;color:#9ca3af;line-height:1">+</span>
-          <span style="font-size:9px;color:#9ca3af">照片</span>
-          <input type="file" accept="image/*" multiple class="hidden" onchange="batchAddDefectPhotos(this)" />
-        </label>` : ''}
-      </div>
-      ${!readonly && _defectItems.length === 0 ? `<p style="font-size:12px;color:#9ca3af;text-align:center">點 + 可一次選取多張照片</p>` : ''}
-    </div>
-    <div style="background:#fef9f9;border-radius:14px;border:1.5px solid #fecaca;padding:12px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div style="display:flex;align-items:center;gap:8px">
-          ${photoMain}
-          <span style="font-size:11px;color:#9ca3af">${i+1} / ${_defectItems.length}</span>
+  container.innerHTML = statsEl + _defectItems.map((item, i) => {
+    const photoEl = item.photo
+      ? `<div style="position:relative;flex-shrink:0">
+          <img src="${item.photo}" style="width:68px;height:68px;object-fit:cover;display:block;cursor:pointer;border-radius:8px" onclick="viewDefectPhoto(${i})" />
+          ${!readonly?`<button onclick="clearDefectPhotoItem(${i})" style="position:absolute;top:-5px;right:-5px;width:16px;height:16px;background:#ef4444;color:#fff;border:none;border-radius:50%;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>`:''}
+        </div>`
+      : (!readonly?`<label style="width:68px;height:68px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:3px;border-radius:8px;border:2px dashed #fca5a5;background:#fff5f5;flex-shrink:0">${camSvg}<span style="font-size:10px;color:#fca5a5">上傳</span><input type="file" accept="image/*" class="hidden" onchange="setDefectPhoto(${i},this)" /></label>`
+          :'<span style="font-size:12px;color:#9ca3af;flex-shrink:0">未上傳</span>');
+    const qtyEl = !readonly
+      ? `<div style="flex-shrink:0;text-align:center">
+          <div style="font-size:10px;color:#9ca3af;margin-bottom:3px">數量</div>
+          <input type="number" min="0" value="${item.qty||''}" placeholder="0"
+            style="width:56px;border:1.5px solid ${(parseInt(item.qty)||0)>0?'#2563eb':'#e5e7eb'};border-radius:8px;padding:6px 4px;font-size:15px;font-weight:700;text-align:center;outline:none;color:#2563eb;background:#f0f7ff"
+            oninput="_defectItems[${i}].qty=parseInt(this.value)||0;renderDefectItems(false)" />
+        </div>`
+      : `<div style="flex-shrink:0;text-align:center;min-width:48px">
+          <div style="font-size:10px;color:#9ca3af">數量</div>
+          <div style="font-size:16px;font-weight:800;color:#2563eb">${item.qty||0}</div>
+        </div>`;
+    const delBtn = !readonly ? `<button onclick="removeDefectItem(${i})" style="background:none;border:none;color:#fca5a5;cursor:pointer;font-size:16px;line-height:1;padding:0;align-self:flex-start">✕</button>` : '';
+    const catBtns = DEFECT_CATEGORIES.map(c=>{const active=item.category===c;return `<button onclick="${readonly?'':`setDefectCategory(${i},'${c}')`}" style="padding:5px 12px;border-radius:18px;border:1.5px solid ${active?'#2563eb':'#e5e7eb'};background:${active?'#dbeafe':'#f8fafc'};color:${active?'#1d4ed8':'#6b7280'};font-size:12px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap">${c}</button>`;}).join('');
+    const reasonChips = !readonly
+      ? `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:2px 6px;margin-top:6px">${DEFECT_REASONS.map(r=>{const sel=(item.reasons||[]).includes(r);return `<label style="display:flex;align-items:center;gap:4px;cursor:pointer;padding:2px 0"><input type="checkbox" ${sel?'checked':''} onchange="toggleDefectSubReason(${i},'${r}')" style="width:13px;height:13px;accent-color:#2563eb;flex-shrink:0;cursor:pointer" /><span style="font-size:11px;color:#374151;line-height:1.3">${r}</span></label>`;}).join('')}</div>`
+      : ((item.reasons||[]).length?`<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${(item.reasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')}</div>`:'');
+    const noteEl = !readonly
+      ? `<input placeholder="補充說明（選填）" value="${item.note||''}" style="width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:6px 10px;font-size:12px;outline:none;background:#fff;margin-top:6px;font-family:inherit" oninput="_defectItems[${i}].note=this.value" />`
+      : (item.note?`<div style="font-size:11px;color:#6b7280;margin-top:3px">${item.note}</div>`:'');
+    const replyEl = item.procAction?`<div style="padding:6px 10px;background:#d1fae5;font-size:12px;color:#065f46;border-top:1px solid #a7f3d0;margin-top:4px;border-radius:0 0 10px 10px"><b>採購：</b>${item.procAction}${item.procReply?' — '+item.procReply:''}</div>`:'';
+    return `<div style="background:#fef9f9;border-radius:12px;border:1.5px solid #fecaca;margin-bottom:8px;overflow:hidden">
+      <div style="display:flex;align-items:flex-start;gap:8px;padding:10px 10px 8px">
+        ${photoEl}
+        ${qtyEl}
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px">${catBtns}</div>
+          ${reasonChips}${noteEl}
         </div>
-        ${!readonly ? `<button onclick="removeDefectItem(${i})"
-          style="background:none;border:none;color:#fca5a5;cursor:pointer;font-size:13px;padding:4px">✕ 刪除</button>` : ''}
-      </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${catBtns}</div>
-      ${reasonChips}${noteEl}${replyEl}
+        ${delBtn}
+      </div>${replyEl}
     </div>`;
+  }).join('');
 }
 
-function switchDefectItem(idx) {
-  _activeDefectIdx = idx;
-  renderDefectItems(false);
-}
-
-function clearDefectPhoto(i) {
-  _defectItems[i].photo = '';
-  renderDefectItems(false);
-}
+function clearDefectPhotoItem(i) { _defectItems[i].photo=''; renderDefectItems(false); }
 function addDefectItem() {
   if (_defectItems.length >= 6) { alert('最多 6 筆'); return; }
   _defectItems.push({ photo: '', category: '', reasons: [], note: '' });
@@ -670,6 +619,8 @@ async function saveReceiving() {
   const bad  = parseInt(document.getElementById('rs-bad').value)||0;
   if (isNaN(good)||good<0) { errDiv.textContent='請輸入正確的良品數量'; errDiv.style.display='block'; return; }
   if (bad>0 && _defectItems.length===0) { errDiv.textContent='有不良品時，請新增至少一筆異常明細'; errDiv.style.display='block'; return; }
+  const totalQty = _defectItems.reduce((s,it)=>(s+(parseInt(it.qty)||0)),0);
+  if (bad>0 && totalQty !== bad) { errDiv.textContent=`照片數量合計（${totalQty}）需等於不良品數量（${bad}）`; errDiv.style.display='block'; return; }
   if (bad>0 && _defectItems.some(item=>!item.category)) { errDiv.textContent='每筆異常明細都需選擇異常大分類'; errDiv.style.display='block'; return; }
   // 原因為選填，但分類為必選
 
