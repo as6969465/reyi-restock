@@ -589,17 +589,21 @@ function openReceiveSheet(date, idx) {
 
   body.innerHTML = `
     ${bizTag}
-    <div style="background:#f9fafb;border-radius:14px;padding:14px;margin-bottom:16px;text-align:center">
-      <div style="font-size:17px;font-weight:700;color:#111;margin-bottom:8px">${p.name}</div>
-      <div style="display:flex;justify-content:center;gap:20px;font-size:13px;color:#6b7280;flex-wrap:wrap;margin-bottom:10px">
-        <div>品號：<b style="color:#374151">${p.itemNo||'—'}</b></div>
-        <div>採購單：<b style="color:#374151">${p.po||'—'}</b></div>
-        <div>採購數量：<b style="color:#2563eb;font-size:15px">${p.qty}</b></div>
+    <div style="background:#f9fafb;border-radius:14px;padding:14px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:16px;font-weight:700;color:#111;margin-bottom:8px">${p.name}</div>
+          <div style="display:flex;gap:16px;font-size:13px;color:#6b7280;flex-wrap:wrap">
+            <div>品號：<b style="color:#374151">${p.itemNo||'—'}</b></div>
+            <div>採購單：<b style="color:#374151">${p.po||'—'}</b></div>
+            <div>採購數量：<b style="color:#2563eb;font-size:15px">${p.qty}</b></div>
+          </div>
+        </div>
+        ${p.barcode ? `<div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:4px">
+          <canvas id="rs-barcode" style="height:52px;max-width:130px"></canvas>
+          <div style="font-size:11px;color:#6b7280;letter-spacing:0.5px;text-align:center">${p.barcode}</div>
+        </div>` : ''}
       </div>
-      ${p.barcode ? `<div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-        <canvas id="rs-barcode" style="height:52px;max-width:140px"></canvas>
-        <div style="font-size:11px;color:#6b7280;letter-spacing:0.5px">${p.barcode}</div>
-      </div>` : ''}
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
       <div>
