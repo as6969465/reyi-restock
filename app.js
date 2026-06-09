@@ -1231,9 +1231,34 @@ function renderResolvedCards() {
         ${(p.defectReasons||[]).length>0 ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${p.defectReasons.map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')}</div>` : ''}
         <div style="padding:8px 10px;background:#d1fae5;border-radius:10px;font-size:14px;font-weight:700;color:#065f46;margin-bottom:6px">${p.procAction||'—'}</div>
         ${p.procReply ? `<div style="font-size:13px;color:#6b7280;margin-bottom:4px">${p.procReply}</div>` : ''}
-        <div style="font-size:11px;color:#9ca3af">物流：${p.defectStaff||'—'} · 採購：${p.procStaffName||'—'}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <div style="font-size:11px;color:#9ca3af">物流：${p.defectStaff||'—'} · 採購：${p.procStaffName||'—'}</div>
+          ${(p.photos||[]).length>0 ? `<button onclick="viewResolvedPhotos(${JSON.stringify((p.photos||[]).filter(Boolean)).replace(/"/g,'&quot;')})" style="display:flex;align-items:center;gap:4px;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:8px;padding:4px 8px;font-size:11px;font-weight:600;color:#2563eb;cursor:pointer;flex-shrink:0">
+            <svg style="width:13px;height:13px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            照片(${(p.photos||[]).filter(Boolean).length})
+          </button>` : ''}
+        </div>
       </div>
     </div>`).join('');
+}
+
+function viewResolvedPhotos(photos) {
+  const body = document.getElementById('resolvedPhotoBody');
+  if (!body) return;
+  body.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:4px 0">
+      ${photos.map((src, i) => `
+        <div style="position:relative;border-radius:12px;overflow:hidden;background:#f3f4f6">
+          <img src="${src}" onclick="openLightbox('${src}')"
+            style="width:100%;aspect-ratio:1;object-fit:cover;cursor:pointer;display:block" />
+          <a href="${src}" download="photo_${i+1}.jpg"
+            style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.55);border-radius:8px;padding:5px 8px;display:flex;align-items:center;gap:4px;font-size:11px;color:#fff;text-decoration:none">
+            <svg style="width:13px;height:13px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            下載
+          </a>
+        </div>`).join('')}
+    </div>`;
+  openSheet('resolvedPhotoSheet');
 }
 
 // ══════════════════════════════════════════════════════
