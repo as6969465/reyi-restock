@@ -588,12 +588,19 @@ function openReceiveSheet(date, idx) {
   body.innerHTML = `
     ${bizTag}
     <div style="background:#f9fafb;border-radius:14px;padding:14px;margin-bottom:16px">
-      <div style="font-size:16px;font-weight:700;color:#111;margin-bottom:6px">${p.name}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px;color:#6b7280">
-        <div>品號：<b style="color:#374151">${p.itemNo||'—'}</b></div>
-        <div>採購單：<b style="color:#374151">${p.po||'—'}</b></div>
-        <div>條碼：<b style="color:#374151">${p.barcode||'—'}</b></div>
-        <div>採購數量：<b style="color:#2563eb;font-size:16px">${p.qty}</b></div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:16px;font-weight:700;color:#111;margin-bottom:6px">${p.name}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px;color:#6b7280">
+            <div>品號：<b style="color:#374151">${p.itemNo||'—'}</b></div>
+            <div>採購單：<b style="color:#374151">${p.po||'—'}</b></div>
+            <div>條碼：<b style="color:#374151">${p.barcode||'—'}</b></div>
+            <div>採購數量：<b style="color:#2563eb;font-size:16px">${p.qty}</b></div>
+          </div>
+        </div>
+        ${p.barcode ? `<div style="flex-shrink:0;display:flex;align-items:center;justify-content:center">
+          <canvas id="rs-barcode" style="height:52px;max-width:120px"></canvas>
+        </div>` : ''}
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
@@ -632,6 +639,19 @@ function openReceiveSheet(date, idx) {
 
   renderDefectItems(isResolved);
   openSheet('receiveSheet');
+  // 繪製條碼
+  if (p.barcode && typeof JsBarcode !== 'undefined') {
+    requestAnimationFrame(() => {
+      const el = document.getElementById('rs-barcode');
+      if (!el) return;
+      try {
+        JsBarcode(el, p.barcode, {
+          format: 'CODE128', width: 1.5, height: 48,
+          displayValue: false, margin: 0, background: 'transparent'
+        });
+      } catch(e) {}
+    });
+  }
 }
 
 function changeBizAttr(date, idx) {
