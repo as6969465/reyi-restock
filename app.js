@@ -367,12 +367,12 @@ function renderDefectItems(readonly) {
     : ((item.reasons||[]).length?`<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${(item.reasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')}</div>`:'');
 
   const photoMain = item.photo
-    ? `<div style="position:relative;display:inline-block;flex-shrink:0"><img src="${item.photo}" style="height:72px;border-radius:10px;object-fit:cover;display:block;cursor:pointer" onclick="viewDefectPhoto(${i})" />${!readonly?`<button onclick="clearDefectPhotoItem(${i})" style="position:absolute;top:-5px;right:-5px;width:16px;height:16px;background:#ef4444;color:#fff;border:none;border-radius:50%;font-size:10px;cursor:pointer">x</button>`:''}</div>`
-    : (!readonly?`<label style="height:72px;padding:0 12px;border:2px dashed #fca5a5;border-radius:10px;background:#fff5f5;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:3px;flex-shrink:0">${camSvgLg}<span style="font-size:10px;color:#fca5a5">上傳</span><input type="file" accept="image/*" class="hidden" onchange="setDefectPhoto(${i},this)" /></label>`:'<span style="font-size:12px;color:#9ca3af">未上傳</span>');
+    ? `<div style="position:relative;display:inline-block;flex-shrink:0"><img src="${item.photo}" style="width:80px;height:80px;border-radius:10px;object-fit:cover;display:block;cursor:pointer" onclick="viewDefectPhoto(${i})" />${!readonly?`<button onclick="clearDefectPhotoItem(${i})" style="position:absolute;top:-5px;right:-5px;width:16px;height:16px;background:#ef4444;color:#fff;border:none;border-radius:50%;font-size:10px;cursor:pointer">x</button>`:''}</div>`
+    : (!readonly?`<label style="width:80px;height:80px;border:2px dashed #fca5a5;border-radius:10px;background:#fff5f5;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:3px;flex-shrink:0">${camSvgLg}<span style="font-size:10px;color:#fca5a5">上傳</span><input type="file" accept="image/*" class="hidden" onchange="setDefectPhoto(${i},this)" /></label>`:'<span style="font-size:12px;color:#9ca3af">未上傳</span>');
 
   const qtyInput = !readonly
-    ? `<div style="flex-shrink:0;text-align:center"><div style="font-size:10px;color:#9ca3af;margin-bottom:3px">不良數量</div><input type="number" min="0" value="${item.qty||''}" placeholder="0" style="width:64px;border:1.5px solid ${(parseInt(item.qty)||0)>0?'#2563eb':'#fecaca'};border-radius:10px;padding:8px 4px;font-size:18px;font-weight:800;text-align:center;outline:none;color:#2563eb;background:#f0f7ff" oninput="_defectItems[${i}].qty=parseInt(this.value)||0;updateDefectQtyStats()" /></div>`
-    : `<div style="flex-shrink:0;text-align:center;min-width:52px"><div style="font-size:10px;color:#9ca3af">數量</div><div style="font-size:22px;font-weight:900;color:#2563eb">${item.qty||0}</div></div>`;
+    ? `<div style="flex-shrink:0;text-align:center;width:80px"><div style="font-size:10px;color:#9ca3af;margin-bottom:3px">不良數量</div><input type="number" min="0" value="${item.qty||''}" placeholder="0" style="width:80px;border:1.5px solid ${(parseInt(item.qty)||0)>0?'#2563eb':'#fecaca'};border-radius:10px;padding:8px 4px;font-size:18px;font-weight:800;text-align:center;outline:none;color:#2563eb;background:#f0f7ff" oninput="_defectItems[${i}].qty=parseInt(this.value)||0;updateDefectQtyStats()" /></div>`
+    : `<div style="flex-shrink:0;text-align:center;width:80px"><div style="font-size:10px;color:#9ca3af">數量</div><div style="font-size:22px;font-weight:900;color:#2563eb">${item.qty||0}</div></div>`;
 
   const noteEl = !readonly
     ? `<input placeholder="補充說明（選填）" value="${item.note||''}" style="width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:7px 10px;font-size:12px;outline:none;background:#fff;margin-top:6px;font-family:inherit" oninput="_defectItems[${i}].note=this.value" />`
@@ -387,8 +387,14 @@ function renderDefectItems(readonly) {
     </div>
     ${statsEl}
     <div style="background:#fef9f9;border-radius:14px;border:1.5px solid #fecaca;padding:12px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div style="display:flex;align-items:center;gap:10px">${photoMain}${qtyInput}<span style="font-size:11px;color:#9ca3af">${i+1} / ${_defectItems.length}</span></div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0">
+            ${photoMain}
+            ${qtyInput}
+          </div>
+          <span style="font-size:11px;color:#9ca3af;align-self:flex-end;padding-bottom:2px">${i+1} / ${_defectItems.length}</span>
+        </div>
         ${!readonly?`<button onclick="removeDefectItem(${i})" style="background:none;border:none;color:#fca5a5;cursor:pointer;font-size:13px;padding:4px">x 刪除</button>`:''}
       </div>
       <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">${catBtns}</div>
