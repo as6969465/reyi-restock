@@ -12,6 +12,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Inject Firebase config
+        run: |
+          cat > config.js << 'EOF'
+          window.FIREBASE_CONFIG = ${{ secrets.FIREBASE_CONFIG_JSON }};
+          EOF
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
