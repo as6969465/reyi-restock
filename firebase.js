@@ -13,6 +13,8 @@ const firebaseConfig = window.FIREBASE_CONFIG || {
 };
 firebase.initializeApp(firebaseConfig);
 const db=firebase.firestore();
+// 啟用離線持久化快取（加速重複讀取，首次連線後資料本地快取）
+db.enablePersistence({ synchronizeTabs: true }).catch(()=>{});
 const COL={users:'users',roles:'roles',products:'products',auditLogs:'audit_logs'};
 function nowStr(){return new Date().toLocaleString('zh-TW');}
 async function hashPassword(pw){
@@ -25,14 +27,15 @@ async function logAction(a,t,d){
 async function ensureAdmin(){const s=await db.collection(COL.users).doc('reyi').get();if(!s.exists)console.warn('Admin not found. Create in Firestore > users > reyi');}
 const AuthAPI={
   async login(userId,password){
-    const s=await db.collection(COL.users).doc(userId).get();
+    const wt=(p,ms)=>Promise.race([p,new Promise((_,r)=>setTimeout(()=>r(new Error('連線逾時，請檢查網路後再試')),ms))]);
+    const s=await wt(db.collection(COL.users).doc(userId).get(), 8000);
     if(!s.exists)throw new Error('帳號不存在，請先申請帳號');
     const u=s.data();const h=await hashPassword(password);
     if(u.password!==h&&u.password!==password)throw new Error('密碼錯誤，請重新輸入');
     if(u.roleId==='pending')throw new Error('帳號尚待管理員審核，請稍後再試');
     let rn='管理員',tabs=['receiving','warehouse','review','report','purchase','resolved','admin'];
-    if(u.roleId!=='admin'){const rs=await db.collection(COL.roles).doc(u.roleId).get();if(rs.exists){rn=rs.data().name;tabs=rs.data().tabs||[];}}
-    await logAction('login',userId);
+    if(u.roleId!=='admin'){const rs=await wt(db.collection(COL.roles).doc(u.roleId).get(),5000);if(rs.exists){rn=rs.data().name;tabs=rs.data().tabs||[];}}
+    logAction('login',userId).catch(()=>{});
     return{userId:u.userId,name:u.name,roleId:u.roleId,roleName:rn,tabs};
   },
   async logout(){await logAction('logout');sessionStorage.clear();},

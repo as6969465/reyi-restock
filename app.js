@@ -102,8 +102,6 @@ async function handleLogin(e) {
 window.addEventListener('DOMContentLoaded', async () => {
   if (!document.getElementById('bottomNav')) return;
 
-  if (typeof ensureAdmin==='function') { try { await ensureAdmin(); } catch(e){} }
-
   let user = getCurrentUser();
   if (!user) {
     try { user = await AuthAPI.me(); sessionStorage.setItem('rr_user', JSON.stringify(user)); }

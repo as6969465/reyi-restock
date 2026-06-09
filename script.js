@@ -122,10 +122,7 @@ function showError(el, msg) { el.textContent = msg; el.classList.remove('hidden'
 window.addEventListener('DOMContentLoaded', async () => {
   if (!document.getElementById('productTableBody')) return;
 
-  // Firebase：確保管理員帳號存在
-  if (typeof ensureAdmin === 'function') {
-    try { await ensureAdmin(); } catch(e) { console.warn('ensureAdmin:', e.message); }
-  }
+
 
   // 先嘗試從 session 取得使用者資訊（重整時用 /api/auth/me 驗證）
   let user = getCurrentUser();
