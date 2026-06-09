@@ -1209,7 +1209,7 @@ function renderResolvedCards() {
   const catFilter = catSel?.value || '';
   const list = getAllProducts().filter(p=>p.status===STATUS.RESOLVED).filter(p=>
     (!from||p.arrivalDate>=from) && (!to||p.arrivalDate<=to) &&
-    (!catFilter||p.defectClass===catFilter)
+    (!catFilter||p.cat===catFilter)
   );
   if (!list.length) { container.innerHTML='<div class="empty-state"><p>尚無已處理記錄</p></div>'; return; }
   container.innerHTML = list.map(p => `
