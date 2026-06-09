@@ -316,8 +316,8 @@ function renderProductCards() {
         <div class="product-card-sub">${p.itemNo||'—'} · ${p.cat||'—'}</div>
         ${p.received && p.badQty > 0 ? `<div style="margin-top:6px">${(p.defectReasons||[]).slice(0,2).map(r=>`<span class="badge badge-abnormal" style="font-size:10px;margin-right:3px">${r}</span>`).join('')}</div>` : ''}
       </div>
-      ${p.barcode ? `<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:0 4px">
-        <canvas id="bc-r-${date}-${i}" style="max-width:100%;height:40px"></canvas>
+      ${p.barcode ? `<div style="flex-shrink:0;width:110px;display:flex;align-items:center;justify-content:center;padding:0 4px">
+        <canvas id="bc-r-${date}-${i}" style="width:100%;height:40px"></canvas>
       </div>` : ''}
       <div class="product-card-right">
         ${statusBadgeHtml(p)}
