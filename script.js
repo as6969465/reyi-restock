@@ -232,14 +232,17 @@ function initTabsByRole(roleId) {
     }
   });
 
-  // 切換至第一個可用頁籤
-  const firstTab = roleId === 'admin' ? 'receiving' : (allowedTabs[0] || 'receiving');
+  // 切換至上次頁籤（若有權限），否則切至第一個可用頁籤
+  const savedTab = localStorage.getItem('rr_last_tab');
+  const defaultTab = roleId === 'admin' ? 'receiving' : (allowedTabs[0] || 'receiving');
+  const firstTab = (savedTab && (roleId==='admin' || allowedTabs.includes(savedTab))) ? savedTab : defaultTab;
   switchTab(firstTab);
 }
 
 // ── Tab 切換 ──────────────────────────────────────────
 const ALL_PAGES = ['receiving','warehouse','review','report','purchase','resolved','admin'];
 function switchTab(name) {
+  localStorage.setItem('rr_last_tab', name);
   ALL_PAGES.forEach(t => {
     document.getElementById(`page-${t}`)?.classList.toggle('hidden', t !== name);
     const btn = document.getElementById(`tab-${t}`);

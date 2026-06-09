@@ -181,9 +181,12 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   } catch(e) { console.warn('load failed:', e.message); }
 
-  // 切換到第一個可用頁面
+  // 切換到上次頁面（若有權限），否則切至第一個可用頁面
   const roleObj = getRoleById(currentRole);
-  const firstPage = currentRole==='admin' ? 'receiving' : (roleObj?.tabs?.[0] || 'receiving');
+  const allowedPages = currentRole==='admin' ? Object.keys(TAB_LABELS) : (roleObj?.tabs || []);
+  const savedPage = localStorage.getItem('rr_last_tab');
+  const defaultPage = currentRole==='admin' ? 'receiving' : (roleObj?.tabs?.[0] || 'receiving');
+  const firstPage = (savedPage && allowedPages.includes(savedPage)) ? savedPage : defaultPage;
   switchPage(firstPage);
 
   clearTimeout(loadingTimer);
@@ -212,6 +215,7 @@ function buildNav(user) {
 // ── 頁面切換 ──────────────────────────────────────────
 function switchPage(name) {
   currentPage = name;
+  localStorage.setItem('rr_last_tab', name);
   document.querySelectorAll('.app-page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const page = document.getElementById(`page-${name}`);
