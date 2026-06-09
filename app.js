@@ -399,6 +399,8 @@ function renderDefectItems(readonly) {
     </div>`;
 }
 
+function switchDefectItem(idx) { _activeDefectIdx = idx; renderDefectItems(false); }
+
 function updateDefectQtyStats() {
   const badQty       = parseInt(document.getElementById('rs-bad')?.value)||0;
   const totalEntered = _defectItems.reduce((s,it)=>(s+(parseInt(it.qty)||0)),0);
