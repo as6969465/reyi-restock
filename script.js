@@ -76,6 +76,16 @@ let _reviewStartTime = '';
 // ── 業務屬性 ──────────────────────────────────────────
 function getBizAttrs() { return JSON.parse(localStorage.getItem('rr_biz_attrs') || '[]'); }
 function saveBizAttrs(attrs) { localStorage.setItem('rr_biz_attrs', JSON.stringify(attrs)); }
+
+// ── 異常設定（桌電版）────────────────────────────────
+const _DEF_CATS    = ['臨時到貨','取消到貨','其他異常'];
+const _DEF_REASONS = ['品名不符','數量不符','規格不符','外箱標示異常','條碼異常','臨時到貨','取消到貨','商品異常-(多筆)','商品異常-殘膠','商品異常-汙損','商品異常-破膜','商品異常-凹損','商品異常-破損','商品異常-未封口','商品異常-效期模糊','裸瓶','混效期','效期異常-無第二條件','效期異常-未來日','效期異常-效期超允收','效期異常-保存期限不合理','其他'];
+function getDeskDefectCategories() { const d=JSON.parse(localStorage.getItem('rr_defect_config')||'null'); return d?.categories||_DEF_CATS; }
+function getDeskDefectReasons()    { const d=JSON.parse(localStorage.getItem('rr_defect_config')||'null'); return d?.reasons||_DEF_REASONS; }
+function saveDeskDefectConfig(cfg) { localStorage.setItem('rr_defect_config', JSON.stringify({categories:cfg.categories||null,reasons:cfg.reasons||null})); }
+async function loadDeskDefectConfig() {
+  try { const cfg=await DefectConfigAPI.get(); saveDeskDefectConfig(cfg); } catch(e) {}
+}
 async function loadBizAttrs() {
   try {
     const attrs = await BizAttrAPI.list();
@@ -1573,10 +1583,17 @@ function closePhotoModal(event) {
 // ── 管理頁載入 ───────────────────────────────────────
 async function loadAndRenderAdmin() {
   try {
-    const [roles, users, attrs] = await Promise.all([RoleAPI.list(), UserAPI.list(), (window.BizAttrAPI?.list?.()||Promise.resolve([]))]);
-    saveRoles(roles); saveUsers(users); if(attrs.length) saveBizAttrs(attrs);
+    const [roles, users, attrs, defectCfg] = await Promise.all([
+      RoleAPI.list(), UserAPI.list(),
+      (window.BizAttrAPI?.list?.()||Promise.resolve([])),
+      (window.DefectConfigAPI?.get?.()||Promise.resolve({}))
+    ]);
+    saveRoles(roles); saveUsers(users);
+    if(attrs.length) saveBizAttrs(attrs);
+    if(defectCfg?.categories||defectCfg?.reasons) saveDeskDefectConfig(defectCfg);
   } catch(e) { console.warn('admin load:', e.message); }
   renderRoleTable(); renderUserTable(); renderDesktopBizAttrList();
+  renderDeskDefectCatList(); renderDeskDefectReasonList();
 }
 
 // ── 業務屬性管理 ─────────────────────────────────────
@@ -1613,6 +1630,71 @@ async function desktopDeleteBizAttr(idOrIdx) {
     if (attrs[idx].id) await BizAttrAPI.delete(attrs[idx].id);
     attrs.splice(idx,1); saveBizAttrs(attrs); renderDesktopBizAttrList();
   } catch(e) { alert(e.message); }
+}
+
+// ── 異常設定管理（桌電版）────────────────────────────
+function renderDeskDefectCatList() {
+  const el = document.getElementById('deskDefectCatList');
+  if (!el) return;
+  const cats = getDeskDefectCategories();
+  el.innerHTML = cats.length
+    ? cats.map((c,i) => `
+        <div class="flex items-center gap-1.5 bg-yellow-50 border border-yellow-300 rounded-full px-3 py-1.5">
+          <span class="text-sm font-medium text-yellow-800">${c}</span>
+          <button onclick="deskDeleteDefectCategory(${i})" class="text-yellow-400 hover:text-yellow-600 text-sm leading-none">✕</button>
+        </div>`).join('')
+    : '<span class="text-sm text-gray-400">尚無異常分類</span>';
+}
+
+function renderDeskDefectReasonList() {
+  const el = document.getElementById('deskDefectReasonList');
+  if (!el) return;
+  const reasons = getDeskDefectReasons();
+  el.innerHTML = reasons.length
+    ? reasons.map((r,i) => `
+        <div class="flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-full px-3 py-1.5">
+          <span class="text-sm font-medium text-red-700">${r}</span>
+          <button onclick="deskDeleteDefectReason(${i})" class="text-red-300 hover:text-red-500 text-sm leading-none">✕</button>
+        </div>`).join('')
+    : '<span class="text-sm text-gray-400">尚無異常原因</span>';
+}
+
+async function deskAddDefectCategory() {
+  const input = document.getElementById('deskDefectCatInput');
+  const name  = input?.value.trim();
+  if (!name) return;
+  const cfg = { categories: [...getDeskDefectCategories(), name], reasons: getDeskDefectReasons() };
+  saveDeskDefectConfig(cfg);
+  try { await DefectConfigAPI.saveCategories(cfg.categories); } catch(e) { console.warn(e.message); }
+  input.value = ''; renderDeskDefectCatList();
+}
+
+async function deskDeleteDefectCategory(idx) {
+  if (!confirm('確定刪除此異常分類？')) return;
+  const cats = getDeskDefectCategories(); cats.splice(idx,1);
+  const cfg = { categories: cats, reasons: getDeskDefectReasons() };
+  saveDeskDefectConfig(cfg);
+  try { await DefectConfigAPI.saveCategories(cats.length ? cats : null); } catch(e) { console.warn(e.message); }
+  renderDeskDefectCatList();
+}
+
+async function deskAddDefectReason() {
+  const input = document.getElementById('deskDefectReasonInput');
+  const name  = input?.value.trim();
+  if (!name) return;
+  const cfg = { categories: getDeskDefectCategories(), reasons: [...getDeskDefectReasons(), name] };
+  saveDeskDefectConfig(cfg);
+  try { await DefectConfigAPI.saveReasons(cfg.reasons); } catch(e) { console.warn(e.message); }
+  input.value = ''; renderDeskDefectReasonList();
+}
+
+async function deskDeleteDefectReason(idx) {
+  if (!confirm('確定刪除此異常原因？')) return;
+  const reasons = getDeskDefectReasons(); reasons.splice(idx,1);
+  const cfg = { categories: getDeskDefectCategories(), reasons };
+  saveDeskDefectConfig(cfg);
+  try { await DefectConfigAPI.saveReasons(reasons.length ? reasons : null); } catch(e) { console.warn(e.message); }
+  renderDeskDefectReasonList();
 }
 
 // ── 角色管理 CRUD ─────────────────────────────────────

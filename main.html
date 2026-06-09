@@ -376,6 +376,42 @@
       </div>
     </div>
 
+    <!-- 異常分類管理 -->
+    <div>
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-800">異常分類</h2>
+          <p class="text-xs text-gray-500 mt-0.5">驗收時可選擇的異常大分類</p>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 p-4">
+        <div id="deskDefectCatList" class="flex flex-wrap gap-2 mb-3"></div>
+        <div class="flex gap-2">
+          <input id="deskDefectCatInput" type="text" placeholder="輸入新異常分類名稱"
+            class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400" />
+          <button onclick="deskAddDefectCategory()" class="bg-yellow-500 hover:bg-yellow-600 text-white text-sm px-4 py-2 rounded-lg">新增</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 異常原因管理 -->
+    <div>
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-800">異常原因</h2>
+          <p class="text-xs text-gray-500 mt-0.5">驗收時可選擇的異常原因項目</p>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 p-4">
+        <div id="deskDefectReasonList" class="flex flex-wrap gap-2 mb-3"></div>
+        <div class="flex gap-2">
+          <input id="deskDefectReasonInput" type="text" placeholder="輸入新異常原因名稱"
+            class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400" />
+          <button onclick="deskAddDefectReason()" class="bg-red-500 hover:bg-red-600 text-white text-sm px-4 py-2 rounded-lg">新增</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 角色管理 -->
     <div>
       <div class="flex items-center justify-between mb-4">
