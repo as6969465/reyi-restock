@@ -802,10 +802,13 @@ function renderReviewSheetBody(p) {
     const t = it.photo
       ? `<img src="${it.photo}" style="width:100%;height:100%;object-fit:cover;display:block" />`
       : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:10px">無圖</div>`;
+    const hasQty = parseInt(it.qty) > 0;
     return `<div onclick="_reviewPhotoIdx=${idx};renderReviewSheetBody();"
-      style="width:52px;height:52px;border-radius:10px;flex-shrink:0;cursor:pointer;overflow:hidden;
+      style="width:52px;height:52px;border-radius:10px;flex-shrink:0;cursor:pointer;overflow:hidden;position:relative;
         border:2.5px solid ${active?'#f59e0b':'#e5e7eb'};background:${active?'#fef3c7':'#f9fafb'};
-        box-shadow:${active?'0 2px 8px rgba(245,158,11,.3)':'none'};transition:all .15s">${t}</div>`;
+        box-shadow:${active?'0 2px 8px rgba(245,158,11,.3)':'none'};transition:all .15s">${t}
+      ${hasQty?`<div style="position:absolute;bottom:1px;right:1px;background:#059669;color:#fff;border-radius:3px;font-size:9px;font-weight:700;padding:0 2px;line-height:13px">${it.qty}</div>`:''}
+    </div>`;
   }).join('');
 
   // 當前照片＋可編輯的分類/原因（預填驗收時的資料）
@@ -838,6 +841,7 @@ function renderReviewSheetBody(p) {
       <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px">
         ${cur?.photo ? `<img src="${cur.photo}" style="width:64px;height:64px;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:pointer"
           onclick="viewPhotos('${reviewIdx.arrivalDate}','${reviewIdx.itemNo}',${_reviewPhotoIdx})" />` : ''}
+        ${(parseInt(cur?.qty)||0)>0 ? `<div style="flex-shrink:0;text-align:center;min-width:44px"><div style="font-size:10px;color:#92400e;margin-bottom:2px">數量</div><div style="font-size:20px;font-weight:900;color:#d97706;line-height:1">${cur.qty}</div></div>` : ''}
         <div>
           <div style="font-size:10px;font-weight:700;color:#92400e;margin-bottom:4px">
             照片 ${items.length>1?`${_reviewPhotoIdx+1}/${items.length} `:''}<span style="font-weight:400;color:#b45309">（可修改原因後確認）</span>
@@ -969,6 +973,7 @@ function openReplyDetail(arrivalDate, itemNo) {
           <div style="display:flex;gap:10px;padding:12px;align-items:flex-start">
             ${item.photo ? `<img src="${item.photo}" style="width:60px;height:60px;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:pointer"
               onclick="viewPhotos('${arrivalDate}','${itemNo}',${i})" />` : ''}
+            ${(parseInt(item.qty)||0)>0?`<div style="flex-shrink:0;text-align:center;min-width:40px"><div style="font-size:10px;color:#9ca3af">數量</div><div style="font-size:18px;font-weight:900;color:#2563eb;line-height:1">${item.qty}</div></div>`:''}
             <div style="flex:1;min-width:0">
               <div style="font-size:11px;color:#9ca3af;margin-bottom:4px">照片 ${i+1} / ${items.length}${item.category?' · '+item.category:''}</div>
               <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:4px">
@@ -1038,10 +1043,12 @@ function openPurchaseSheet(arrivalDate, itemNo) {
   const itemsHtml = items.length
     ? items.map((item, i) => `
       <div style="background:#f9fafb;border-radius:12px;border:1.5px solid #e5e7eb;padding:12px;margin-bottom:10px">
-        <div style="display:flex;gap:10px;margin-bottom:10px">
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px">
           ${item.photo ? `<img src="${item.photo}" style="width:56px;height:56px;border-radius:8px;object-fit:cover;flex-shrink:0" />` : ''}
-          <div>
-            <span class="badge badge-abnormal" style="font-size:11px">${item.reason||'未選擇原因'}</span>
+          ${(parseInt(item.qty)||0)>0?`<div style="flex-shrink:0;text-align:center;min-width:40px"><div style="font-size:10px;color:#9ca3af">數量</div><div style="font-size:20px;font-weight:900;color:#2563eb;line-height:1">${item.qty}</div></div>`:''}
+          <div style="flex:1;min-width:0">
+            <div style="font-size:11px;color:#9ca3af;margin-bottom:3px">照片 ${i+1} / ${items.length}${item.category?' · '+item.category:''}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:3px">${(item.reasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')||''}</div>
             ${item.note ? `<div style="font-size:12px;color:#6b7280;margin-top:4px">${item.note}</div>` : ''}
           </div>
         </div>

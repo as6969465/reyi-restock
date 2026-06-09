@@ -691,9 +691,10 @@ function openReplyDetailModal(arrivalDate, itemNo) {
   const content = items.length
     ? items.map((item, i) => `
         <div class="border border-gray-200 rounded-xl overflow-hidden mb-3">
-          <div class="flex gap-3 p-3 items-start">
+          <div class="flex gap-3 p-3 items-center">
             ${item.photo ? `<img src="${item.photo}" onclick="openPhotoModal([${items.filter(x=>x.photo).map(x=>'\''+x.photo+'\'').join(',')}],'${p.name}',${i})"
               class="w-14 h-14 object-cover rounded-lg cursor-pointer flex-shrink-0" />` : ''}
+            ${(parseInt(item.qty)||0)>0?`<div class="flex-shrink-0 text-center min-w-[40px]"><div class="text-xs text-gray-400">數量</div><div class="font-black text-blue-600" style="font-size:20px;line-height:1">${item.qty}</div></div>`:''}
             <div class="flex-1 min-w-0">
               <div class="text-xs text-gray-400 mb-1">照片 ${i+1} / ${items.length}${item.category?' · '+item.category:''}</div>
               <div class="flex flex-wrap gap-1">${(item.reasons||[]).map(r=>`<span class="text-xs px-1.5 py-0.5 bg-red-100 text-red-600 rounded">${r}</span>`).join('')||'—'}</div>
@@ -1145,11 +1146,14 @@ function renderReviewPhotoPanel(p) {
     const t = it.photo
       ? `<img src="${it.photo}" class="w-full h-full object-cover" />`
       : `<div class="w-full h-full flex items-center justify-center text-gray-400 text-xs">無圖</div>`;
+    const hasQty = parseInt(it.qty) > 0;
     return `<div onclick="_deskReviewPhotoIdx=${idx};renderReviewPhotoPanel();"
-      class="flex-shrink-0 cursor-pointer overflow-hidden rounded-lg transition-all"
-      style="width:52px;height:52px;border:2.5px solid ${active?'#2563eb':'#e5e7eb'};
-        background:${active?'#dbeafe':'#f9fafb'};
-        box-shadow:${active?'0 2px 8px rgba(37,99,235,.25)':'none'}">${t}</div>`;
+      class="flex-shrink-0 cursor-pointer overflow-hidden rounded-lg transition-all relative"
+      style="width:52px;height:52px;border:2.5px solid ${active?'#2563eb':hasQty?'#86efac':'#e5e7eb'};
+        background:${active?'#dbeafe':hasQty?'#f0fdf4':'#f9fafb'};
+        box-shadow:${active?'0 2px 8px rgba(37,99,235,.25)':'none'}">${t}
+      ${hasQty?`<div style="position:absolute;bottom:1px;right:1px;background:#059669;color:#fff;border-radius:3px;font-size:9px;font-weight:700;padding:0 2px;line-height:13px">${it.qty}</div>`:''}
+    </div>`;
   }).join('');
 
   // 大分類按鈕（預填 + 可修改）
@@ -1184,6 +1188,7 @@ function renderReviewPhotoPanel(p) {
       <div class="flex items-center justify-between mb-2">
         <div class="flex items-center gap-2">
           ${photoEl}
+          ${(parseInt(cur.qty)||0)>0?`<div class="flex-shrink-0 text-center min-w-[40px]"><div class="text-xs text-gray-400">數量</div><div class="font-black text-blue-600" style="font-size:20px;line-height:1">${cur.qty}</div></div>`:''}
           <span class="text-xs text-gray-400">${i+1} / ${items.length}</span>
         </div>
       </div>
@@ -1304,12 +1309,14 @@ function renderPurchasePhotoPanel(p) {
     const t = it.photo
       ? `<img src="${it.photo}" class="w-full h-full object-cover" />`
       : `<div class="w-full h-full flex items-center justify-center text-xs text-gray-400">無圖</div>`;
+    const hasQty = parseInt(it.qty) > 0;
     return `<div onclick="_deskPurchasePhotoIdx=${idx};renderPurchasePhotoPanel();"
       class="flex-shrink-0 cursor-pointer overflow-hidden rounded-lg transition-all relative"
       style="width:52px;height:52px;border:2.5px solid ${active?'#2563eb':done?'#34d399':'#e5e7eb'};
         background:${active?'#dbeafe':done?'#d1fae5':'#f9fafb'};
         box-shadow:${active?'0 2px 8px rgba(37,99,235,.25)':'none'}">${t}
       ${done?'<div style="position:absolute;bottom:1px;right:1px;width:14px;height:14px;background:#059669;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;border:1.5px solid #fff">✓</div>':''}
+      ${!done&&hasQty?`<div style="position:absolute;bottom:1px;right:1px;background:#2563eb;color:#fff;border-radius:3px;font-size:9px;font-weight:700;padding:0 2px;line-height:13px">${it.qty}</div>`:''}
     </div>`;
   }).join('');
 
@@ -1335,8 +1342,9 @@ function renderPurchasePhotoPanel(p) {
     ${statHtml}
     <div class="flex gap-2 items-center overflow-x-auto pb-1 mb-3">${thumbs}</div>
     <div class="p-3 bg-blue-50 border border-blue-100 rounded-xl">
-      <div class="flex items-start gap-2 mb-2">
+      <div class="flex items-center gap-2 mb-2">
         ${photoEl}
+        ${(parseInt(cur.qty)||0)>0?`<div class="flex-shrink-0 text-center min-w-[40px]"><div class="text-xs text-gray-400">數量</div><div class="font-black text-blue-600" style="font-size:20px;line-height:1">${cur.qty}</div></div>`:''}
         <div class="flex-1 min-w-0">
           <div class="text-xs text-gray-400 mb-1">${i+1} / ${items.length}${cur.category?' · '+cur.category:''}</div>
           ${reasonsHtml}
