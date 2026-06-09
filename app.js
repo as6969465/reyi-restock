@@ -363,7 +363,7 @@ function renderDefectItems(readonly) {
   const catBtns = DEFECT_CATEGORIES.map(c=>{const active=item.category===c;return `<button onclick="${readonly?'':`setDefectCategory(${i},'${c}')`}" style="padding:6px 12px;border-radius:18px;border:1.5px solid ${active?'#2563eb':'#e5e7eb'};background:${active?'#dbeafe':'#f8fafc'};color:${active?'#1d4ed8':'#6b7280'};font-size:12px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap">${c}</button>`;}).join('');
 
   const reasonChips = !readonly
-    ? `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:6px">${DEFECT_REASONS.map(r=>{const sel=(item.reasons||[]).includes(r);return `<button type="button" onclick="toggleDefectSubReason(${i},'${r}')" style="padding:5px 2px;border-radius:8px;border:1.5px solid ${sel?'#2563eb':'#e5e7eb'};background:${sel?'#dbeafe':'#f8fafc'};color:${sel?'#1d4ed8':'#6b7280'};font-size:10px;font-weight:${sel?'700':'400'};cursor:pointer;line-height:1.3;text-align:center;word-break:break-all">${r}</button>`;}).join('')}</div>`
+    ? `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:6px">${DEFECT_REASONS.map(r=>{const sel=(item.reasons||[]).includes(r);return `<button type="button" onclick="toggleDefectSubReason(${i},'${r}')" style="padding:8px 4px;border-radius:8px;border:1.5px solid ${sel?'#2563eb':'#e5e7eb'};background:${sel?'#dbeafe':'#f8fafc'};color:${sel?'#1d4ed8':'#6b7280'};font-size:12px;font-weight:${sel?'700':'400'};cursor:pointer;line-height:1.4;text-align:center;word-break:break-all">${r}</button>`;}).join('')}</div>`
     : ((item.reasons||[]).length?`<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${(item.reasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')}</div>`:'');
 
   const photoMain = item.photo
@@ -823,13 +823,13 @@ function renderReviewSheetBody(p) {
         font-size:12px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap">${c}</button>`;
   }).join('');
   // 原因勾選（預填，可修改）
-  const reasonChips = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:6px">
+  const reasonChips = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:6px">
     ${DEFECT_REASONS.map(r => {
       const sel = (cur?.reasons||[]).includes(r);
       return `<button type="button" onclick="rvToggleReason(${i},'${r}')"
-        style="padding:5px 2px;border-radius:8px;border:1.5px solid ${sel?'#f59e0b':'#e5e7eb'};
+        style="padding:8px 4px;border-radius:8px;border:1.5px solid ${sel?'#f59e0b':'#e5e7eb'};
           background:${sel?'#fef3c7':'#f8fafc'};color:${sel?'#92400e':'#6b7280'};
-          font-size:10px;font-weight:${sel?'700':'400'};cursor:pointer;line-height:1.3;
+          font-size:12px;font-weight:${sel?'700':'400'};cursor:pointer;line-height:1.4;
           text-align:center;word-break:break-all">${r}</button>`;
     }).join('')}
   </div>`;
