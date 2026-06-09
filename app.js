@@ -598,7 +598,7 @@ function openReceiveSheet(date, idx) {
             <div>採購數量：<b style="color:#2563eb;font-size:16px">${p.qty}</b></div>
           </div>
         </div>
-        ${p.barcode ? `<div style="flex-shrink:0;display:flex;align-items:center;justify-content:center">
+        ${p.barcode ? `<div style="flex-shrink:0;display:flex;align-items:flex-end;justify-content:center">
           <canvas id="rs-barcode" style="height:52px;max-width:120px"></canvas>
         </div>` : ''}
       </div>
