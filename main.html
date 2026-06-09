@@ -61,11 +61,11 @@
       <!-- 現場人員 tabs -->
       <button onclick="switchTab('receiving')" id="tab-receiving" data-role="field"
         class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-blue-600 text-blue-600">
-        當日驗收作業
+        當日進貨作業
       </button>
       <button onclick="switchTab('warehouse')" id="tab-warehouse" data-role="field"
         class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
-        入庫清單
+        已確認清單
       </button>
       <!-- 物流專員 tabs -->
       <button onclick="switchTab('review')" id="tab-review" data-role="specialist"
@@ -106,11 +106,11 @@
     </div>
   </div>
 
-  <!-- ===== 1. 當日驗收作業 (現場人員) ===== -->
+  <!-- ===== 1. 當日進貨作業 (現場人員) ===== -->
   <div id="page-receiving" class="p-6">
     <div class="flex flex-wrap items-center gap-4 mb-5">
       <div>
-        <h2 class="text-lg font-semibold text-gray-800">當日驗收作業</h2>
+        <h2 class="text-lg font-semibold text-gray-800">當日進貨作業</h2>
         <p class="text-xs text-gray-500 mt-0.5">上傳每日進貨 Excel，進行商品驗收登錄</p>
       </div>
       <div class="ml-auto flex items-center gap-3">
@@ -196,10 +196,10 @@
     </div>
   </div>
 
-  <!-- ===== 2. 入庫清單 (現場人員) ===== -->
+  <!-- ===== 2. 已確認清單 (現場人員) ===== -->
   <div id="page-warehouse" class="p-6 hidden">
     <div class="flex items-center justify-between mb-3">
-      <div><h2 class="text-lg font-semibold text-gray-800">入庫清單</h2>
+      <div><h2 class="text-lg font-semibold text-gray-800">已確認清單</h2>
         <p class="text-xs text-gray-500 mt-0.5">已驗收商品清單，供入庫人員使用</p></div>
       <button onclick="exportWarehouseList()" class="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>匯出清單
@@ -452,10 +452,10 @@
           <label class="block text-sm font-medium text-gray-700 mb-2">可存取功能頁籤</label>
           <div class="grid grid-cols-2 gap-2 border border-gray-200 rounded-lg p-3 bg-gray-50">
             <label class="flex items-center gap-2 text-sm cursor-pointer">
-              <input type="checkbox" value="receiving" class="rm-tab accent-purple-500" /> 當日驗收作業
+              <input type="checkbox" value="receiving" class="rm-tab accent-purple-500" /> 當日進貨作業
             </label>
             <label class="flex items-center gap-2 text-sm cursor-pointer">
-              <input type="checkbox" value="warehouse" class="rm-tab accent-purple-500" /> 入庫清單
+              <input type="checkbox" value="warehouse" class="rm-tab accent-purple-500" /> 已確認清單
             </label>
             <label class="flex items-center gap-2 text-sm cursor-pointer">
               <input type="checkbox" value="review" class="rm-tab accent-purple-500" /> 異常檢核
