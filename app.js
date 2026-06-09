@@ -596,7 +596,6 @@ function openReceiveSheet(date, idx) {
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px;color:#6b7280">
             <div>品號：<b style="color:#374151">${p.itemNo||'—'}</b></div>
             <div>採購單：<b style="color:#374151">${p.po||'—'}</b></div>
-            <div>條碼：<b style="color:#374151">${p.barcode||'—'}</b></div>
             <div>採購數量：<b style="color:#2563eb;font-size:16px">${p.qty}</b></div>
           </div>
         </div>
