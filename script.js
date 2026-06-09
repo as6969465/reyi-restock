@@ -86,6 +86,11 @@ function saveDeskDefectConfig(cfg) { localStorage.setItem('rr_defect_config', JS
 async function loadDeskDefectConfig() {
   try { const cfg=await DefectConfigAPI.get(); saveDeskDefectConfig(cfg); } catch(e) {}
 }
+
+// ── 大分類篩選選項（桌電版）──────────────────────────
+const _DEF_CAT_FILTERS = ['食品','居家美妝','預購項目'];
+function getDeskCatFilters() { const d=JSON.parse(localStorage.getItem('rr_cat_filters')||'null'); return d||_DEF_CAT_FILTERS; }
+function saveDeskCatFilters(items) { localStorage.setItem('rr_cat_filters', JSON.stringify(items||null)); }
 async function loadBizAttrs() {
   try {
     const attrs = await BizAttrAPI.list();
@@ -750,7 +755,13 @@ function renderPurchaseTable() {
 // ── 6. 已處理記錄 ─────────────────────────────────────
 function renderResolvedTable() {
   const tbody = document.getElementById('resolvedTableBody');
-  const catFilter = document.getElementById('res-cat-filter-desk')?.value || '';
+  const catSel = document.getElementById('res-cat-filter-desk');
+  const catFilter = catSel?.value || '';
+  if (catSel) {
+    const cur = catSel.value;
+    catSel.innerHTML = '<option value="">全部大分類</option>' +
+      getDeskCatFilters().map(c=>`<option value="${c}" ${cur===c?'selected':''}>${c}</option>`).join('');
+  }
   let list = getFilteredAllProducts().filter(p => p.status === STATUS.RESOLVED);
   if (catFilter) list = list.filter(p => p.cat === catFilter);
   if (!list.length) { tbody.innerHTML='<tr><td colspan="11" class="px-4 py-12 text-center text-gray-400 text-sm">尚無已處理記錄</td></tr>'; return; }
@@ -1583,17 +1594,19 @@ function closePhotoModal(event) {
 // ── 管理頁載入 ───────────────────────────────────────
 async function loadAndRenderAdmin() {
   try {
-    const [roles, users, attrs, defectCfg] = await Promise.all([
+    const [roles, users, attrs, defectCfg, catItems] = await Promise.all([
       RoleAPI.list(), UserAPI.list(),
       (window.BizAttrAPI?.list?.()||Promise.resolve([])),
-      (window.DefectConfigAPI?.get?.()||Promise.resolve({}))
+      (window.DefectConfigAPI?.get?.()||Promise.resolve({})),
+      (window.CatFilterAPI?.get?.()||Promise.resolve(null))
     ]);
     saveRoles(roles); saveUsers(users);
     if(attrs.length) saveBizAttrs(attrs);
     if(defectCfg?.categories||defectCfg?.reasons) saveDeskDefectConfig(defectCfg);
+    saveDeskCatFilters(catItems);
   } catch(e) { console.warn('admin load:', e.message); }
   renderRoleTable(); renderUserTable(); renderDesktopBizAttrList();
-  renderDeskDefectCatList(); renderDeskDefectReasonList();
+  renderDeskDefectCatList(); renderDeskDefectReasonList(); renderDeskCatFilterList();
 }
 
 // ── 業務屬性管理 ─────────────────────────────────────
@@ -1695,6 +1708,38 @@ async function deskDeleteDefectReason(idx) {
   saveDeskDefectConfig(cfg);
   try { await DefectConfigAPI.saveReasons(reasons.length ? reasons : null); } catch(e) { console.warn(e.message); }
   renderDeskDefectReasonList();
+}
+
+// ── 大分類篩選管理（桌電版）──────────────────────────
+function renderDeskCatFilterList() {
+  const el = document.getElementById('deskCatFilterList');
+  if (!el) return;
+  const cats = getDeskCatFilters();
+  el.innerHTML = cats.length
+    ? cats.map((c,i) => `
+        <div class="flex items-center gap-1.5 bg-green-50 border border-green-300 rounded-full px-3 py-1.5">
+          <span class="text-sm font-medium text-green-800">${c}</span>
+          <button onclick="deskDeleteCatFilter(${i})" class="text-green-400 hover:text-green-600 text-sm leading-none">✕</button>
+        </div>`).join('')
+    : '<span class="text-sm text-gray-400">尚無大分類選項</span>';
+}
+
+async function deskAddCatFilter() {
+  const input = document.getElementById('deskCatFilterInput');
+  const name  = input?.value.trim();
+  if (!name) return;
+  const items = [...getDeskCatFilters(), name];
+  saveDeskCatFilters(items);
+  try { await CatFilterAPI.save(items); } catch(e) { console.warn(e.message); }
+  input.value = ''; renderDeskCatFilterList();
+}
+
+async function deskDeleteCatFilter(idx) {
+  if (!confirm('確定刪除此大分類？')) return;
+  const items = getDeskCatFilters(); items.splice(idx,1);
+  saveDeskCatFilters(items.length ? items : null);
+  try { await CatFilterAPI.save(items.length ? items : _DEF_CAT_FILTERS); } catch(e) { console.warn(e.message); }
+  renderDeskCatFilterList();
 }
 
 // ── 角色管理 CRUD ─────────────────────────────────────

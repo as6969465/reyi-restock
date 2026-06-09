@@ -376,6 +376,24 @@
       </div>
     </div>
 
+    <!-- 大分類篩選管理 -->
+    <div>
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-800">大分類篩選選項</h2>
+          <p class="text-xs text-gray-500 mt-0.5">待回覆、已處理記錄頁籤的大分類篩選項目</p>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 p-4">
+        <div id="deskCatFilterList" class="flex flex-wrap gap-2 mb-3"></div>
+        <div class="flex gap-2">
+          <input id="deskCatFilterInput" type="text" placeholder="輸入新大分類名稱"
+            class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+          <button onclick="deskAddCatFilter()" class="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded-lg">新增</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 異常分類管理 -->
     <div>
       <div class="flex items-center justify-between mb-4">

@@ -105,5 +105,16 @@ const DefectConfigAPI = {
   }
 };
 
+// ── 大分類篩選選項 API ────────────────────────────────
+const CatFilterAPI = {
+  async get() {
+    const snap = await db.collection('app_config').doc('cat_filters').get();
+    return (snap.exists && snap.data().items?.length) ? snap.data().items : null;
+  },
+  async save(items) {
+    await db.collection('app_config').doc('cat_filters').set({ items });
+  }
+};
+
 ProductAPI._clearUnread=async function(id){await db.collection(COL.products).doc(id).update({proc_reply_unread:false});};
-window.AuthAPI=AuthAPI;window.RoleAPI=RoleAPI;window.UserAPI=UserAPI;window.ProductAPI=ProductAPI;window.BizAttrAPI=BizAttrAPI;window.DefectConfigAPI=DefectConfigAPI;window.ensureAdmin=ensureAdmin;
+window.AuthAPI=AuthAPI;window.RoleAPI=RoleAPI;window.UserAPI=UserAPI;window.ProductAPI=ProductAPI;window.BizAttrAPI=BizAttrAPI;window.DefectConfigAPI=DefectConfigAPI;window.CatFilterAPI=CatFilterAPI;window.ensureAdmin=ensureAdmin;

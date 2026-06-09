@@ -86,6 +86,14 @@ async function loadDefectConfig() {
 }
 
 
+// ── 大分類篩選選項 ────────────────────────────────────
+const DEFAULT_CAT_FILTERS = ['食品','居家美妝','預購項目'];
+function getCatFilters() { const d=JSON.parse(localStorage.getItem('rr_cat_filters')||'null'); return d||DEFAULT_CAT_FILTERS; }
+function saveCatFilters(items) { localStorage.setItem('rr_cat_filters', JSON.stringify(items||null)); }
+async function loadCatFilters() {
+  try { const items=await CatFilterAPI.get(); saveCatFilters(items); } catch(e) {}
+}
+
 function nowStr()  { return new Date().toLocaleString('zh-TW'); }
 function nowHHMM() { const d=new Date(); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
 function getDateProducts(date) { return productsByDate[date] || []; }
@@ -150,6 +158,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   // 載入業務屬性
   loadBizAttrs().catch(()=>{});
   loadDefectConfig().catch(()=>{});
+  loadCatFilters().catch(()=>{});
 
   // 移除 Loading 遮罩的函式（確保一定會執行）
   const hideLoading = () => {
@@ -1094,7 +1103,13 @@ function renderPurchaseCards() {
   if (!container) return;
   const from      = document.getElementById('pur-from')?.value;
   const to        = document.getElementById('pur-to')?.value;
-  const catFilter = document.getElementById('pur-cat-filter')?.value || '';
+  const purCatSel = document.getElementById('pur-cat-filter');
+  const catFilter = purCatSel?.value || '';
+  if (purCatSel) {
+    const cur = purCatSel.value;
+    purCatSel.innerHTML = '<option value="">全部大分類</option>' +
+      getCatFilters().map(c=>`<option value="${c}" ${cur===c?'selected':''}>${c}</option>`).join('');
+  }
   const list = getAllProducts().filter(p =>
     p.status===STATUS.PROCUREMENT &&
     (!from||p.arrivalDate>=from) && (!to||p.arrivalDate<=to) &&
@@ -1237,8 +1252,13 @@ function renderResolvedCards() {
   if (!container) return;
   const from    = document.getElementById('res-from')?.value;
   const to      = document.getElementById('res-to')?.value;
-  const catSel  = document.getElementById('res-cat-filter');
+  const catSel    = document.getElementById('res-cat-filter');
   const catFilter = catSel?.value || '';
+  if (catSel) {
+    const cur = catSel.value;
+    catSel.innerHTML = '<option value="">全部大分類</option>' +
+      getCatFilters().map(c=>`<option value="${c}" ${cur===c?'selected':''}>${c}</option>`).join('');
+  }
   const list = getAllProducts().filter(p=>p.status===STATUS.RESOLVED).filter(p=>
     (!from||p.arrivalDate>=from) && (!to||p.arrivalDate<=to) &&
     (!catFilter||p.cat===catFilter)
@@ -1290,17 +1310,19 @@ function viewResolvedPhotos(photos) {
 // ══════════════════════════════════════════════════════
 async function loadAndRenderAdmin() {
   try {
-    const [roles, users, attrs, defectCfg] = await Promise.all([
+    const [roles, users, attrs, defectCfg, catItems] = await Promise.all([
       RoleAPI.list(), UserAPI.list(),
       (BizAttrAPI?.list?.()||Promise.resolve([])),
-      DefectConfigAPI.get()
+      DefectConfigAPI.get(),
+      CatFilterAPI.get()
     ]);
     saveRoles(roles); saveUsers(users);
     if(attrs.length) saveBizAttrs(attrs);
     saveDefectConfig(defectCfg);
+    saveCatFilters(catItems);
   } catch(e) { console.warn('admin load:', e.message); }
   renderRoleCards(); renderUserCards(); refreshRoleOptions(); renderBizAttrCards();
-  renderDefectCatCards(); renderDefectReasonCards();
+  renderDefectCatCards(); renderDefectReasonCards(); renderCatFilterCards();
   const user = getCurrentUser();
   const el = document.getElementById('userDisplay-a');
   if (el) el.textContent = `${user?.name||''} · ${getRoleName(currentRole)}`;
@@ -1346,6 +1368,40 @@ async function deleteBizAttr(idOrIdx) {
     saveBizAttrs(attrs);
     renderBizAttrCards();
   } catch(e) { alert(e.message); }
+}
+
+// ── 大分類篩選管理 ────────────────────────────────────
+function renderCatFilterCards() {
+  const container = document.getElementById('catFilterListContainer');
+  if (!container) return;
+  const cats = getCatFilters();
+  if (!cats.length) { container.innerHTML='<div style="padding:8px 16px;font-size:13px;color:#9ca3af">尚無大分類，請新增</div>'; return; }
+  container.innerHTML = `<div style="padding:8px 16px;display:flex;flex-wrap:wrap;gap:8px">
+    ${cats.map((c,i) => `
+      <div style="display:flex;align-items:center;gap:6px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:20px;padding:6px 12px">
+        <span style="font-size:13px;font-weight:600;color:#166534">${c}</span>
+        <button onclick="deleteCatFilter(${i})" style="background:none;border:none;color:#4ade80;cursor:pointer;font-size:14px;line-height:1;padding:0">✕</button>
+      </div>`).join('')}
+  </div>`;
+}
+
+async function addCatFilter() {
+  const input = document.getElementById('catFilterInput');
+  const name = input?.value.trim();
+  if (!name) return;
+  const items = [...getCatFilters(), name];
+  saveCatFilters(items);
+  try { await CatFilterAPI.save(items); } catch(e) { console.warn(e.message); }
+  input.value = '';
+  renderCatFilterCards();
+}
+
+async function deleteCatFilter(idx) {
+  if (!confirm('確定刪除此大分類？')) return;
+  const items = getCatFilters(); items.splice(idx,1);
+  saveCatFilters(items.length ? items : null);
+  try { await CatFilterAPI.save(items.length ? items : DEFAULT_CAT_FILTERS); } catch(e) { console.warn(e.message); }
+  renderCatFilterCards();
 }
 
 // ── 異常設定管理 ──────────────────────────────────────
