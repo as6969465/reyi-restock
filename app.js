@@ -249,8 +249,8 @@ async function onReceivingDateChange() {
 // ── 1. 驗收作業 - 卡片渲染 ────────────────────────────
 // ══════════════════════════════════════════════════════
 function statusBadgeHtml(p) {
-  const m = { pending:'<span class="badge badge-pending">待驗收</span>',
-    received:'<span class="badge badge-done">已驗收</span>',
+  const m = { pending:'<span class="badge badge-pending">待確認</span>',
+    received:'<span class="badge badge-done">已確認</span>',
     abnormal_pending:'<span class="badge badge-abnormal">異常待檢核</span>',
     procurement:'<span class="badge badge-proc">待採購回覆</span>',
     resolved:'<span class="badge badge-resolved">已處理</span>' };
@@ -331,11 +331,11 @@ function updateStats() {
     </div>
     <div class="stat-card stat-done">
       <div class="stat-card-icon">${IC('M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z')}</div>
-      <div><div class="stat-card-val">${done}</div><div class="stat-card-lbl">已驗收</div></div>
+      <div><div class="stat-card-val">${done}</div><div class="stat-card-lbl">已確認</div></div>
     </div>
     <div class="stat-card stat-pending">
       <div class="stat-card-icon">${IC('M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z')}</div>
-      <div><div class="stat-card-val">${pending}</div><div class="stat-card-lbl">待驗收</div></div>
+      <div><div class="stat-card-val">${pending}</div><div class="stat-card-lbl">待確認</div></div>
     </div>
     <div class="stat-card stat-bad">
       <div class="stat-card-icon">${IC('M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z')}</div>
@@ -573,7 +573,7 @@ function openReceiveSheet(date, idx) {
 
   const isResolved = p.status === STATUS.RESOLVED;
   document.getElementById('receiveSheetTitle').textContent =
-    p.status===STATUS.PENDING ? '驗收登錄' : (isResolved ? '已處理（唯讀）' : '修改驗收');
+    p.status===STATUS.PENDING ? '確認登錄' : (isResolved ? '已處理（唯讀）' : '修改確認');
 
   const body  = document.getElementById('receiveSheetBody');
   // 已選業務屬性顯示（唯讀，需修改請關閉重新點選）
@@ -634,7 +634,7 @@ function openReceiveSheet(date, idx) {
       ? `<button onclick="closeAllSheets()" class="btn" style="width:100%;background:#f3f4f6;color:#374151;border:none">關閉</button>`
       : `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <button onclick="closeAllSheets()" class="btn" style="background:#f3f4f6;color:#374151;border:none">取消</button>
-          <button onclick="saveReceiving()" class="btn btn-primary">確認驗收</button>
+          <button onclick="saveReceiving()" class="btn btn-primary">確認</button>
          </div>`}`;
 
   renderDefectItems(isResolved);
@@ -746,7 +746,7 @@ function renderWarehouseCards() {
   if (from)      list = list.filter(p=>!p.arrivalDate||p.arrivalDate>=from);
   if (to)        list = list.filter(p=>!p.arrivalDate||p.arrivalDate<=to);
   if (bizFilter) list = list.filter(p=>p.bizAttr===bizFilter);
-  if (!list.length) { container.innerHTML='<div class="empty-state"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><p>尚無已驗收資料</p></div>'; return; }
+  if (!list.length) { container.innerHTML='<div class="empty-state"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><p>尚無已確認資料</p></div>'; return; }
   container.innerHTML = list.map(p => {
     const hasReply = p.badQty>0 && ((p.defectItems||[]).some(it=>it.procAction)||(p.procAction&&p.procAction!=='—'));
     return `

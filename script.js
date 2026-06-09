@@ -382,8 +382,8 @@ function getFilteredAllProducts() {
 // ── 狀態徽章 ─────────────────────────────────────────
 function statusBadge(status) {
   const map = {
-    [STATUS.PENDING]:          '<span class="badge badge-pending">待驗收</span>',
-    [STATUS.RECEIVED]:         '<span class="badge badge-done">已驗收</span>',
+    [STATUS.PENDING]:          '<span class="badge badge-pending">待確認</span>',
+    [STATUS.RECEIVED]:         '<span class="badge badge-done">已確認</span>',
     [STATUS.ABNORMAL_PENDING]: '<span class="badge badge-abnormal">異常待檢核</span>',
     [STATUS.PROCUREMENT]:      '<span class="badge" style="background:#dbeafe;color:#1d4ed8">待採購回覆</span>',
     [STATUS.RESOLVED]:         '<span class="badge" style="background:#d1fae5;color:#065f46">已處理</span>',
@@ -582,7 +582,7 @@ function renderWarehouseTable() {
   const bizFilter = bizSel?.value || '';
   let list = getFilteredAllProducts().filter(p => p.status !== STATUS.PENDING);
   if (bizFilter) list = list.filter(p => p.bizAttr === bizFilter);
-  if (!list.length) { tbody.innerHTML='<tr><td colspan="10" class="px-4 py-12 text-center text-gray-400 text-sm">尚無已驗收資料</td></tr>'; return; }
+  if (!list.length) { tbody.innerHTML='<tr><td colspan="10" class="px-4 py-12 text-center text-gray-400 text-sm">尚無已確認資料</td></tr>'; return; }
   tbody.innerHTML = list.map(p => {
     const hasReply = p.badQty > 0 && ((p.defectItems||[]).some(it=>it.procAction)||(p.procAction&&p.procAction!=='—'));
     return `
@@ -821,7 +821,7 @@ function openModal(date, idx) {
     _deskDefectItems = [];
   }
   _activeDeskDefectIdx = 0;
-  document.getElementById('modalTitle').textContent = p.status === STATUS.PENDING ? '驗收登錄' : '修改驗收';
+  document.getElementById('modalTitle').textContent = p.status === STATUS.PENDING ? '確認登錄' : '修改確認';
   // 業務屬性選擇區
   const bizContainer = document.getElementById('m-biz-attrs');
   if (bizContainer) {

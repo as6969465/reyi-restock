@@ -41,20 +41,6 @@
     </div>
   </header>
 
-  <!-- ===== 流程進度列 ===== -->
-  <div class="bg-white border-b border-gray-100 px-6 py-2">
-    <div class="flex items-center gap-2 text-xs text-gray-400 max-w-2xl">
-      <span class="step-dot bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center font-bold">1</span>
-      <span class="text-gray-600 font-medium">現場收貨驗收</span>
-      <span class="flex-1 h-px bg-gray-200"></span>
-      <span class="step-dot bg-orange-400 text-white rounded-full w-5 h-5 flex items-center justify-center font-bold">2</span>
-      <span class="text-gray-600 font-medium">專員異常檢核</span>
-      <span class="flex-1 h-px bg-gray-200"></span>
-      <span class="step-dot bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center font-bold">3</span>
-      <span class="text-gray-600 font-medium">採購回覆處理</span>
-    </div>
-  </div>
-
   <!-- Tabs -->
   <div class="bg-white border-b border-gray-200 px-6 flex items-center justify-between">
     <nav class="flex gap-0" id="mainTabs">
@@ -111,7 +97,7 @@
     <div class="flex flex-wrap items-center gap-4 mb-5">
       <div>
         <h2 class="text-lg font-semibold text-gray-800">當日進貨作業</h2>
-        <p class="text-xs text-gray-500 mt-0.5">上傳每日進貨 Excel，進行商品驗收登錄</p>
+        <p class="text-xs text-gray-500 mt-0.5">上傳每日進貨 Excel，進行商品確認登錄</p>
       </div>
       <div class="ml-auto flex items-center gap-3">
         <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
@@ -146,11 +132,11 @@
         <p id="stat-total" class="text-2xl font-bold text-gray-800 mt-1">0</p>
       </div>
       <div class="bg-white rounded-xl border border-gray-200 p-4">
-        <p class="text-xs text-gray-500">已驗收</p>
+        <p class="text-xs text-gray-500">已確認</p>
         <p id="stat-done" class="text-2xl font-bold text-green-600 mt-1">0</p>
       </div>
       <div class="bg-white rounded-xl border border-gray-200 p-4">
-        <p class="text-xs text-gray-500">待驗收</p>
+        <p class="text-xs text-gray-500">待確認</p>
         <p id="stat-pending" class="text-2xl font-bold text-amber-500 mt-1">0</p>
       </div>
       <div class="bg-white rounded-xl border border-gray-200 p-4">
@@ -200,7 +186,7 @@
   <div id="page-warehouse" class="p-6 hidden">
     <div class="flex items-center justify-between mb-3">
       <div><h2 class="text-lg font-semibold text-gray-800">已確認清單</h2>
-        <p class="text-xs text-gray-500 mt-0.5">已驗收商品清單，供入庫人員使用</p></div>
+        <p class="text-xs text-gray-500 mt-0.5">已確認商品清單，供入庫人員使用</p></div>
       <button onclick="exportWarehouseList()" class="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>匯出清單
       </button>
@@ -227,7 +213,7 @@
             <th class="text-center px-4 py-3 font-medium text-gray-600">採購回覆</th>
             <th class="text-left px-4 py-3 font-medium text-gray-600">驗收時間</th>
           </tr></thead>
-          <tbody id="warehouseTableBody"><tr><td colspan="10" class="px-4 py-12 text-center text-gray-400 text-sm">尚無已驗收資料</td></tr></tbody>
+          <tbody id="warehouseTableBody"><tr><td colspan="10" class="px-4 py-12 text-center text-gray-400 text-sm">尚無已確認資料</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -625,7 +611,7 @@
   <div id="receiveModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
       <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
-        <h3 id="modalTitle" class="font-semibold text-gray-800">驗收登錄</h3>
+        <h3 id="modalTitle" class="font-semibold text-gray-800">確認登錄</h3>
         <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
@@ -675,7 +661,7 @@
         <div id="modalError" class="hidden mb-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2"></div>
         <div class="flex gap-3">
           <button onclick="closeModal()" class="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-lg text-sm hover:bg-gray-50">取消</button>
-          <button onclick="saveReceiving()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-medium">確認驗收</button>
+          <button onclick="saveReceiving()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-medium">確認</button>
         </div>
       </div>
     </div>
