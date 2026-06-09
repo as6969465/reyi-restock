@@ -85,7 +85,7 @@ body { font-family: -apple-system,'Segoe UI',Arial,sans-serif;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .product-card-sub   { font-size:12px; color:var(--gray); margin-top:3px; }
 .product-card-right { padding:12px 14px 11px; display:flex; flex-direction:column;
-  align-items:flex-end; justify-content:space-between; flex-shrink:0; gap:4px; }
+  align-items:center; justify-content:space-between; flex-shrink:0; gap:4px; text-align:center; }
 .qty-big { font-size:24px; font-weight:900; color:var(--blue); line-height:1; }
 .qty-lbl { font-size:10px; color:var(--gray); }
 .qty-row { display:flex; gap:14px; }
