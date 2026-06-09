@@ -261,7 +261,8 @@ function renderProductCards() {
   const container = document.getElementById('productListContainer');
   if (!container) return;
   const date = currentReceivingDate();
-  const list  = getDateProducts(date).filter(p => p.status === STATUS.PENDING);
+  const list  = getDateProducts(date).filter(p => p.status === STATUS.PENDING)
+    .sort((a,b) => (a.po||'').localeCompare(b.po||''));
   if (!list.length) {
     container.innerHTML = `<div class="empty-state">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
