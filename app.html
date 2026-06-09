@@ -271,7 +271,8 @@
       </div>
     </div>
     <div class="sheet-body">
-      <img id="photoSheetImg" src="" style="width:100%;border-radius:16px;object-fit:contain;max-height:55vh" />
+      <img id="photoSheetImg" src="" onclick="openLightbox(this.src)"
+        style="width:100%;border-radius:16px;object-fit:contain;max-height:55vh;cursor:zoom-in" />
       <div id="photoSheetThumbs" style="display:flex;gap:8px;margin-top:12px;overflow-x:auto;padding-bottom:4px"></div>
       <div style="display:flex;gap:12px;margin-top:16px">
         <button onclick="shiftPhoto(-1)" class="btn" style="flex:1;background:#f3f4f6;color:#374151;border:none">‹ 上一張</button>
@@ -300,6 +301,17 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="firebase.js"></script>
   <script src="app.js"></script>
+  <!-- 全螢幕 Lightbox -->
+  <div id="imgLightbox" onclick="closeLightbox()"
+    style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.92);
+      align-items:center;justify-content:center;cursor:zoom-out">
+    <img id="imgLightboxSrc" src="" alt=""
+      style="max-width:96vw;max-height:92vh;object-fit:contain;border-radius:12px;
+        box-shadow:0 8px 40px rgba(0,0,0,.6);pointer-events:none;
+        transform:scale(.92);transition:transform .2s cubic-bezier(.34,1.56,.64,1)" />
+    <div style="position:absolute;top:16px;right:16px;color:rgba(255,255,255,.6);font-size:13px">點任意處關閉</div>
+  </div>
+
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(()=>{}));

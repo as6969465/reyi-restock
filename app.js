@@ -470,10 +470,7 @@ function setDefectPhoto(i, input) {
 function viewDefectPhoto(i) {
   const p = _defectItems[i];
   if (!p?.photo) return;
-  _photoList=[p.photo]; _photoIdx=0;
-  document.getElementById('photoSheetTitle').textContent='異常照片';
-  document.getElementById('photoCounterLabel').textContent='';
-  renderPhotoSheet(); openSheet('photoSheet');
+  openLightbox(p.photo);
 }
 
 // ── 驗收 Sheet 開啟 ───────────────────────────────────
@@ -841,8 +838,8 @@ function renderReviewSheetBody(p) {
     </div>
     <div style="background:#fffbeb;border-radius:12px;border:1.5px solid #fde68a;padding:12px;margin-bottom:10px">
       <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px">
-        ${cur?.photo ? `<img src="${cur.photo}" style="width:64px;height:64px;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:pointer"
-          onclick="viewPhotos('${reviewIdx.arrivalDate}','${reviewIdx.itemNo}',${_reviewPhotoIdx})" />` : ''}
+        ${cur?.photo ? `<img src="${cur.photo}" style="width:64px;height:64px;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:zoom-in"
+          onclick="openLightbox('${cur.photo}')" />` : ''}
         ${(parseInt(cur?.qty)||0)>0 ? `<div style="flex-shrink:0;text-align:center;min-width:44px"><div style="font-size:10px;color:#92400e;margin-bottom:2px">數量</div><div style="font-size:20px;font-weight:900;color:#d97706;line-height:1">${cur.qty}</div></div>` : ''}
         <div>
           <div style="font-size:10px;font-weight:700;color:#92400e;margin-bottom:4px">
@@ -973,8 +970,8 @@ function openReplyDetail(arrivalDate, itemNo) {
     ? items.map((item, i) => `
         <div style="border:1.5px solid #e5e7eb;border-radius:12px;overflow:hidden;margin-bottom:10px">
           <div style="display:flex;gap:10px;padding:12px;align-items:flex-start">
-            ${item.photo ? `<img src="${item.photo}" style="width:60px;height:60px;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:pointer"
-              onclick="viewPhotos('${arrivalDate}','${itemNo}',${i})" />` : ''}
+            ${item.photo ? `<img src="${item.photo}" style="width:60px;height:60px;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:zoom-in"
+              onclick="openLightbox('${item.photo}')" />` : ''}
             ${(parseInt(item.qty)||0)>0?`<div style="flex-shrink:0;text-align:center;min-width:40px"><div style="font-size:10px;color:#9ca3af">數量</div><div style="font-size:18px;font-weight:900;color:#2563eb;line-height:1">${item.qty}</div></div>`:''}
             <div style="flex:1;min-width:0">
               <div style="font-size:11px;color:#9ca3af;margin-bottom:4px">照片 ${i+1} / ${items.length}${item.category?' · '+item.category:''}</div>
@@ -1048,7 +1045,7 @@ function openPurchaseSheet(arrivalDate, itemNo) {
     ? items.map((item, i) => `
       <div style="background:#f9fafb;border-radius:12px;border:1.5px solid #e5e7eb;padding:12px;margin-bottom:10px">
         <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px">
-          ${item.photo ? `<img src="${item.photo}" style="width:56px;height:56px;border-radius:8px;object-fit:cover;flex-shrink:0" />` : ''}
+          ${item.photo ? `<img src="${item.photo}" style="width:56px;height:56px;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:zoom-in" onclick="openLightbox('${item.photo}')" />` : ''}
           ${(parseInt(item.qty)||0)>0?`<div style="flex-shrink:0;text-align:center;min-width:40px"><div style="font-size:10px;color:#9ca3af">數量</div><div style="font-size:20px;font-weight:900;color:#2563eb;line-height:1">${item.qty}</div></div>`:''}
           <div style="flex:1;min-width:0">
             <div style="font-size:11px;color:#9ca3af;margin-bottom:3px">照片 ${i+1} / ${items.length}${item.category?' · '+item.category:''}</div>
@@ -1500,6 +1497,29 @@ function renderPhotoSheet() {
 }
 function shiftPhoto(dir){_photoIdx=(_photoIdx+dir+_photoList.length)%_photoList.length;renderPhotoSheet();}
 function jumpPhoto(i){_photoIdx=i;renderPhotoSheet();}
+
+// ── Lightbox（全螢幕放大，點任意處關閉）──
+function openLightbox(src) {
+  const lb  = document.getElementById('imgLightbox');
+  const img = document.getElementById('imgLightboxSrc');
+  if (!lb || !img || !src) return;
+  img.src = src;
+  lb.style.display = 'flex';
+  // 入場動畫
+  requestAnimationFrame(() => { img.style.transform = 'scale(1)'; });
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox() {
+  const lb  = document.getElementById('imgLightbox');
+  const img = document.getElementById('imgLightboxSrc');
+  if (!lb) return;
+  img.style.transform = 'scale(.92)';
+  setTimeout(() => {
+    lb.style.display = 'none';
+    img.src = '';
+    document.body.style.overflow = '';
+  }, 180);
+}
 
 // ── 刪除勾選（驗收頁目前改為長按/滑動，暫用 confirm）──
 async function deleteProductCard(date, idx) {
