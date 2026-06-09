@@ -786,7 +786,7 @@ function renderResolvedTable() {
       <td class="px-4 py-3 text-xs">${(p.defectReasons||[]).map(r=>`<span class="inline-block bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full mr-1 mb-0.5">${r}</span>`).join('')||'—'}</td>
       <td class="px-4 py-3 text-xs text-gray-600 max-w-[140px] truncate" title="${p.defectNote||''}">${p.defectNote||'—'}</td>
       <td class="px-4 py-3 text-xs text-gray-600">${p.defectStaff||'—'}</td>
-      <td class="px-4 py-3">${photoCell}</td>
+      <td class="px-4 py-3 text-center">${photoCell}</td>
     </tr>`;
   }).join('');
 }
