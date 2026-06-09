@@ -430,7 +430,7 @@ function renderProductTable() {
       </td>
       <td class="px-4 py-3 text-center">
         ${p.status === STATUS.PENDING
-          ? `<button onclick="startDesktopReceiving('${date}',${i})" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg">驗收</button>`
+          ? `<button onclick="startDesktopReceiving('${date}',${i})" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg">確認</button>`
           : p.status === STATUS.RESOLVED
             ? '<span class="text-xs text-gray-400">已處理</span>'
             : `<button onclick="openModal('${date}',${i})" class="bg-gray-200 hover:bg-gray-300 text-gray-600 text-xs px-3 py-1.5 rounded-lg">修改</button>`}
