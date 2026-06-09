@@ -732,7 +732,9 @@ function renderWarehouseCards() {
 function renderReviewCards() {
   const container = document.getElementById('reviewListContainer');
   if (!container) return;
-  const list = getAllProducts().filter(p=>p.badQty>0);
+  const from = document.getElementById('rv-from')?.value;
+  const to   = document.getElementById('rv-to')?.value;
+  const list = getAllProducts().filter(p=>p.badQty>0 && (!from||p.arrivalDate>=from) && (!to||p.arrivalDate<=to));
   const pending = list.filter(p=>p.status===STATUS.ABNORMAL).length;
   const proc    = list.filter(p=>p.status===STATUS.PROCUREMENT).length;
   const done    = list.filter(p=>p.status===STATUS.RESOLVED).length;
@@ -1012,7 +1014,9 @@ function openReplyDetail(arrivalDate, itemNo) {
 function renderPurchaseCards() {
   const container = document.getElementById('purchaseListContainer');
   if (!container) return;
-  const list = getAllProducts().filter(p=>p.status===STATUS.PROCUREMENT);
+  const from = document.getElementById('pur-from')?.value;
+  const to   = document.getElementById('pur-to')?.value;
+  const list = getAllProducts().filter(p=>p.status===STATUS.PROCUREMENT && (!from||p.arrivalDate>=from) && (!to||p.arrivalDate<=to));
   updateBadges();
   if (!list.length) { container.innerHTML='<div class="empty-state"><p style="font-size:15px;font-weight:600">尚無待回覆項目</p></div>'; return; }
   container.innerHTML = list.map(p => `
@@ -1148,7 +1152,9 @@ async function submitPurchaseReply() {
 function renderResolvedCards() {
   const container = document.getElementById('resolvedListContainer');
   if (!container) return;
-  const list = getAllProducts().filter(p=>p.status===STATUS.RESOLVED);
+  const from = document.getElementById('res-from')?.value;
+  const to   = document.getElementById('res-to')?.value;
+  const list = getAllProducts().filter(p=>p.status===STATUS.RESOLVED && (!from||p.arrivalDate>=from) && (!to||p.arrivalDate<=to));
   if (!list.length) { container.innerHTML='<div class="empty-state"><p>尚無已處理記錄</p></div>'; return; }
   container.innerHTML = list.map(p => `
     <div class="product-card slide-up" data-status="${p.status}">

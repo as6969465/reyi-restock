@@ -56,11 +56,19 @@
 
   <!-- 入庫清單 -->
   <div id="page-warehouse" class="app-page">
-    <div class="page-header"><h1>入庫清單</h1><p>已驗收商品</p></div>
-    <div style="padding:10px 12px 0;display:flex;gap:8px;align-items:center">
-      <input type="date" id="wh-from" onchange="renderWarehouseCards()" style="flex:1;border:1.5px solid #e5e7eb;border-radius:12px;padding:9px;font-size:13px;outline:none" />
-      <span style="color:#9ca3af;flex-shrink:0">～</span>
-      <input type="date" id="wh-to" onchange="renderWarehouseCards()" style="flex:1;border:1.5px solid #e5e7eb;border-radius:12px;padding:9px;font-size:13px;outline:none" />
+    <div class="page-header">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+        <div><h1>入庫清單</h1><p>已驗收商品</p></div>
+        <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+          <div style="display:flex;align-items:center;gap:4px">
+            <input type="date" id="wh-from" onchange="renderWarehouseCards()"
+              style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;padding:5px 7px;font-size:11px;font-weight:600;outline:none;width:112px" />
+            <span style="color:rgba(255,255,255,.7);font-size:11px">～</span>
+            <input type="date" id="wh-to" onchange="renderWarehouseCards()"
+              style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;padding:5px 7px;font-size:11px;font-weight:600;outline:none;width:112px" />
+          </div>
+        </div>
+      </div>
     </div>
     <div style="padding:8px 12px 0">
       <select id="wh-biz-app-filter" onchange="renderWarehouseCards()"
@@ -74,7 +82,18 @@
 
   <!-- 異常檢核 -->
   <div id="page-review" class="app-page">
-    <div class="page-header"><h1>異常檢核</h1><p>審核不良品，填寫異常商流</p></div>
+    <div class="page-header">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+        <div><h1>異常檢核</h1><p>審核不良品，填寫異常商流</p></div>
+        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+          <input type="date" id="rv-from" onchange="renderReviewCards()"
+            style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;padding:5px 7px;font-size:11px;font-weight:600;outline:none;width:112px" />
+          <span style="color:rgba(255,255,255,.7);font-size:11px">～</span>
+          <input type="date" id="rv-to" onchange="renderReviewCards()"
+            style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;padding:5px 7px;font-size:11px;font-weight:600;outline:none;width:112px" />
+        </div>
+      </div>
+    </div>
     <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
       <div class="stat-card"><div class="val" id="rev-stat-pending" style="color:#dc2626">0</div><div class="lbl">待檢核</div></div>
       <div class="stat-card"><div class="val" id="rev-stat-proc" style="color:#d97706">0</div><div class="lbl">待採購</div></div>
@@ -85,11 +104,17 @@
 
   <!-- 異常回覆 -->
   <div id="page-report" class="app-page">
-    <div class="page-header"><h1>異常回覆</h1><p>商品異常回覆商流</p></div>
-    <div style="padding:12px;display:flex;gap:8px">
-      <input type="date" id="rp-from" onchange="renderReportCards()" style="flex:1;border:1.5px solid #e5e7eb;border-radius:12px;padding:10px;font-size:14px;outline:none" />
-      <span style="align-self:center;color:#9ca3af">～</span>
-      <input type="date" id="rp-to" onchange="renderReportCards()" style="flex:1;border:1.5px solid #e5e7eb;border-radius:12px;padding:10px;font-size:14px;outline:none" />
+    <div class="page-header">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+        <div><h1>異常回覆</h1><p>商品異常回覆商流</p></div>
+        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+          <input type="date" id="rp-from" onchange="renderReportCards()"
+            style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;padding:5px 7px;font-size:11px;font-weight:600;outline:none;width:112px" />
+          <span style="color:rgba(255,255,255,.7);font-size:11px">～</span>
+          <input type="date" id="rp-to" onchange="renderReportCards()"
+            style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;padding:5px 7px;font-size:11px;font-weight:600;outline:none;width:112px" />
+        </div>
+      </div>
     </div>
     <div id="reportListContainer" class="card-list" style="flex:1"></div>
     <div style="padding:12px"><button onclick="exportReport()" class="btn" style="width:100%;background:#dc2626;color:#fff;border:none">匯出異常報表</button></div>
@@ -97,13 +122,35 @@
 
   <!-- 待回覆清單 -->
   <div id="page-purchase" class="app-page">
-    <div class="page-header"><h1>待回覆清單</h1><p>請填寫異常商品處理方式</p></div>
+    <div class="page-header">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+        <div><h1>待回覆清單</h1><p>請填寫異常商品處理方式</p></div>
+        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+          <input type="date" id="pur-from" onchange="renderPurchaseCards()"
+            style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;padding:5px 7px;font-size:11px;font-weight:600;outline:none;width:112px" />
+          <span style="color:rgba(255,255,255,.7);font-size:11px">～</span>
+          <input type="date" id="pur-to" onchange="renderPurchaseCards()"
+            style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;padding:5px 7px;font-size:11px;font-weight:600;outline:none;width:112px" />
+        </div>
+      </div>
+    </div>
     <div id="purchaseListContainer" class="card-list" style="flex:1"></div>
   </div>
 
   <!-- 已處理記錄 -->
   <div id="page-resolved" class="app-page">
-    <div class="page-header"><h1>已處理記錄</h1><p>採購回覆完成的異常商品</p></div>
+    <div class="page-header">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+        <div><h1>已處理記錄</h1><p>採購回覆完成的異常商品</p></div>
+        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+          <input type="date" id="res-from" onchange="renderResolvedCards()"
+            style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;padding:5px 7px;font-size:11px;font-weight:600;outline:none;width:112px" />
+          <span style="color:rgba(255,255,255,.7);font-size:11px">～</span>
+          <input type="date" id="res-to" onchange="renderResolvedCards()"
+            style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;padding:5px 7px;font-size:11px;font-weight:600;outline:none;width:112px" />
+        </div>
+      </div>
+    </div>
     <div id="resolvedListContainer" class="card-list" style="flex:1"></div>
     <div style="padding:12px"><button onclick="exportResolvedExcel()" class="btn" style="width:100%;background:#059669;color:#fff;border:none">匯出 Excel</button></div>
   </div>
