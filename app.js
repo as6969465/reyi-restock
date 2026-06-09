@@ -4,17 +4,9 @@
 
 // ── 常數 ─────────────────────────────────────────────
 // 大分類（三選一）
-const DEFECT_CATEGORIES = ['臨時到貨', '取消到貨', '其他異常'];
-// 原因（固定清單，複選，與分類無關）
-const DEFECT_REASONS = [
-  '品名不符','數量不符','規格不符','外箱標示異常','條碼異常',
-  '臨時到貨','取消到貨',
-  '商品異常-(多筆)','商品異常-殘膠','商品異常-汙損','商品異常-破膜',
-  '商品異常-凹損','商品異常-破損','商品異常-未封口','商品異常-效期模糊',
-  '裸瓶','混效期',
-  '效期異常-無第二條件','效期異常-未來日','效期異常-效期超允收','效期異常-保存期限不合理',
-  '其他'
-];
+// 分類與原因改為動態（由 Firestore defect_config 管理），以下 getter 取代固定常數
+function DEFECT_CATEGORIES() { return getDefectCategories(); }
+function DEFECT_REASONS()    { return getDefectReasonsList(); }
 // 向下相容
 const DEFECT_SUB_REASONS = {};
 // 取得顯示用原因文字（供卡片/報表顯示）
@@ -58,6 +50,32 @@ async function loadBizAttrs() {
     saveBizAttrs(attrs);
     return attrs;
   } catch(e) { return getBizAttrs(); }
+}
+
+// ── 異常設定 ──────────────────────────────────────────
+const DEFAULT_DEFECT_CATEGORIES = ['臨時到貨','取消到貨','其他異常'];
+const DEFAULT_DEFECT_REASONS = [
+  '品名不符','數量不符','規格不符','外箱標示異常','條碼異常',
+  '臨時到貨','取消到貨','商品異常-(多筆)','商品異常-殘膠','商品異常-汙損',
+  '商品異常-破膜','商品異常-凹損','商品異常-破損','商品異常-未封口',
+  '商品異常-效期模糊','裸瓶','混效期','效期異常-無第二條件','效期異常-未來日',
+  '效期異常-效期超允收','效期異常-保存期限不合理','其他'
+];
+function getDefectCategories() {
+  const d = JSON.parse(localStorage.getItem('rr_defect_config') || 'null');
+  return d?.categories || DEFAULT_DEFECT_CATEGORIES;
+}
+function getDefectReasonsList() {
+  const d = JSON.parse(localStorage.getItem('rr_defect_config') || 'null');
+  return d?.reasons || DEFAULT_DEFECT_REASONS;
+}
+function saveDefectConfig(cfg) { localStorage.setItem('rr_defect_config', JSON.stringify(cfg)); }
+async function loadDefectConfig() {
+  try {
+    const cfg = await DefectConfigAPI.get();
+    saveDefectConfig(cfg);
+    return cfg;
+  } catch(e) { return { categories: getDefectCategories(), reasons: getDefectReasonsList() }; }
 }
 
 
@@ -124,6 +142,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // 載入業務屬性
   loadBizAttrs().catch(()=>{});
+  loadDefectConfig().catch(()=>{});
 
   // 移除 Loading 遮罩的函式（確保一定會執行）
   const hideLoading = () => {
@@ -390,10 +409,10 @@ function renderDefectItems(readonly) {
     ${isMatch?'✓':'⚠'} 數量合計：${totalEntered} / ${badQty}
   </div>` : '';
 
-  const catBtns = DEFECT_CATEGORIES.map(c=>{const active=item.category===c;return `<button onclick="${readonly?'':`setDefectCategory(${i},'${c}')`}" style="padding:6px 12px;border-radius:18px;border:1.5px solid ${active?'#2563eb':'#e5e7eb'};background:${active?'#dbeafe':'#f8fafc'};color:${active?'#1d4ed8':'#6b7280'};font-size:12px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap">${c}</button>`;}).join('');
+  const catBtns = DEFECT_CATEGORIES().map(c=>{const active=item.category===c;return `<button onclick="${readonly?'':`setDefectCategory(${i},'${c}')`}" style="padding:6px 12px;border-radius:18px;border:1.5px solid ${active?'#2563eb':'#e5e7eb'};background:${active?'#dbeafe':'#f8fafc'};color:${active?'#1d4ed8':'#6b7280'};font-size:12px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap">${c}</button>`;}).join('');
 
   const reasonChips = !readonly
-    ? `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:6px">${DEFECT_REASONS.map(r=>{const sel=(item.reasons||[]).includes(r);return `<button type="button" onclick="toggleDefectSubReason(${i},'${r}')" style="padding:8px 4px;border-radius:8px;border:1.5px solid ${sel?'#2563eb':'#e5e7eb'};background:${sel?'#dbeafe':'#f8fafc'};color:${sel?'#1d4ed8':'#6b7280'};font-size:12px;font-weight:${sel?'700':'400'};cursor:pointer;line-height:1.4;text-align:center;word-break:break-all">${r}</button>`;}).join('')}</div>`
+    ? `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:6px">${DEFECT_REASONS().map(r=>{const sel=(item.reasons||[]).includes(r);return `<button type="button" onclick="toggleDefectSubReason(${i},'${r}')" style="padding:8px 4px;border-radius:8px;border:1.5px solid ${sel?'#2563eb':'#e5e7eb'};background:${sel?'#dbeafe':'#f8fafc'};color:${sel?'#1d4ed8':'#6b7280'};font-size:12px;font-weight:${sel?'700':'400'};cursor:pointer;line-height:1.4;text-align:center;word-break:break-all">${r}</button>`;}).join('')}</div>`
     : ((item.reasons||[]).length?`<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${(item.reasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')}</div>`:'');
 
   const photoMain = item.photo
@@ -868,7 +887,7 @@ function renderReviewSheetBody(p) {
   // 當前照片＋可編輯的分類/原因（預填驗收時的資料）
   const i = _reviewPhotoIdx;
   // 分類按鈕（預填，可修改）
-  const catBtns = DEFECT_CATEGORIES.map(c => {
+  const catBtns = DEFECT_CATEGORIES().map(c => {
     const active = cur?.category === c;
     return `<button onclick="rvSetCategory(${i},'${c}')"
       style="padding:6px 14px;border-radius:20px;border:1.5px solid ${active?'#f59e0b':'#e5e7eb'};
@@ -877,7 +896,7 @@ function renderReviewSheetBody(p) {
   }).join('');
   // 原因勾選（預填，可修改）
   const reasonChips = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:6px">
-    ${DEFECT_REASONS.map(r => {
+    ${DEFECT_REASONS().map(r => {
       const sel = (cur?.reasons||[]).includes(r);
       return `<button type="button" onclick="rvToggleReason(${i},'${r}')"
         style="padding:8px 4px;border-radius:8px;border:1.5px solid ${sel?'#f59e0b':'#e5e7eb'};
@@ -1259,10 +1278,17 @@ function viewResolvedPhotos(photos) {
 // ══════════════════════════════════════════════════════
 async function loadAndRenderAdmin() {
   try {
-    const [roles, users, attrs] = await Promise.all([RoleAPI.list(), UserAPI.list(), (BizAttrAPI?.list?.()||Promise.resolve([]))]);
-    saveRoles(roles); saveUsers(users); if(attrs.length) saveBizAttrs(attrs);
+    const [roles, users, attrs, defectCfg] = await Promise.all([
+      RoleAPI.list(), UserAPI.list(),
+      (BizAttrAPI?.list?.()||Promise.resolve([])),
+      DefectConfigAPI.get()
+    ]);
+    saveRoles(roles); saveUsers(users);
+    if(attrs.length) saveBizAttrs(attrs);
+    saveDefectConfig(defectCfg);
   } catch(e) { console.warn('admin load:', e.message); }
   renderRoleCards(); renderUserCards(); refreshRoleOptions(); renderBizAttrCards();
+  renderDefectCatCards(); renderDefectReasonCards();
   const user = getCurrentUser();
   const el = document.getElementById('userDisplay-a');
   if (el) el.textContent = `${user?.name||''} · ${getRoleName(currentRole)}`;
@@ -1308,6 +1334,77 @@ async function deleteBizAttr(idOrIdx) {
     saveBizAttrs(attrs);
     renderBizAttrCards();
   } catch(e) { alert(e.message); }
+}
+
+// ── 異常設定管理 ──────────────────────────────────────
+function renderDefectCatCards() {
+  const container = document.getElementById('defectCatListContainer');
+  if (!container) return;
+  const cats = getDefectCategories();
+  if (!cats.length) { container.innerHTML='<div style="padding:8px 16px;font-size:13px;color:#9ca3af">尚無分類，請新增</div>'; return; }
+  container.innerHTML = `<div style="padding:8px 16px;display:flex;flex-wrap:wrap;gap:8px">
+    ${cats.map((c,i) => `
+      <div style="display:flex;align-items:center;gap:6px;background:#fef3c7;border:1.5px solid #fde68a;border-radius:20px;padding:6px 12px">
+        <span style="font-size:13px;font-weight:600;color:#92400e">${c}</span>
+        <button onclick="deleteDefectCategory(${i})" style="background:none;border:none;color:#d97706;cursor:pointer;font-size:14px;line-height:1;padding:0">✕</button>
+      </div>`).join('')}
+  </div>`;
+}
+
+function renderDefectReasonCards() {
+  const container = document.getElementById('defectReasonListContainer');
+  if (!container) return;
+  const reasons = getDefectReasonsList();
+  if (!reasons.length) { container.innerHTML='<div style="padding:8px 16px;font-size:13px;color:#9ca3af">尚無原因，請新增</div>'; return; }
+  container.innerHTML = `<div style="padding:8px 16px;display:flex;flex-wrap:wrap;gap:8px">
+    ${reasons.map((r,i) => `
+      <div style="display:flex;align-items:center;gap:6px;background:#fef2f2;border:1.5px solid #fecaca;border-radius:20px;padding:6px 12px">
+        <span style="font-size:13px;font-weight:600;color:#991b1b">${r}</span>
+        <button onclick="deleteDefectReason(${i})" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:14px;line-height:1;padding:0">✕</button>
+      </div>`).join('')}
+  </div>`;
+}
+
+async function addDefectCategory() {
+  const input = document.getElementById('defectCatInput');
+  const name = input?.value.trim();
+  if (!name) return;
+  const cfg = { categories: [...getDefectCategories(), name], reasons: getDefectReasonsList() };
+  saveDefectConfig(cfg);
+  try { await DefectConfigAPI.saveCategories(cfg.categories); } catch(e) { console.warn(e.message); }
+  input.value = '';
+  renderDefectCatCards();
+}
+
+async function deleteDefectCategory(idx) {
+  if (!confirm('確定刪除此異常分類？')) return;
+  const cats = getDefectCategories();
+  cats.splice(idx, 1);
+  const cfg = { categories: cats, reasons: getDefectReasonsList() };
+  saveDefectConfig(cfg);
+  try { await DefectConfigAPI.saveCategories(cats); } catch(e) { console.warn(e.message); }
+  renderDefectCatCards();
+}
+
+async function addDefectReason() {
+  const input = document.getElementById('defectReasonInput');
+  const name = input?.value.trim();
+  if (!name) return;
+  const cfg = { categories: getDefectCategories(), reasons: [...getDefectReasonsList(), name] };
+  saveDefectConfig(cfg);
+  try { await DefectConfigAPI.saveReasons(cfg.reasons); } catch(e) { console.warn(e.message); }
+  input.value = '';
+  renderDefectReasonCards();
+}
+
+async function deleteDefectReason(idx) {
+  if (!confirm('確定刪除此異常原因？')) return;
+  const reasons = getDefectReasonsList();
+  reasons.splice(idx, 1);
+  const cfg = { categories: getDefectCategories(), reasons };
+  saveDefectConfig(cfg);
+  try { await DefectConfigAPI.saveReasons(reasons); } catch(e) { console.warn(e.message); }
+  renderDefectReasonCards();
 }
 
 function renderRoleCards() {

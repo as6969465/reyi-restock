@@ -86,5 +86,24 @@ const BizAttrAPI = {
   }
 };
 
+// ── 異常設定 API ──────────────────────────────────────
+const DefectConfigAPI = {
+  async get() {
+    const [cs, rs] = await Promise.all([
+      db.collection('defect_config').doc('categories').get(),
+      db.collection('defect_config').doc('reasons').get()
+    ]);
+    const cats    = cs.exists ? (cs.data().items||[]) : ['臨時到貨','取消到貨','其他異常'];
+    const reasons = rs.exists ? (rs.data().items||[]) : [];
+    return { categories: cats, reasons };
+  },
+  async saveCategories(items) {
+    await db.collection('defect_config').doc('categories').set({ items });
+  },
+  async saveReasons(items) {
+    await db.collection('defect_config').doc('reasons').set({ items });
+  }
+};
+
 ProductAPI._clearUnread=async function(id){await db.collection(COL.products).doc(id).update({proc_reply_unread:false});};
-window.AuthAPI=AuthAPI;window.RoleAPI=RoleAPI;window.UserAPI=UserAPI;window.ProductAPI=ProductAPI;window.BizAttrAPI=BizAttrAPI;window.ensureAdmin=ensureAdmin;
+window.AuthAPI=AuthAPI;window.RoleAPI=RoleAPI;window.UserAPI=UserAPI;window.ProductAPI=ProductAPI;window.BizAttrAPI=BizAttrAPI;window.DefectConfigAPI=DefectConfigAPI;window.ensureAdmin=ensureAdmin;
