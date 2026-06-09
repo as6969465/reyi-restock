@@ -383,7 +383,6 @@ function renderDefectItems(readonly) {
   container.innerHTML = `
     <div style="display:flex;gap:8px;align-items:center;overflow-x:auto;padding-bottom:6px;margin-bottom:8px">
       ${thumbs}
-      ${!readonly?`<button onclick="addDefectItem()" style="width:50px;height:50px;border-radius:10px;flex-shrink:0;border:2px dashed #e5e7eb;background:#f8fafc;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;color:#9ca3af;line-height:1">+</button>`:''}
     </div>
     ${statsEl}
     <div style="background:#fef9f9;border-radius:14px;border:1.5px solid #fecaca;padding:12px">

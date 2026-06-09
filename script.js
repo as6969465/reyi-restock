@@ -962,7 +962,6 @@ function renderDeskDefectItems() {
   container.innerHTML = `
     <div class="flex gap-2 items-center overflow-x-auto pb-2 mb-2">
       ${thumbs}
-      <button onclick="desktopAddDefectItem()" class="flex-shrink-0 flex items-center justify-center border-2 border-dashed border-gray-200 rounded-lg bg-gray-50 text-gray-400 text-lg hover:border-blue-300" style="width:48px;height:48px">+</button>
     </div>
     ${statsHtml}
     <div class="bg-red-50 border border-red-100 rounded-xl p-3">
