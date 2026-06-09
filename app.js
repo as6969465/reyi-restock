@@ -911,7 +911,7 @@ function renderReviewSheetBody(p) {
         font-size:12px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap">${c}</button>`;
   }).join('');
   // 原因勾選（預填，可修改）
-  const reasonChips = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:6px">
+  const reasonChips = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:6px">
     ${DEFECT_REASONS().map(r => {
       const sel = (cur?.reasons||[]).includes(r);
       return `<button type="button" onclick="rvToggleReason(${i},'${r}')"

@@ -1029,7 +1029,7 @@ function renderDeskDefectItems() {
       class="text-xs px-2.5 py-1 rounded-full border transition-colors ${item.category===c?'bg-blue-100 border-blue-400 text-blue-600 font-semibold':'bg-white border-gray-200 text-gray-500 hover:border-blue-300'}">${c}</button>`
   ).join('');
 
-  const subReasons = `<div class="grid gap-1.5 mt-2" style="grid-template-columns:repeat(4,1fr)">${DEFECT_REASONS.map(r=>{const s=(item.reasons||[]).includes(r);return `<button type="button" onclick="deskToggleSubReason(${i},'${r}')" style="padding:7px 4px;border-radius:6px;border:1.5px solid ${s?'#2563eb':'#e5e7eb'};background:${s?'#dbeafe':'#f8fafc'};color:${s?'#1d4ed8':'#6b7280'};font-size:12px;font-weight:${s?'700':'400'};cursor:pointer;line-height:1.4;text-align:center;word-break:break-all">${r}</button>`;}).join('')}</div>`;
+  const subReasons = `<div class="grid gap-1.5 mt-2" style="grid-template-columns:repeat(3,1fr)">${DEFECT_REASONS.map(r=>{const s=(item.reasons||[]).includes(r);return `<button type="button" onclick="deskToggleSubReason(${i},'${r}')" style="padding:7px 4px;border-radius:6px;border:1.5px solid ${s?'#2563eb':'#e5e7eb'};background:${s?'#dbeafe':'#f8fafc'};color:${s?'#1d4ed8':'#6b7280'};font-size:12px;font-weight:${s?'700':'400'};cursor:pointer;line-height:1.4;text-align:center;word-break:break-all">${r}</button>`;}).join('')}</div>`;
 
   container.innerHTML = `
     <div class="flex gap-2 items-center overflow-x-auto pb-2 mb-2">
@@ -1236,7 +1236,7 @@ function renderReviewPhotoPanel(p) {
   ).join('');
 
   // 原因勾選（預填 + 可修改）
-  const subReasons = `<div class="grid gap-1.5 mt-2" style="grid-template-columns:repeat(4,1fr)">
+  const subReasons = `<div class="grid gap-1.5 mt-2" style="grid-template-columns:repeat(3,1fr)">
     ${DEFECT_REASONS.map(r=>{
       const s=(cur.reasons||[]).includes(r);
       return `<button type="button" onclick="deskRvToggleReason(${i},'${r}')"
