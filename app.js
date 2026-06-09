@@ -389,11 +389,9 @@ function renderDefectItems(readonly) {
     <div style="background:#fef9f9;border-radius:14px;border:1.5px solid #fecaca;padding:12px">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
         <div style="display:flex;align-items:center;gap:8px">
-          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0">
-            ${photoMain}
-            ${qtyInput}
-          </div>
-          <span style="font-size:11px;color:#9ca3af;align-self:flex-end;padding-bottom:2px">${i+1} / ${_defectItems.length}</span>
+          ${photoMain}
+          ${qtyInput}
+          <span style="font-size:11px;color:#9ca3af">${i+1} / ${_defectItems.length}</span>
         </div>
         ${!readonly?`<button onclick="removeDefectItem(${i})" style="background:none;border:none;color:#fca5a5;cursor:pointer;font-size:13px;padding:4px">x 刪除</button>`:''}
       </div>

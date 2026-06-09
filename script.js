@@ -968,11 +968,9 @@ function renderDeskDefectItems() {
     <div class="bg-red-50 border border-red-100 rounded-xl p-3">
       <div class="flex items-start justify-between mb-2">
         <div class="flex items-center gap-2">
-          <div class="flex flex-col items-center gap-1.5 flex-shrink-0">
-            ${photoEl}
-            ${qtyEl}
-          </div>
-          <span class="text-xs text-gray-400 self-end pb-1">${i+1} / ${_deskDefectItems.length}</span>
+          ${photoEl}
+          ${qtyEl}
+          <span class="text-xs text-gray-400">${i+1} / ${_deskDefectItems.length}</span>
         </div>
         <button onclick="deskRemoveDefectItem(${i})" class="text-red-300 hover:text-red-500 text-sm flex-shrink-0">✕ 刪除</button>
       </div>
