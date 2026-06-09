@@ -317,12 +317,21 @@
 
   <!-- ===== 6. 已處理記錄 (採購人員) ===== -->
   <div id="page-resolved" class="p-6 hidden">
-    <div class="flex items-center justify-between mb-5">
+    <div class="flex items-center justify-between mb-4">
       <div><h2 class="text-lg font-semibold text-gray-800">已處理記錄</h2>
         <p class="text-xs text-gray-500 mt-0.5">已回覆完成的異常商品記錄</p></div>
       <button onclick="exportResolvedExcel()" class="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded-lg flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>匯出 Excel
       </button>
+    </div>
+    <div class="mb-4">
+      <select id="res-cat-filter-desk" onchange="renderResolvedTable()"
+        class="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none bg-white">
+        <option value="">全部大分類</option>
+        <option value="食品">食品</option>
+        <option value="居家美妝">居家美妝</option>
+        <option value="預購項目">預購項目</option>
+      </select>
     </div>
     <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <div class="overflow-x-auto">
@@ -338,8 +347,9 @@
             <th class="text-left px-4 py-3 font-medium text-gray-600">異常原因</th>
             <th class="text-left px-4 py-3 font-medium text-gray-600">其他說明</th>
             <th class="text-left px-4 py-3 font-medium text-gray-600">物流回覆專員</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">照片</th>
           </tr></thead>
-          <tbody id="resolvedTableBody"><tr><td colspan="10" class="px-4 py-12 text-center text-gray-400 text-sm">尚無已處理記錄</td></tr></tbody>
+          <tbody id="resolvedTableBody"><tr><td colspan="11" class="px-4 py-12 text-center text-gray-400 text-sm">尚無已處理記錄</td></tr></tbody>
         </table>
       </div>
     </div>

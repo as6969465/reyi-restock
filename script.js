@@ -740,9 +740,20 @@ function renderPurchaseTable() {
 // ── 6. 已處理記錄 ─────────────────────────────────────
 function renderResolvedTable() {
   const tbody = document.getElementById('resolvedTableBody');
-  const list  = getFilteredAllProducts().filter(p => p.status === STATUS.RESOLVED);
-  if (!list.length) { tbody.innerHTML='<tr><td colspan="10" class="px-4 py-12 text-center text-gray-400 text-sm">尚無已處理記錄</td></tr>'; return; }
-  tbody.innerHTML = list.map(p => `
+  const catFilter = document.getElementById('res-cat-filter-desk')?.value || '';
+  let list = getFilteredAllProducts().filter(p => p.status === STATUS.RESOLVED);
+  if (catFilter) list = list.filter(p => p.cat === catFilter);
+  if (!list.length) { tbody.innerHTML='<tr><td colspan="11" class="px-4 py-12 text-center text-gray-400 text-sm">尚無已處理記錄</td></tr>'; return; }
+  tbody.innerHTML = list.map(p => {
+    const photos = (p.photos||[]).filter(Boolean);
+    const photoCell = photos.length
+      ? `<button onclick="openDeskResolvedPhotos(${JSON.stringify(photos).replace(/"/g,'&quot;')})"
+           class="flex items-center gap-1 bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 rounded-lg px-2 py-1 text-xs font-medium">
+           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+           照片(${photos.length})
+         </button>`
+      : '<span class="text-xs text-gray-300">—</span>';
+    return `
     <tr class="border-b border-gray-100 hover:bg-green-50">
       <td class="px-4 py-3 text-xs text-gray-500">${p.arrivalDate||'—'}</td>
       <td class="px-4 py-3 text-xs text-gray-500">${p.defectTime||'—'}</td>
@@ -754,7 +765,49 @@ function renderResolvedTable() {
       <td class="px-4 py-3 text-xs">${(p.defectReasons||[]).map(r=>`<span class="inline-block bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full mr-1 mb-0.5">${r}</span>`).join('')||'—'}</td>
       <td class="px-4 py-3 text-xs text-gray-600 max-w-[140px] truncate" title="${p.defectNote||''}">${p.defectNote||'—'}</td>
       <td class="px-4 py-3 text-xs text-gray-600">${p.defectStaff||'—'}</td>
-    </tr>`).join('');
+      <td class="px-4 py-3">${photoCell}</td>
+    </tr>`;
+  }).join('');
+}
+
+function openDeskResolvedPhotos(photos) {
+  const existing = document.getElementById('deskResolvedPhotoModal');
+  if (existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'deskResolvedPhotoModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px';
+  modal.onclick = e => { if (e.target===modal) modal.remove(); };
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:16px;max-width:640px;width:100%;max-height:80vh;overflow-y:auto;padding:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="font-size:16px;font-weight:700;color:#111">異常照片</h3>
+        <button onclick="document.getElementById('deskResolvedPhotoModal').remove()" style="background:#f3f4f6;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px;color:#374151">關閉</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+        ${photos.map((src,i)=>`
+          <div style="position:relative;border-radius:10px;overflow:hidden;background:#f3f4f6">
+            <img src="${src}" style="width:100%;aspect-ratio:1;object-fit:cover;cursor:pointer;display:block"
+              onclick="openDeskLightbox('${src}')" />
+            <a href="${src}" download="photo_${i+1}.jpg"
+              style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.55);border-radius:6px;padding:4px 8px;display:flex;align-items:center;gap:3px;font-size:11px;color:#fff;text-decoration:none">
+              <svg style="width:12px;height:12px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              下載
+            </a>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function openDeskLightbox(src) {
+  const existing = document.getElementById('deskLightboxOverlay');
+  if (existing) existing.remove();
+  const el = document.createElement('div');
+  el.id = 'deskLightboxOverlay';
+  el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:2000;display:flex;align-items:center;justify-content:center;cursor:zoom-out';
+  el.onclick = () => el.remove();
+  el.innerHTML = `<img src="${src}" style="max-width:90vw;max-height:90vh;object-fit:contain;border-radius:8px" />`;
+  document.body.appendChild(el);
 }
 
 function exportResolvedExcel() {
