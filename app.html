@@ -161,6 +161,12 @@
         </div>
       </div>
     </div>
+    <div style="padding:8px 12px 0">
+      <select id="res-cat-filter" onchange="renderResolvedCards()"
+        style="width:100%;border:1.5px solid #e5e7eb;border-radius:12px;padding:9px 12px;font-size:13px;outline:none;background:#fff">
+        <option value="">全部大分類</option>
+      </select>
+    </div>
     <div id="resolvedListContainer" class="card-list" style="flex:1"></div>
     <div style="padding:12px"><button onclick="exportResolvedExcel()" class="btn" style="width:100%;background:#059669;color:#fff;border:none">匯出 Excel</button></div>
   </div>

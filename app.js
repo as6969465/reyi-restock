@@ -1203,9 +1203,22 @@ async function submitPurchaseReply() {
 function renderResolvedCards() {
   const container = document.getElementById('resolvedListContainer');
   if (!container) return;
-  const from = document.getElementById('res-from')?.value;
-  const to   = document.getElementById('res-to')?.value;
-  const list = getAllProducts().filter(p=>p.status===STATUS.RESOLVED && (!from||p.arrivalDate>=from) && (!to||p.arrivalDate<=to));
+  const from    = document.getElementById('res-from')?.value;
+  const to      = document.getElementById('res-to')?.value;
+  const catSel  = document.getElementById('res-cat-filter');
+  const catFilter = catSel?.value || '';
+  // 動態填充大分類選項
+  const allResolved = getAllProducts().filter(p=>p.status===STATUS.RESOLVED);
+  const cats = [...new Set(allResolved.map(p=>p.defectClass||'').filter(Boolean))].sort();
+  if (catSel) {
+    const cur = catSel.value;
+    catSel.innerHTML = '<option value="">全部大分類</option>' +
+      cats.map(c=>`<option value="${c}" ${cur===c?'selected':''}>${c}</option>`).join('');
+  }
+  const list = allResolved.filter(p=>
+    (!from||p.arrivalDate>=from) && (!to||p.arrivalDate<=to) &&
+    (!catFilter||p.defectClass===catFilter)
+  );
   if (!list.length) { container.innerHTML='<div class="empty-state"><p>尚無已處理記錄</p></div>'; return; }
   container.innerHTML = list.map(p => `
     <div class="product-card slide-up" data-status="${p.status}">
