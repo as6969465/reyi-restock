@@ -275,6 +275,7 @@ function renderProductCards() {
   container.innerHTML = list.map((p, i) => `
     <div class="product-card slide-up" data-status="${p.status}" onclick="startReceiving('${date}',${i})">
       <div class="product-card-inner">
+        ${p.po ? `<div style="font-size:10px;color:#6b7280;margin-bottom:2px">PO：${p.po}</div>` : ''}
         <div class="product-card-name">${p.name}</div>
         <div class="product-card-sub">${p.itemNo||'—'} · ${p.cat||'—'}</div>
         ${p.received && p.badQty > 0 ? `<div style="margin-top:6px">${(p.defectReasons||[]).slice(0,2).map(r=>`<span class="badge badge-abnormal" style="font-size:10px;margin-right:3px">${r}</span>`).join('')}</div>` : ''}
