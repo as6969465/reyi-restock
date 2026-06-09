@@ -25,7 +25,7 @@ function getDefectDisplay(item) {
 }
 const PROC_ACTIONS = ['正常收貨','退貨','換貨','補貨','折讓','報廢','廠商確認後處理','其他'];
 const STATUS = { PENDING:'pending', RECEIVED:'received', ABNORMAL:'abnormal_pending', PROCUREMENT:'procurement', RESOLVED:'resolved' };
-const TAB_LABELS = { receiving:'確認', warehouse:'已確認', review:'檢核', report:'異常回覆', purchase:'待回覆', resolved:'記錄', admin:'設定' };
+const TAB_LABELS = { receiving:'進貨確認', warehouse:'已確認', review:'檢核', report:'異常回覆', purchase:'待回覆', resolved:'記錄', admin:'設定' };
 const NAV_ICONS = {
   receiving: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>',
   warehouse: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
@@ -295,7 +295,7 @@ function renderProductCards() {
 
   // 繪製條碼
   if (typeof JsBarcode !== 'undefined') {
-    products.forEach((p, i) => {
+    list.forEach((p, i) => {
       if (!p.barcode) return;
       const el = document.getElementById(`bc-r-${date}-${i}`);
       if (!el) return;
@@ -718,12 +718,14 @@ async function saveReceiving() {
   p.defectStaff=user?.name||''; p.time=nowStr(); p.operatorName=user?.name||'';
   // bizAttr 已在 rs_setBizAttr 即時更新，無需再次設定
   p.status = bad>0 ? STATUS.ABNORMAL : STATUS.RECEIVED;
+  // 立即重新渲染（不等 Firestore），確保已確認項目馬上顯示在確認頁籤
+  closeAllSheets();
+  renderProductCards(); updateStats();
   if (p.id) {
     ProductAPI.receive(p.id, {goodQty:good,badQty:bad,defectReasons:p.defectReasons,defectNote:p.defectNote,defectClass:p.defectClass,photos:p.photos,defectItems:p.defectItems})
       .then(async()=>{ await reloadFromFirestore(date); renderProductCards(); updateStats(); updateBadges(); })
       .catch(e=>console.warn('receive:',e.message));
   } else { saveProductsData(); }
-  closeAllSheets();
 }
 
 // ══════════════════════════════════════════════════════
