@@ -1207,15 +1207,7 @@ function renderResolvedCards() {
   const to      = document.getElementById('res-to')?.value;
   const catSel  = document.getElementById('res-cat-filter');
   const catFilter = catSel?.value || '';
-  // 動態填充大分類選項
-  const allResolved = getAllProducts().filter(p=>p.status===STATUS.RESOLVED);
-  const cats = [...new Set(allResolved.map(p=>p.defectClass||'').filter(Boolean))].sort();
-  if (catSel) {
-    const cur = catSel.value;
-    catSel.innerHTML = '<option value="">全部大分類</option>' +
-      cats.map(c=>`<option value="${c}" ${cur===c?'selected':''}>${c}</option>`).join('');
-  }
-  const list = allResolved.filter(p=>
+  const list = getAllProducts().filter(p=>p.status===STATUS.RESOLVED).filter(p=>
     (!from||p.arrivalDate>=from) && (!to||p.arrivalDate<=to) &&
     (!catFilter||p.defectClass===catFilter)
   );
