@@ -734,7 +734,15 @@ function openReplyDetailModal(arrivalDate, itemNo) {
 // ── 5. 待採購回覆 ─────────────────────────────────────
 function renderPurchaseTable() {
   const tbody = document.getElementById('purchaseTableBody');
-  const list  = getFilteredAllProducts().filter(p => p.status === STATUS.PROCUREMENT);
+  const catSel = document.getElementById('pur-cat-filter-desk');
+  const catFilter = catSel?.value || '';
+  if (catSel) {
+    const cur = catSel.value;
+    catSel.innerHTML = '<option value="">全部大分類</option>' +
+      getDeskCatFilters().map(c=>`<option value="${c}" ${cur===c?'selected':''}>${c}</option>`).join('');
+  }
+  const list = getFilteredAllProducts().filter(p => p.status === STATUS.PROCUREMENT)
+    .filter(p => !catFilter || p.cat === catFilter);
   updateBadges();
   if (!list.length) { tbody.innerHTML='<tr><td colspan="8" class="px-4 py-12 text-center text-gray-400 text-sm">尚無待回覆項目</td></tr>'; return; }
   tbody.innerHTML = list.map(p => `
