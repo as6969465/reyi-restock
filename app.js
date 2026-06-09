@@ -127,13 +127,23 @@ window.addEventListener('DOMContentLoaded', async () => {
   // 載入業務屬性
   loadBizAttrs().catch(()=>{});
 
+  // 移除 Loading 遮罩的函式（確保一定會執行）
+  const hideLoading = () => {
+    const loading = document.getElementById('authLoading');
+    if (loading) { loading.style.opacity='0'; loading.style.transition='opacity .3s'; setTimeout(()=>loading.remove(), 300); }
+  };
+
+  // 5 秒後強制移除 loading（防止 Firestore 卡住）
+  const loadingTimer = setTimeout(hideLoading, 5000);
+
   // 載入 Firestore 資料
   try {
-    const dates = await ProductAPI.getDates();
+    const withTimeout = (p, ms) => Promise.race([p, new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),ms))]);
+    const dates = await withTimeout(ProductAPI.getDates(), 4000);
     if (dates && dates.length > 0) {
       const best = dates.includes(today) ? today : dates[0];
       if (dateEl) dateEl.value = best;
-      const items = await ProductAPI.getByDate(best);
+      const items = await withTimeout(ProductAPI.getByDate(best), 4000);
       productsByDate[best] = normalizeProducts(items);
     }
   } catch(e) { console.warn('load failed:', e.message); }
@@ -143,9 +153,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   const firstPage = currentRole==='admin' ? 'receiving' : (roleObj?.tabs?.[0] || 'receiving');
   switchPage(firstPage);
 
-  // 移除 Loading 遮罩
-  const loading = document.getElementById('authLoading');
-  if (loading) { loading.style.opacity='0'; loading.style.transition='opacity .3s'; setTimeout(()=>loading.remove(), 300); }
+  clearTimeout(loadingTimer);
+  hideLoading();
 });
 
 function logout() { AuthAPI.logout().catch(()=>{}); sessionStorage.clear(); window.location.replace('index.html'); }
