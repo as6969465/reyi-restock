@@ -739,7 +739,7 @@ async function saveReceiving() {
   const totalQty = _defectItems.reduce((s,it)=>(s+(parseInt(it.qty)||0)),0);
   if (bad>0 && totalQty !== bad) { errDiv.textContent=`照片數量合計（${totalQty}）需等於不良品數量（${bad}）`; errDiv.style.display='block'; return; }
   if (bad>0 && _defectItems.some(item=>!item.category)) { errDiv.textContent='每筆異常明細都需選擇異常大分類'; errDiv.style.display='block'; return; }
-  // 原因為選填，但分類為必選
+  if (bad>0 && _defectItems.some(item=>!(item.reasons&&item.reasons.length>0))) { errDiv.textContent='每筆異常明細都需選擇至少一項異常原因'; errDiv.style.display='block'; return; }
 
 
   const { date, idx } = currentIdx;
@@ -984,6 +984,14 @@ async function submitReview() {
   const { arrivalDate, itemNo } = reviewIdx;
   const p     = getAllProducts().find(x=>x.arrivalDate===arrivalDate&&x.itemNo===itemNo);
   const rvUser= getCurrentUser();
+  // 驗證：每筆異常明細都需選擇分類與原因
+  if (p.defectItems?.length) {
+    const missingCat = p.defectItems.some(it=>!it.category);
+    const missingRsn = p.defectItems.some(it=>!(it.reasons&&it.reasons.length>0));
+    const errDiv = document.getElementById('rv-error');
+    if (missingCat) { if(errDiv){errDiv.textContent='每筆異常明細都需選擇異常大分類';errDiv.style.display='block';} return; }
+    if (missingRsn) { if(errDiv){errDiv.textContent='每筆異常明細都需選擇至少一項異常原因';errDiv.style.display='block';} return; }
+  }
   let dt = document.getElementById('rv-time')?.value.trim() || '';
   if (!dt) dt = `${_reviewStartTime}～`;
   p.defectTime  = dt;

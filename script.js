@@ -1125,6 +1125,7 @@ function saveReceiving() {
   if (isNaN(good) || good < 0) { errDiv.textContent='請輸入正確的良品數量'; errDiv.classList.remove('hidden'); return; }
   if (bad > 0 && _deskDefectItems.length === 0) { errDiv.textContent='有不良品時，請新增至少一筆異常明細'; errDiv.classList.remove('hidden'); return; }
   if (bad > 0 && _deskDefectItems.some(item=>!item.category)) { errDiv.textContent='每筆異常明細都需選擇異常大分類'; errDiv.classList.remove('hidden'); return; }
+  if (bad > 0 && _deskDefectItems.some(item=>!(item.reasons&&item.reasons.length>0))) { errDiv.textContent='每筆異常明細都需選擇至少一項異常原因'; errDiv.classList.remove('hidden'); return; }
   const totalQty = _deskDefectItems.reduce((s,it)=>(s+(parseInt(it.qty)||0)),0);
   if (bad > 0 && totalQty !== bad) { errDiv.textContent=`照片數量合計（${totalQty}）需等於不良品數量（${bad}）`; errDiv.classList.remove('hidden'); return; }
   // 原因為選填
@@ -1299,6 +1300,11 @@ function submitReview() {
   const rvUser = getCurrentUser();
   const { arrivalDate, itemNo } = reviewIdx;
   const p = getDateProducts(arrivalDate).find(x => x.itemNo === itemNo);
+  // 驗證：每筆異常明細都需選擇分類與原因
+  if (p.defectItems?.length) {
+    if (p.defectItems.some(it=>!it.category)) { errDiv.textContent='每筆異常明細都需選擇異常大分類'; errDiv.classList.remove('hidden'); return; }
+    if (p.defectItems.some(it=>!(it.reasons&&it.reasons.length>0))) { errDiv.textContent='每筆異常明細都需選擇至少一項異常原因'; errDiv.classList.remove('hidden'); return; }
+  }
   // 保存起始時間（格式 HH:MM～），結束由採購回覆時補入
   let rvDefectTime = document.getElementById('rv-defectTime').value.trim();
   if (!rvDefectTime) rvDefectTime = `${_reviewStartTime}～`;
