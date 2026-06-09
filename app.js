@@ -272,6 +272,9 @@ function renderProductCards() {
         <div class="product-card-sub">${p.itemNo||'—'} · ${p.cat||'—'}</div>
         ${p.received && p.badQty > 0 ? `<div style="margin-top:6px">${(p.defectReasons||[]).slice(0,2).map(r=>`<span class="badge badge-abnormal" style="font-size:10px;margin-right:3px">${r}</span>`).join('')}</div>` : ''}
       </div>
+      ${p.barcode ? `<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:0 4px">
+        <canvas id="bc-r-${date}-${i}" style="max-width:100%;height:40px"></canvas>
+      </div>` : ''}
       <div class="product-card-right">
         ${statusBadgeHtml(p)}
         ${p.received
@@ -282,6 +285,21 @@ function renderProductCards() {
           : `<div><div class="qty-lbl">採購</div><div class="qty-big">${p.qty}</div></div>`}
       </div>
     </div>`).join('');
+
+  // 繪製條碼
+  if (typeof JsBarcode !== 'undefined') {
+    products.forEach((p, i) => {
+      if (!p.barcode) return;
+      const el = document.getElementById(`bc-r-${date}-${i}`);
+      if (!el) return;
+      try {
+        JsBarcode(el, p.barcode, {
+          format: 'CODE128', width: 1.2, height: 36,
+          displayValue: false, margin: 0, background: 'transparent'
+        });
+      } catch(e) {}
+    });
+  }
 }
 
 function updateStats() {
