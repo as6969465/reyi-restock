@@ -55,7 +55,7 @@ function getRoleColor(roleId) {
 function initAdmin() {
   const users = getUsers();
   if (!users.find(u => u.userId === 'reyi')) {
-    users.unshift({ userId:'reyi', password:'8963', name:'管理員', role:'admin', createdAt: new Date().toLocaleString('zh-TW') });
+    users.unshift({ userId:'reyi', password:'', name:'管理員', role:'admin', createdAt: new Date().toLocaleString('zh-TW') });
     saveUsers(users);
   }
 }

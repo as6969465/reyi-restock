@@ -1,11 +1,11 @@
 ﻿/**
  * 日翊收發進貨平台 - Firebase 後端（Compat SDK）
+ * Firebase 設定由 config.js 載入（已列入 .gitignore，不推送）
  */
-const firebaseConfig = {
-  apiKey:"AIzaSyDenrHO9G8TRxs3glpQLwG7HymXTqqyCRk",authDomain:"reyi-mailroom.firebaseapp.com",
-  projectId:"reyi-mailroom",storageBucket:"reyi-mailroom.firebasestorage.app",
-  messagingSenderId:"119280647295",appId:"1:119280647295:web:a97bd142a57f4ef89e934a"
-};
+if (!window.FIREBASE_CONFIG) {
+  console.error('Firebase config not found. Please create config.js with window.FIREBASE_CONFIG.');
+}
+const firebaseConfig = window.FIREBASE_CONFIG || {};
 firebase.initializeApp(firebaseConfig);
 const db=firebase.firestore();
 const COL={users:'users',roles:'roles',products:'products',auditLogs:'audit_logs'};

@@ -99,11 +99,12 @@ def init_db():
         created_at TEXT DEFAULT (datetime('now','localtime'))
     )''')
 
-    # 預設管理員
+    # 預設管理員（密碼由環境變數 ADMIN_PASSWORD 設定，勿在程式碼中硬編碼）
     admin = c.execute("SELECT * FROM users WHERE user_id='reyi'").fetchone()
     if not admin:
+        _admin_pw = os.environ.get('ADMIN_PASSWORD', '')
         c.execute("INSERT INTO users (user_id, password, name, role_id) VALUES (?,?,?,?)",
-                  ('reyi', '8963', '管理員', 'admin'))
+                  ('reyi', _admin_pw, '管理員', 'admin'))
 
     db.commit()
     db.close()
