@@ -901,50 +901,102 @@ function renderDeskDefectItems() {
     container.innerHTML = '<p class="text-xs text-gray-400 py-2 text-center">尚未新增，點「匯入照片」按鈕</p>';
     return;
   }
-  const badQty      = parseInt(document.getElementById('badQty')?.value)||0;
-  const totalEntered= _deskDefectItems.reduce((s,it)=>(s+(parseInt(it.qty)||0)),0);
-  const isMatch     = badQty>0 && totalEntered===badQty;
 
-  const statsHtml = `<div class="flex items-center gap-2 mb-3 px-3 py-2 rounded-xl text-xs font-medium ${isMatch?'bg-green-50 text-green-700':'bg-amber-50 text-amber-700'}">
+  _activeDeskDefectIdx = Math.min(_activeDeskDefectIdx, _deskDefectItems.length-1);
+  if (_activeDeskDefectIdx < 0) _activeDeskDefectIdx = 0;
+
+  const badQty       = parseInt(document.getElementById('badQty')?.value)||0;
+  const totalEntered = _deskDefectItems.reduce((s,it)=>(s+(parseInt(it.qty)||0)),0);
+  const isMatch      = badQty>0 && totalEntered===badQty;
+  const i    = _activeDeskDefectIdx;
+  const item = _deskDefectItems[i];
+
+  // 縮圖列
+  const camSvgSm = `<svg style="width:14px;height:14px;color:#fca5a5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>`;
+  const thumbs = _deskDefectItems.map((it, idx) => {
+    const active  = idx === i;
+    const hasQty  = parseInt(it.qty) > 0;
+    const inner   = it.photo
+      ? `<img src="${it.photo}" style="width:100%;height:100%;object-fit:cover;display:block" />`
+      : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center">${camSvgSm}</div>`;
+    return `<div onclick="deskSwitchDefectItem(${idx})" style="width:48px;height:48px;border-radius:8px;flex-shrink:0;cursor:pointer;overflow:hidden;position:relative;
+        border:2.5px solid ${active?'#2563eb':hasQty?'#86efac':'#fecaca'};
+        background:${active?'#dbeafe':hasQty?'#f0fdf4':'#fff0f0'};
+        box-shadow:${active?'0 2px 8px rgba(37,99,235,.2)':'none'};transition:all .15s">${inner}
+      ${hasQty?`<div style="position:absolute;bottom:1px;right:1px;background:#059669;color:#fff;border-radius:3px;font-size:9px;font-weight:700;padding:0 2px;line-height:13px">${it.qty}</div>`:''}
+    </div>`;
+  }).join('');
+
+  // 統計列
+  const statsHtml = `<div class="flex items-center gap-2 mb-2 px-3 py-1.5 rounded-xl text-xs font-semibold ${isMatch?'bg-green-50 text-green-700':'bg-amber-50 text-amber-700'}">
     ${isMatch?'✓':'⚠'} 數量合計：${totalEntered} / ${badQty}（不良品數）
   </div>`;
 
-  container.innerHTML = statsHtml + _deskDefectItems.map((item, i) => {
-    const photoEl = item.photo
-      ? `<div class="relative flex-shrink-0">
-          <img src="${item.photo}" class="w-16 h-16 object-cover rounded-lg cursor-pointer" onclick="deskViewDefectPhoto(${i})" />
-          <button onclick="deskClearDefectPhotoItem(${i})" class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full text-xs flex items-center justify-center leading-none">&times;</button>
-        </div>`
-      : `<label class="flex-shrink-0 flex flex-col items-center justify-center gap-1 w-16 h-16 border-2 border-dashed border-red-200 rounded-lg bg-red-50 cursor-pointer">
-          <svg class="w-5 h-5 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-          <span class="text-xs text-red-300">上傳</span>
-          <input type="file" accept="image/*" class="hidden" onchange="deskSetDefectPhoto(${i},this)" />
-        </label>`;
-    const qtyEl = `<div class="flex-shrink-0 text-center">
-      <div class="text-xs text-gray-400 mb-1">數量</div>
-      <input type="number" min="0" value="${item.qty||''}" placeholder="0"
-        class="w-14 border rounded-lg p-1.5 text-center text-sm font-bold focus:outline-none focus:ring-1 focus:ring-blue-400"
-        style="color:#2563eb;background:#f0f7ff;border-color:${(parseInt(item.qty)||0)>0?'#2563eb':'#e5e7eb'}"
-        oninput="_deskDefectItems[${i}].qty=parseInt(this.value)||0;renderDeskDefectItems()" />
-    </div>`;
-    const catBtns = DEFECT_CATEGORIES.map(c=>
-      `<button type="button" onclick="deskSetDefectCategory(${i},'${c}')"
-        class="text-xs px-2.5 py-1 rounded-full border transition-colors ${item.category===c?'bg-blue-100 border-blue-400 text-blue-600 font-semibold':'bg-white border-gray-200 text-gray-500 hover:border-blue-300'}">${c}</button>`
-    ).join('');
-    const subReasons = `<div class="grid gap-0.5 mt-1" style="grid-template-columns:repeat(2,1fr)">${DEFECT_REASONS.map(r=>{const s=(item.reasons||[]).includes(r);return `<label class="flex items-center gap-1.5 cursor-pointer py-0.5"><input type="checkbox" ${s?'checked':''} onchange="deskToggleSubReason(${i},'${r}')" class="flex-shrink-0 cursor-pointer" style="width:12px;height:12px;accent-color:#2563eb" /><span class="text-xs text-gray-700 leading-tight">${r}</span></label>`;}).join('')}</div>`;
-    return `<div class="flex gap-2 items-start p-3 mb-2 bg-red-50 border border-red-100 rounded-xl">
-      ${photoEl}
-      ${qtyEl}
-      <div class="flex-1 min-w-0">
-        <div class="flex gap-1.5 flex-wrap mb-1">${catBtns}</div>
-        ${subReasons}
-        <input type="text" value="${item.note||''}" placeholder="補充說明（選填）"
-          class="w-full border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none mt-1"
-          oninput="_deskDefectItems[${i}].note=this.value" />
+  // 當前照片
+  const photoEl = item.photo
+    ? `<div class="relative flex-shrink-0">
+        <img src="${item.photo}" class="object-cover rounded-lg cursor-pointer" style="width:80px;height:80px" onclick="deskViewDefectPhoto(${i})" />
+        <button onclick="deskClearDefectPhotoItem(${i})" class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full text-xs flex items-center justify-center leading-none">&times;</button>
+      </div>`
+    : `<label class="flex-shrink-0 flex flex-col items-center justify-center gap-1 border-2 border-dashed border-red-200 rounded-lg bg-red-50 cursor-pointer" style="width:80px;height:80px">
+        <svg class="w-5 h-5 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <span class="text-xs text-red-300">上傳</span>
+        <input type="file" accept="image/*" class="hidden" onchange="deskSetDefectPhoto(${i},this)" />
+      </label>`;
+
+  const qtyEl = `<div class="flex-shrink-0 text-center" style="width:80px">
+    <div class="text-xs text-gray-400 mb-1">不良數量</div>
+    <input type="number" min="0" value="${item.qty||''}" placeholder="0"
+      class="w-full border rounded-lg p-1.5 text-center font-bold focus:outline-none focus:ring-1 focus:ring-blue-400"
+      style="font-size:17px;color:#2563eb;background:#f0f7ff;border-color:${(parseInt(item.qty)||0)>0?'#2563eb':'#fecaca'}"
+      oninput="_deskDefectItems[${i}].qty=parseInt(this.value)||0;updateDeskDefectQtyStats()" />
+  </div>`;
+
+  const catBtns = DEFECT_CATEGORIES.map(c=>
+    `<button type="button" onclick="deskSetDefectCategory(${i},'${c}')"
+      class="text-xs px-2.5 py-1 rounded-full border transition-colors ${item.category===c?'bg-blue-100 border-blue-400 text-blue-600 font-semibold':'bg-white border-gray-200 text-gray-500 hover:border-blue-300'}">${c}</button>`
+  ).join('');
+
+  const subReasons = `<div class="grid gap-0.5 mt-2" style="grid-template-columns:repeat(2,1fr)">${DEFECT_REASONS.map(r=>{const s=(item.reasons||[]).includes(r);return `<label class="flex items-center gap-1.5 cursor-pointer py-0.5"><input type="checkbox" ${s?'checked':''} onchange="deskToggleSubReason(${i},'${r}')" class="flex-shrink-0 cursor-pointer" style="width:12px;height:12px;accent-color:#2563eb" /><span class="text-xs text-gray-700 leading-tight">${r}</span></label>`;}).join('')}</div>`;
+
+  container.innerHTML = `
+    <div class="flex gap-2 items-center overflow-x-auto pb-2 mb-2">
+      ${thumbs}
+      <button onclick="desktopAddDefectItem()" class="flex-shrink-0 flex items-center justify-center border-2 border-dashed border-gray-200 rounded-lg bg-gray-50 text-gray-400 text-lg hover:border-blue-300" style="width:48px;height:48px">+</button>
+    </div>
+    ${statsHtml}
+    <div class="bg-red-50 border border-red-100 rounded-xl p-3">
+      <div class="flex items-start justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <div class="flex flex-col items-center gap-1.5 flex-shrink-0">
+            ${photoEl}
+            ${qtyEl}
+          </div>
+          <span class="text-xs text-gray-400 self-end pb-1">${i+1} / ${_deskDefectItems.length}</span>
+        </div>
+        <button onclick="deskRemoveDefectItem(${i})" class="text-red-300 hover:text-red-500 text-sm flex-shrink-0">✕ 刪除</button>
       </div>
-      <button onclick="deskRemoveDefectItem(${i})" class="text-red-300 hover:text-red-500 text-base leading-none flex-shrink-0">✕</button>
+      <div class="flex gap-1.5 flex-wrap">${catBtns}</div>
+      ${subReasons}
+      <input type="text" value="${item.note||''}" placeholder="補充說明（選填）"
+        class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none mt-2"
+        oninput="_deskDefectItems[${i}].note=this.value" />
     </div>`;
-  }).join('');
+}
+
+function deskSwitchDefectItem(idx) { _activeDeskDefectIdx = idx; renderDeskDefectItems(); }
+
+function updateDeskDefectQtyStats() {
+  const badQty       = parseInt(document.getElementById('badQty')?.value)||0;
+  const totalEntered = _deskDefectItems.reduce((s,it)=>(s+(parseInt(it.qty)||0)),0);
+  const isMatch      = badQty>0 && totalEntered===badQty;
+  // 統計列直接更新文字，避免失焦
+  const statsDiv = document.querySelector('#desktopDefectItems .bg-green-50, #desktopDefectItems .bg-amber-50');
+  if (statsDiv && statsDiv.textContent.includes('/')) {
+    statsDiv.className = `flex items-center gap-2 mb-2 px-3 py-1.5 rounded-xl text-xs font-semibold ${isMatch?'bg-green-50 text-green-700':'bg-amber-50 text-amber-700'}`;
+    statsDiv.innerHTML = `${isMatch?'✓':'⚠'} 數量合計：${totalEntered} / ${badQty}（不良品數）`;
+  }
+  renderDeskDefectItems();
 }
 
 function deskClearDefectPhotoItem(i) { _deskDefectItems[i].photo=''; renderDeskDefectItems(); }
