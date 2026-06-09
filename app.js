@@ -1085,9 +1085,14 @@ function openReplyDetail(arrivalDate, itemNo) {
 function renderPurchaseCards() {
   const container = document.getElementById('purchaseListContainer');
   if (!container) return;
-  const from = document.getElementById('pur-from')?.value;
-  const to   = document.getElementById('pur-to')?.value;
-  const list = getAllProducts().filter(p=>p.status===STATUS.PROCUREMENT && (!from||p.arrivalDate>=from) && (!to||p.arrivalDate<=to));
+  const from      = document.getElementById('pur-from')?.value;
+  const to        = document.getElementById('pur-to')?.value;
+  const catFilter = document.getElementById('pur-cat-filter')?.value || '';
+  const list = getAllProducts().filter(p =>
+    p.status===STATUS.PROCUREMENT &&
+    (!from||p.arrivalDate>=from) && (!to||p.arrivalDate<=to) &&
+    (!catFilter||p.cat===catFilter)
+  );
   updateBadges();
   if (!list.length) { container.innerHTML='<div class="empty-state"><p style="font-size:15px;font-weight:600">尚無待回覆項目</p></div>'; return; }
   container.innerHTML = list.map(p => `
