@@ -124,6 +124,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   // 初始化底部導航
   buildNav(user);
 
+  // 載入業務屬性
+  loadBizAttrs().catch(()=>{});
+
   // 載入 Firestore 資料
   try {
     const dates = await ProductAPI.getDates();
@@ -477,8 +480,9 @@ function viewDefectPhoto(i) {
 
 // ── 驗收 Sheet 開啟 ───────────────────────────────────
 // ── 驗收前先選業務屬性 ───────────────────────────────
-function startReceiving(date, idx) {
-  const attrs = getBizAttrs();
+async function startReceiving(date, idx) {
+  // 每次開啟時從 Firestore 取最新業務屬性
+  const attrs = await loadBizAttrs().catch(() => getBizAttrs());
   // 若無業務屬性設定，直接開驗收
   if (!attrs.length) { openReceiveSheet(date, idx); return; }
 
