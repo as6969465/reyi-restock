@@ -93,8 +93,8 @@ const DefectConfigAPI = {
       db.collection('defect_config').doc('categories').get(),
       db.collection('defect_config').doc('reasons').get()
     ]);
-    const cats    = cs.exists ? (cs.data().items||[]) : ['臨時到貨','取消到貨','其他異常'];
-    const reasons = rs.exists ? (rs.data().items||[]) : [];
+    const cats    = (cs.exists && cs.data().items?.length) ? cs.data().items : null;
+    const reasons = (rs.exists && rs.data().items?.length) ? rs.data().items : null;
     return { categories: cats, reasons };
   },
   async saveCategories(items) {

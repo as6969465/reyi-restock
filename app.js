@@ -69,7 +69,14 @@ function getDefectReasonsList() {
   const d = JSON.parse(localStorage.getItem('rr_defect_config') || 'null');
   return d?.reasons || DEFAULT_DEFECT_REASONS;
 }
-function saveDefectConfig(cfg) { localStorage.setItem('rr_defect_config', JSON.stringify(cfg)); }
+function saveDefectConfig(cfg) {
+  // null 表示尚未自訂，保留 null 讓 getter 繼續使用預設清單
+  const toSave = {
+    categories: cfg.categories || null,
+    reasons:    cfg.reasons    || null
+  };
+  localStorage.setItem('rr_defect_config', JSON.stringify(toSave));
+}
 async function loadDefectConfig() {
   try {
     const cfg = await DefectConfigAPI.get();
