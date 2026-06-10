@@ -367,7 +367,8 @@ function normalizeProducts(items) {
     defectStaff:p.defect_staff||p.defectStaff||'', procAction:p.proc_action||p.procAction||'',
     procReply:p.proc_reply||p.procReply||'', procReplyTime:p.proc_reply_time||p.procReplyTime||'',
     procStaffName:p.proc_staff_name||p.procStaffName||'', operatorName:p.operator_name||p.operatorName||'',
-    photos:p.photos||[], defectItems:p.defect_items||p.defectItems||[], procReplyUnread:!!(p.proc_reply_unread||p.procReplyUnread), time:p.recv_time||p.time||''
+    photos:p.photos||[], defectItems:p.defect_items||p.defectItems||[], procReplyUnread:!!(p.proc_reply_unread||p.procReplyUnread), time:p.recv_time||p.time||'',
+    bizAttr:p.biz_attr||p.bizAttr||''
   }));
 }
 
@@ -858,7 +859,7 @@ async function saveReceiving() {
   // 延遲 150ms 再重繪，讓使用者當前手勢完整執行後再替換 DOM
   setTimeout(() => { renderProductCards(); updateStats(); }, 150);
   if (p.id) {
-    ProductAPI.receive(p.id, {goodQty:good,badQty:bad,defectReasons:p.defectReasons,defectNote:p.defectNote,defectClass:p.defectClass,photos:p.photos,defectItems:p.defectItems})
+    ProductAPI.receive(p.id, {goodQty:good,badQty:bad,defectReasons:p.defectReasons,defectNote:p.defectNote,defectClass:p.defectClass,photos:p.photos,defectItems:p.defectItems,bizAttr:p.bizAttr||''})
       .then(async()=>{ await reloadFromFirestore(date); renderProductCards(); updateStats(); updateBadges(); })
       .catch(e=>console.warn('receive:',e.message));
   } else { saveProductsData(); }
