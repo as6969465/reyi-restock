@@ -74,6 +74,20 @@ let productsByDate = {};
 let currentRole    = 'field';
 let _deskCurrentTab = 'receiving';
 let _deskRealtimeUnsub = null;
+let _deskReceivingKw = '';
+function onDeskReceivingSearch(val) {
+  _deskReceivingKw = (val || '').trim();
+  const clearBtn = document.getElementById('deskReceivingSearchClear');
+  if (clearBtn) clearBtn.classList.toggle('hidden', !_deskReceivingKw);
+  renderProductTable();
+}
+function clearDeskReceivingSearch() {
+  _deskReceivingKw = '';
+  const input = document.getElementById('deskReceivingSearch');
+  if (input) input.value = '';
+  document.getElementById('deskReceivingSearchClear')?.classList.add('hidden');
+  renderProductTable();
+}
 let _deskSyncTimer = null;
 let currentIdx     = null;
 let reviewIdx      = null;
@@ -505,9 +519,16 @@ function statusBadge(status) {
 function renderProductTable() {
   const tbody = document.getElementById('productTableBody');
   const date  = currentReceivingDate();
-  const list  = getDateProducts(date);
+  const kw    = _deskReceivingKw.toLowerCase();
+  const allProducts = getDateProducts(date);
+  const list  = allProducts
+    .map((p, origIdx) => ({ p, origIdx }))
+    .filter(({ p }) => !kw || [p.po, p.itemNo, p.name, p.barcode]
+      .some(v => (v||'').toLowerCase().includes(kw)));
   if (!list.length) {
-    const msg = date ? `${date} 尚無進貨資料，請匯入 Excel` : '請選擇日期並匯入 Excel';
+    const msg = kw
+      ? `找不到符合「${kw}」的商品`
+      : (date ? `${date} 尚無進貨資料，請匯入 Excel` : '請選擇日期並匯入 Excel');
     tbody.innerHTML = `<tr><td colspan="12" class="px-4 py-16 text-center text-gray-400">
       <div class="flex flex-col items-center gap-2">
         <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -515,9 +536,9 @@ function renderProductTable() {
         </svg><span class="text-sm">${msg}</span></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = list.map((p, i) => `
+  tbody.innerHTML = list.map(({ p, origIdx }) => `
     <tr class="${p.status !== STATUS.PENDING ? 'received-row' : 'hover:bg-gray-50'} border-b border-gray-100">
-      <td class="px-4 py-3"><input type="checkbox" data-idx="${i}" onchange="onRowCheck()" class="row-check accent-blue-600 w-4 h-4 cursor-pointer" /></td>
+      <td class="px-4 py-3"><input type="checkbox" data-idx="${origIdx}" onchange="onRowCheck()" class="row-check accent-blue-600 w-4 h-4 cursor-pointer" /></td>
       <td class="px-4 py-3 text-gray-500">${p.seq}</td>
       <td class="px-4 py-3 font-mono text-xs">${p.po}</td>
       <td class="px-4 py-3">${p.cat}</td>
@@ -540,10 +561,10 @@ function renderProductTable() {
       </td>
       <td class="px-4 py-3 text-center">
         ${p.status === STATUS.PENDING
-          ? `<button onclick="startDesktopReceiving('${date}',${i})" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg">確認</button>`
+          ? `<button onclick="startDesktopReceiving('${date}',${origIdx})" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg">確認</button>`
           : p.status === STATUS.RESOLVED
             ? '<span class="text-xs text-gray-400">已處理</span>'
-            : `<button onclick="openModal('${date}',${i})" class="bg-gray-200 hover:bg-gray-300 text-gray-600 text-xs px-3 py-1.5 rounded-lg">修改</button>`}
+            : `<button onclick="openModal('${date}',${origIdx})" class="bg-gray-200 hover:bg-gray-300 text-gray-600 text-xs px-3 py-1.5 rounded-lg">修改</button>`}
       </td>
     </tr>`).join('');
 

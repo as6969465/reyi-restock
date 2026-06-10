@@ -276,6 +276,23 @@ function closeAllSheets() {
   document.querySelectorAll('.sheet.open').forEach(s=>s.classList.remove('open'));
 }
 
+// ── 進貨搜尋關鍵字 ───────────────────────────────────
+let _receivingSearchKw = '';
+function onReceivingSearch(val) {
+  _receivingSearchKw = (val || '').trim();
+  const clearBtn = document.getElementById('receivingSearchClear');
+  if (clearBtn) clearBtn.style.display = _receivingSearchKw ? '' : 'none';
+  renderProductCards();
+}
+function clearReceivingSearch() {
+  _receivingSearchKw = '';
+  const input = document.getElementById('receivingSearchInput');
+  if (input) input.value = '';
+  const clearBtn = document.getElementById('receivingSearchClear');
+  if (clearBtn) clearBtn.style.display = 'none';
+  renderProductCards();
+}
+
 // ── 即時同步（onSnapshot）────────────────────────────
 let _realtimeUnsub     = null;
 let _syncDebounceTimer = null;
@@ -407,18 +424,24 @@ function renderProductCards() {
   if (!container) return;
   const date = currentReceivingDate();
   const allProducts = getDateProducts(date);
+  const kw = _receivingSearchKw.toLowerCase();
   const list = allProducts
     .map((p, origIdx) => ({ p, origIdx }))
     .filter(({ p }) => p.status === STATUS.PENDING)
+    .filter(({ p }) => !kw || [p.po, p.itemNo, p.name, p.barcode]
+      .some(v => (v||'').toLowerCase().includes(kw)))
     .sort((a, b) => (a.p.po||'').localeCompare(b.p.po||''));
   if (!list.length) {
+    const msg = kw
+      ? `找不到符合「${kw}」的待確認商品`
+      : (date ? date + ' 尚無進貨資料' : '請選擇日期');
+    const hint = kw ? '請確認關鍵字或清除搜尋' : '點右下角 ↑ 匯入 Excel';
     container.innerHTML = `<div class="empty-state">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
       </svg>
-      <p>${date ? date + ' 尚無進貨資料' : '請選擇日期'}</p>
-      <small>點右下角 ↑ 匯入 Excel</small></div>`;
+      <p>${msg}</p><small>${hint}</small></div>`;
     return;
   }
   container.innerHTML = list.map(({ p, origIdx }, i) => `
