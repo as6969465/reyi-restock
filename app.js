@@ -192,11 +192,14 @@ window.addEventListener('DOMContentLoaded', async () => {
   const firstPage = (savedPage && allowedPages.includes(savedPage)) ? savedPage : defaultPage;
   switchPage(firstPage);
 
+  // 啟動即時同步監聽
+  startRealtimeSync();
+
   clearTimeout(loadingTimer);
   hideLoading();
 });
 
-function logout() { AuthAPI.logout().catch(()=>{}); sessionStorage.clear(); window.location.replace('index.html'); }
+function logout() { stopRealtimeSync(); AuthAPI.logout().catch(()=>{}); sessionStorage.clear(); window.location.replace('index.html'); }
 
 // ── 底部導航建立 ──────────────────────────────────────
 function buildNav(user) {
@@ -258,6 +261,58 @@ function openSheet(id) {
 function closeAllSheets() {
   document.getElementById('overlay').classList.remove('open');
   document.querySelectorAll('.sheet.open').forEach(s=>s.classList.remove('open'));
+}
+
+// ── 即時同步（onSnapshot）────────────────────────────
+let _realtimeUnsub = null;
+let _syncDebounceTimer = null;
+
+function isUserOperating() {
+  return document.getElementById('overlay')?.classList.contains('open') || false;
+}
+
+function rerenderCurrentView() {
+  if (isUserOperating()) return; // 使用者正在操作中，不打斷
+  if (currentPage === 'receiving')       { renderProductCards(); updateStats(); }
+  else if (currentPage === 'warehouse')  renderWarehouseCards();
+  else if (currentPage === 'review')     renderReviewCards();
+  else if (currentPage === 'report')     renderReportCards();
+  else if (currentPage === 'purchase')   renderPurchaseCards();
+  else if (currentPage === 'resolved')   renderResolvedCards();
+  updateBadges();
+}
+
+function startRealtimeSync() {
+  if (_realtimeUnsub) { _realtimeUnsub(); _realtimeUnsub = null; }
+  _realtimeUnsub = db.collection('products').onSnapshot(snapshot => {
+    let changed = false;
+    snapshot.docChanges().forEach(change => {
+      const date = change.doc.data()?.arrival_date;
+      if (!date) return;
+      if (!_allKnownDates.includes(date)) _allKnownDates.push(date);
+      if (change.type === 'removed') {
+        if (productsByDate[date]) {
+          productsByDate[date] = productsByDate[date].filter(p => p.id !== change.doc.id);
+          changed = true;
+        }
+      } else {
+        const p = normalizeProducts([{id: change.doc.id, ...change.doc.data()}])[0];
+        if (!productsByDate[date]) productsByDate[date] = [];
+        const idx = productsByDate[date].findIndex(x => x.id === change.doc.id);
+        if (idx >= 0) { productsByDate[date][idx] = p; }
+        else { productsByDate[date].push(p); }
+        changed = true;
+      }
+    });
+    if (!changed) return;
+    // 防抖：500ms 內只重繪一次
+    clearTimeout(_syncDebounceTimer);
+    _syncDebounceTimer = setTimeout(rerenderCurrentView, 500);
+  }, err => console.warn('realtime sync err:', err.message));
+}
+
+function stopRealtimeSync() {
+  if (_realtimeUnsub) { _realtimeUnsub(); _realtimeUnsub = null; }
 }
 
 // ── Firestore 重載 ────────────────────────────────────

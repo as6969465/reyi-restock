@@ -63,6 +63,9 @@ function initAdmin() {
 // ── 全域狀態 ──────────────────────────────────────────
 let productsByDate = {};
 let currentRole    = 'field';
+let _deskCurrentTab = 'receiving';
+let _deskRealtimeUnsub = null;
+let _deskSyncTimer = null;
 let currentIdx     = null;
 let reviewIdx      = null;
 let purchaseIdx    = null;
@@ -168,15 +171,65 @@ window.addEventListener('DOMContentLoaded', async () => {
   initTabsByRole(currentRole);
   renderPhotoSlots();
 
+  // 啟動即時同步監聽
+  startDeskRealtimeSync();
+
   // 驗證完成，移除 Loading 遮罩
   const loading = document.getElementById('authLoading');
   if (loading) loading.remove();
 });
 
 function logout() {
+  if (_deskRealtimeUnsub) { _deskRealtimeUnsub(); _deskRealtimeUnsub = null; }
   AuthAPI.logout().catch(()=>{});
   sessionStorage.clear();
   window.location.href = 'index.html';
+}
+
+// ── 即時同步（onSnapshot）────────────────────────────
+function isDeskModalOpen() {
+  return ['receiveModal','reviewModal','purchaseModal','bizAttrModal'].some(id => {
+    const el = document.getElementById(id);
+    return el && !el.classList.contains('hidden');
+  });
+}
+
+function rerenderDeskCurrentView() {
+  if (isDeskModalOpen()) return; // 有 Modal 開啟，不打斷使用者
+  if (_deskCurrentTab === 'receiving')     { renderProductTable(); updateStats(); }
+  else if (_deskCurrentTab === 'warehouse') renderWarehouseTable();
+  else if (_deskCurrentTab === 'review')    renderReviewTable();
+  else if (_deskCurrentTab === 'report')    renderReportTable();
+  else if (_deskCurrentTab === 'purchase')  renderPurchaseTable();
+  else if (_deskCurrentTab === 'resolved')  renderResolvedTable();
+  updateBadges();
+}
+
+function startDeskRealtimeSync() {
+  if (_deskRealtimeUnsub) { _deskRealtimeUnsub(); _deskRealtimeUnsub = null; }
+  _deskRealtimeUnsub = db.collection('products').onSnapshot(snapshot => {
+    let changed = false;
+    snapshot.docChanges().forEach(change => {
+      const date = change.doc.data()?.arrival_date;
+      if (!date) return;
+      if (change.type === 'removed') {
+        if (productsByDate[date]) {
+          productsByDate[date] = productsByDate[date].filter(p => p.id !== change.doc.id);
+          changed = true;
+        }
+      } else {
+        const p = normalizeProducts([{id: change.doc.id, ...change.doc.data()}])[0];
+        if (!productsByDate[date]) productsByDate[date] = [];
+        const idx = productsByDate[date].findIndex(x => x.id === change.doc.id);
+        if (idx >= 0) { productsByDate[date][idx] = p; }
+        else { productsByDate[date].push(p); }
+        changed = true;
+      }
+    });
+    if (!changed) return;
+    clearTimeout(_deskSyncTimer);
+    _deskSyncTimer = setTimeout(rerenderDeskCurrentView, 500);
+  }, err => console.warn('desk realtime sync err:', err.message));
 }
 
 // 將後端格式轉為前端格式
@@ -242,6 +295,7 @@ function initTabsByRole(roleId) {
 // ── Tab 切換 ──────────────────────────────────────────
 const ALL_PAGES = ['receiving','warehouse','review','report','purchase','resolved','admin'];
 function switchTab(name) {
+  _deskCurrentTab = name;
   localStorage.setItem('rr_last_tab', name);
   ALL_PAGES.forEach(t => {
     document.getElementById(`page-${t}`)?.classList.toggle('hidden', t !== name);
