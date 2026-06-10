@@ -276,6 +276,15 @@ function closeAllSheets() {
   document.querySelectorAll('.sheet.open').forEach(s=>s.classList.remove('open'));
 }
 
+// ── 已到貨標記（Set of "date_origIdx"，不存 Firestore，頁面刷新後重置）──
+const _arrivedSet = new Set();
+function _arrivedKey(date, origIdx) { return `${date}__${origIdx}`; }
+function toggleArrived(date, origIdx) {
+  const key = _arrivedKey(date, origIdx);
+  if (_arrivedSet.has(key)) _arrivedSet.delete(key); else _arrivedSet.add(key);
+  renderProductCards();
+}
+
 // ── 進貨搜尋關鍵字 ───────────────────────────────────
 let _receivingSearchKw = '';
 function onReceivingSearch(val) {
@@ -444,27 +453,46 @@ function renderProductCards() {
       <p>${msg}</p><small>${hint}</small></div>`;
     return;
   }
-  container.innerHTML = list.map(({ p, origIdx }, i) => `
-    <div class="product-card slide-up" data-status="${p.status}" onclick="startReceiving('${date}',${origIdx})">
-      <div class="product-card-inner">
-        ${p.po ? `<div style="font-size:13px;font-weight:600;color:#4b5563;margin-bottom:2px">PO：${p.po}</div>` : ''}
-        <div class="product-card-name">${p.name}</div>
-        <div class="product-card-sub">${p.itemNo||'—'} · ${p.cat||'—'}</div>
-        ${p.received && p.badQty > 0 ? `<div style="margin-top:6px">${(p.defectReasons||[]).slice(0,2).map(r=>`<span class="badge badge-abnormal" style="font-size:10px;margin-right:3px">${r}</span>`).join('')}</div>` : ''}
+  container.innerHTML = list.map(({ p, origIdx }, i) => {
+    const arrived = _arrivedSet.has(_arrivedKey(date, origIdx));
+    const cardBorder = arrived ? '2px solid #16a34a' : '1px solid #e5e7eb';
+    const cardBg     = arrived ? '#f0fdf4' : '#fff';
+    return `
+    <div class="product-card slide-up" data-status="${p.status}"
+      style="border:${cardBorder};background:${cardBg};display:flex;flex-direction:column;padding:0;overflow:hidden">
+      <!-- 商品資訊列 -->
+      <div style="display:flex;align-items:center;padding:10px 12px;gap:8px">
+        <div class="product-card-inner" style="flex:1;min-width:0">
+          ${p.po ? `<div style="font-size:13px;font-weight:600;color:#4b5563;margin-bottom:2px">PO：${p.po}</div>` : ''}
+          <div class="product-card-name">${p.name}</div>
+          <div class="product-card-sub">${p.itemNo||'—'} · ${p.cat||'—'}</div>
+        </div>
+        ${p.barcode ? `<div style="flex-shrink:0;width:100px;display:flex;align-items:center">
+          <canvas id="bc-r-${date}-${origIdx}" style="width:100px;height:36px;display:block"></canvas>
+        </div>` : ''}
+        <div class="product-card-right" style="flex-shrink:0;text-align:right">
+          ${statusBadgeHtml(p)}
+          <div style="margin-top:4px"><div style="font-size:10px;color:#9ca3af">採購</div><div style="font-size:20px;font-weight:800;color:#111">${p.qty}</div></div>
+        </div>
       </div>
-      ${p.barcode ? `<div style="flex-shrink:0;width:108px;display:flex;align-items:center;justify-content:flex-start;padding:0 6px 0 0">
-        <canvas id="bc-r-${date}-${origIdx}" style="width:108px;height:40px;display:block"></canvas>
-      </div>` : ''}
-      <div class="product-card-right">
-        ${statusBadgeHtml(p)}
-        ${p.received
-          ? `<div class="qty-row">
-              <div class="qty-item"><div class="qty-num" style="color:#059669">${p.goodQty}</div><div class="qty-lbl">良品</div></div>
-              <div class="qty-item"><div class="qty-num" style="color:#dc2626">${p.badQty}</div><div class="qty-lbl">不良</div></div>
-             </div>`
-          : `<div><div class="qty-lbl">採購</div><div class="qty-big">${p.qty}</div></div>`}
+      <!-- 操作列 -->
+      <div style="display:flex;border-top:1px solid ${arrived?'#bbf7d0':'#f3f4f6'};background:${arrived?'#dcfce7':'#f9fafb'}">
+        <button onclick="toggleArrived('${date}',${origIdx})"
+          style="flex:1;padding:10px 0;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:600;
+            color:${arrived?'#15803d':'#6b7280'};display:flex;align-items:center;justify-content:center;gap:5px">
+          ${arrived
+            ? `<svg style="width:15px;height:15px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>已到貨（點擊取消）`
+            : `<svg style="width:15px;height:15px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="1.5"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h8"/></svg>標記已到貨`}
+        </button>
+        ${arrived ? `<button onclick="startReceiving('${date}',${origIdx})"
+          style="padding:10px 18px;border:none;border-left:1px solid #86efac;background:#16a34a;color:#fff;
+            font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px">
+          確認登錄
+          <svg style="width:14px;height:14px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+        </button>` : ''}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   // 繪製條碼
   if (typeof JsBarcode !== 'undefined') {
@@ -890,6 +918,7 @@ async function saveReceiving() {
   p.defectStaff=user?.name||''; p.time=nowStr(); p.operatorName=user?.name||'';
   // bizAttr 已在 rs_setBizAttr 即時更新，無需再次設定
   p.status = bad>0 ? STATUS.ABNORMAL : STATUS.RECEIVED;
+  _arrivedSet.delete(_arrivedKey(date, idx)); // 確認完成後移除已到貨標記
   suppressSyncRender(3000);
   closeAllSheets();
   // 延遲 150ms 再重繪，讓使用者當前手勢完整執行後再替換 DOM

@@ -74,6 +74,15 @@ let productsByDate = {};
 let currentRole    = 'field';
 let _deskCurrentTab = 'receiving';
 let _deskRealtimeUnsub = null;
+// ── 已到貨標記（桌電版）─────────────────────────────
+const _deskArrivedSet = new Set();
+function _deskArrivedKey(date, origIdx) { return `${date}__${origIdx}`; }
+function toggleDeskArrived(date, origIdx) {
+  const key = _deskArrivedKey(date, origIdx);
+  if (_deskArrivedSet.has(key)) _deskArrivedSet.delete(key); else _deskArrivedSet.add(key);
+  renderProductTable();
+}
+
 let _deskReceivingKw = '';
 function onDeskReceivingSearch(val) {
   _deskReceivingKw = (val || '').trim();
@@ -536,8 +545,15 @@ function renderProductTable() {
         </svg><span class="text-sm">${msg}</span></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = list.map(({ p, origIdx }) => `
-    <tr class="${p.status !== STATUS.PENDING ? 'received-row' : 'hover:bg-gray-50'} border-b border-gray-100">
+  tbody.innerHTML = list.map(({ p, origIdx }) => {
+    const arrived = p.status === STATUS.PENDING && _deskArrivedSet.has(_deskArrivedKey(date, origIdx));
+    const rowCls  = p.status !== STATUS.PENDING
+      ? 'received-row border-b border-gray-100'
+      : arrived
+        ? 'border-b border-green-200 bg-green-50'
+        : 'hover:bg-gray-50 border-b border-gray-100';
+    return `
+    <tr class="${rowCls}">
       <td class="px-4 py-3"><input type="checkbox" data-idx="${origIdx}" onchange="onRowCheck()" class="row-check accent-blue-600 w-4 h-4 cursor-pointer" /></td>
       <td class="px-4 py-3 text-gray-500">${p.seq}</td>
       <td class="px-4 py-3 font-mono text-xs">${p.po}</td>
@@ -561,12 +577,22 @@ function renderProductTable() {
       </td>
       <td class="px-4 py-3 text-center">
         ${p.status === STATUS.PENDING
-          ? `<button onclick="startDesktopReceiving('${date}',${origIdx})" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg">確認</button>`
+          ? `<div class="flex items-center gap-1 justify-center">
+               <button onclick="toggleDeskArrived('${date}',${origIdx})"
+                 class="${arrived
+                   ? 'bg-green-100 border border-green-400 text-green-700 hover:bg-green-200'
+                   : 'bg-gray-100 border border-gray-300 text-gray-600 hover:bg-gray-200'} text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors">
+                 ${arrived ? '✓ 已到貨' : '已到貨'}
+               </button>
+               ${arrived ? `<button onclick="startDesktopReceiving('${date}',${origIdx})"
+                 class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg">確認</button>` : ''}
+             </div>`
           : p.status === STATUS.RESOLVED
             ? '<span class="text-xs text-gray-400">已處理</span>'
             : `<button onclick="openModal('${date}',${origIdx})" class="bg-gray-200 hover:bg-gray-300 text-gray-600 text-xs px-3 py-1.5 rounded-lg">修改</button>`}
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 
   // 渲染一維條碼（等待 JsBarcode CDN 載入）
   const renderBarcodes = () => {
@@ -1269,7 +1295,7 @@ function saveReceiving() {
   p.operatorId    = user?.userId || '';
   p.operatorName  = user?.name  || '';
   p.status        = bad > 0 ? STATUS.ABNORMAL_PENDING : STATUS.RECEIVED;
-
+  _deskArrivedSet.delete(_deskArrivedKey(date, currentIdx.idx)); // 確認完成後移除已到貨標記
   suppressDeskSyncRender(3000);
   // 呼叫後端 API 後重載 Firestore 資料（確保多台同步）
   const receiveDate = date;
