@@ -261,13 +261,16 @@ function openSheet(id) {
 function closeAllSheets() {
   document.getElementById('overlay').classList.remove('open');
   document.querySelectorAll('.sheet.open').forEach(s=>s.classList.remove('open'));
+  // Sheet 關閉後，若有暫存的 snapshot 變更則套用（但不立即重繪，讓呼叫方決定）
+  if (_pendingChanges?.length) { applyChanges(_pendingChanges); _pendingChanges = []; }
 }
 
 // ── 即時同步（onSnapshot）────────────────────────────
-let _realtimeUnsub    = null;
+let _realtimeUnsub     = null;
 let _syncDebounceTimer = null;
-let _syncReady        = false;  // 跳過初始 snapshot
-let _syncSuppressUntil = 0;     // 使用者儲存後短暫壓制 re-render
+let _syncReady         = false;  // 跳過初始 snapshot
+let _syncSuppressUntil = 0;      // 儲存後短暫壓制 re-render
+let _pendingChanges    = [];     // 操作中暫存的 snapshot 變更
 
 function suppressSyncRender(ms = 2000) { _syncSuppressUntil = Date.now() + ms; }
 
@@ -275,9 +278,27 @@ function isUserOperating() {
   return document.getElementById('overlay')?.classList.contains('open') || false;
 }
 
+function applyChanges(changes) {
+  changes.forEach(change => {
+    const date = change.doc.data()?.arrival_date;
+    if (!date) return;
+    if (!_allKnownDates.includes(date)) _allKnownDates.push(date);
+    if (change.type === 'removed') {
+      if (productsByDate[date])
+        productsByDate[date] = productsByDate[date].filter(p => p.id !== change.doc.id);
+    } else {
+      const p = normalizeProducts([{id: change.doc.id, ...change.doc.data()}])[0];
+      if (!productsByDate[date]) productsByDate[date] = [];
+      const idx = productsByDate[date].findIndex(x => x.id === change.doc.id);
+      if (idx >= 0) productsByDate[date][idx] = p;
+      else productsByDate[date].push(p);
+    }
+  });
+}
+
 function rerenderCurrentView() {
   if (isUserOperating()) return;
-  if (Date.now() < _syncSuppressUntil) return; // 剛完成儲存，暫不 re-render
+  if (Date.now() < _syncSuppressUntil) return;
   if (currentPage === 'receiving')       { renderProductCards(); updateStats(); }
   else if (currentPage === 'warehouse')  renderWarehouseCards();
   else if (currentPage === 'review')     renderReviewCards();
@@ -290,30 +311,22 @@ function rerenderCurrentView() {
 function startRealtimeSync() {
   if (_realtimeUnsub) { _realtimeUnsub(); _realtimeUnsub = null; }
   _syncReady = false;
+  _pendingChanges = [];
   _realtimeUnsub = db.collection('products').onSnapshot(snapshot => {
-    // 第一次回呼是初始狀態（資料已手動載入），跳過避免不必要的重繪
-    if (!_syncReady) { _syncReady = true; return; }
-    let changed = false;
-    snapshot.docChanges().forEach(change => {
-      const date = change.doc.data()?.arrival_date;
-      if (!date) return;
-      if (!_allKnownDates.includes(date)) _allKnownDates.push(date);
-      if (change.type === 'removed') {
-        if (productsByDate[date]) {
-          productsByDate[date] = productsByDate[date].filter(p => p.id !== change.doc.id);
-          changed = true;
-        }
-      } else {
-        const p = normalizeProducts([{id: change.doc.id, ...change.doc.data()}])[0];
-        if (!productsByDate[date]) productsByDate[date] = [];
-        const idx = productsByDate[date].findIndex(x => x.id === change.doc.id);
-        if (idx >= 0) { productsByDate[date][idx] = p; }
-        else { productsByDate[date].push(p); }
-        changed = true;
-      }
-    });
-    if (!changed) return;
-    // 防抖：1s 內只重繪一次
+    if (!_syncReady) { _syncReady = true; return; } // 跳過初始 snapshot
+    const changes = snapshot.docChanges();
+    if (!changes.length) return;
+
+    if (isUserOperating()) {
+      // 使用者操作中：只暫存變更，不修改 productsByDate
+      _pendingChanges.push(...changes);
+      return;
+    }
+
+    // 先套用暫存的變更，再套用本次變更
+    if (_pendingChanges.length) { applyChanges(_pendingChanges); _pendingChanges = []; }
+    applyChanges(changes);
+
     clearTimeout(_syncDebounceTimer);
     _syncDebounceTimer = setTimeout(rerenderCurrentView, 1000);
   }, err => console.warn('realtime sync err:', err.message));
@@ -840,10 +853,10 @@ async function saveReceiving() {
   p.defectStaff=user?.name||''; p.time=nowStr(); p.operatorName=user?.name||'';
   // bizAttr 已在 rs_setBizAttr 即時更新，無需再次設定
   p.status = bad>0 ? STATUS.ABNORMAL : STATUS.RECEIVED;
-  // 立即重新渲染（不等 Firestore），確保已確認項目馬上顯示在確認頁籤
   suppressSyncRender(3000);
   closeAllSheets();
-  renderProductCards(); updateStats();
+  // 延遲 150ms 再重繪，讓使用者當前手勢完整執行後再替換 DOM
+  setTimeout(() => { renderProductCards(); updateStats(); }, 150);
   if (p.id) {
     ProductAPI.receive(p.id, {goodQty:good,badQty:bad,defectReasons:p.defectReasons,defectNote:p.defectNote,defectClass:p.defectClass,photos:p.photos,defectItems:p.defectItems})
       .then(async()=>{ await reloadFromFirestore(date); renderProductCards(); updateStats(); updateBadges(); })
