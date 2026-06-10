@@ -1,22 +1,25 @@
-﻿// ── 異常大分類（三選一）& 原因（固定清單複選，與分類無關）──
-const _DEFAULT_DEFECT_CATEGORIES = ['臨時到貨', '取消到貨', '其他異常'];
-const _DEFAULT_DEFECT_REASONS = [
-  '品名不符','數量不符','規格不符','外箱標示異常','條碼異常',
-  '臨時到貨','取消到貨',
-  '商品異常-(多筆)','商品異常-殘膠','商品異常-汙損','商品異常-破膜',
-  '商品異常-凹損','商品異常-破損','商品異常-未封口','商品異常-效期模糊',
-  '裸瓶','混效期',
-  '效期異常-無第二條件','效期異常-未來日','效期異常-效期超允收','效期異常-保存期限不合理',
-  '其他'
-];
-// 動態讀取（與 app.js 相同邏輯，支援管理員自訂）
+﻿// ── 異常分類與細項（大分類 → 細項清單）──────────────────
+const DEFAULT_DEFECT_MAP = {
+  '外箱問題': ['外箱無麥頭','外箱嘜頭箱入數不符','外箱嘜頭品號不符','外箱嘜頭品名不符','外箱條碼與商品相同','外箱破損','外箱凹損','外箱濕損','外箱其它問題'],
+  '效期問題': ['效期過允收','保不合(保存天數與主檔不符)','無第二效期條件','無效期標示','效期模糊或不完整','外袋無效期，包裝內有多種效期','外袋無效期，包裝內僅看到部份效期','外袋效期與內容物不符','效期用貼紙或手寫或塗改','效期其它問題'],
+  '條碼問題': ['條碼不符','條碼無法讀取','未貼條碼','條碼標破損','條碼模糊或不完整','條碼其它問題'],
+  '品名規格': ['品名不符或不完整','品名對不到','規格對不到','規格不符','無中標','中標破損','品名規格其它問題'],
+  '商品問題': ['凹','破','汙','凹汙','凹破','破汙','凹汙破','瑕疵','生鏽','發霉','有蟲','失真空','多款式','未封口','裸裝','商品混放','商品未綑綁','商品其它問題'],
+  '其它問題': ['到錯貨','數量不符','標籤破(污)損或模糊不清','其它異常','臨時到貨']
+};
 function DEFECT_CATEGORIES() {
   const d = JSON.parse(localStorage.getItem('rr_defect_config') || 'null');
-  return d?.categories || _DEFAULT_DEFECT_CATEGORIES;
+  const map = d?.map || DEFAULT_DEFECT_MAP;
+  return Object.keys(map);
 }
-function DEFECT_REASONS() {
+function DEFECT_REASONS(cat) {
   const d = JSON.parse(localStorage.getItem('rr_defect_config') || 'null');
-  return d?.reasons || _DEFAULT_DEFECT_REASONS;
+  const map = d?.map || DEFAULT_DEFECT_MAP;
+  return cat ? (map[cat] || []) : Object.values(map).flat();
+}
+function getDefectMap() {
+  const d = JSON.parse(localStorage.getItem('rr_defect_config') || 'null');
+  return d?.map || DEFAULT_DEFECT_MAP;
 }
 const DEFECT_SUB_REASONS = {};
 function getDefectDisplay(item) {
@@ -113,13 +116,14 @@ function getBizAttrs() { return JSON.parse(localStorage.getItem('rr_biz_attrs') 
 function saveBizAttrs(attrs) { localStorage.setItem('rr_biz_attrs', JSON.stringify(attrs)); }
 
 // ── 異常設定（桌電版）────────────────────────────────
-const _DEF_CATS    = ['臨時到貨','取消到貨','其他異常'];
-const _DEF_REASONS = ['品名不符','數量不符','規格不符','外箱標示異常','條碼異常','臨時到貨','取消到貨','商品異常-(多筆)','商品異常-殘膠','商品異常-汙損','商品異常-破膜','商品異常-凹損','商品異常-破損','商品異常-未封口','商品異常-效期模糊','裸瓶','混效期','效期異常-無第二條件','效期異常-未來日','效期異常-效期超允收','效期異常-保存期限不合理','其他'];
-function getDeskDefectCategories() { const d=JSON.parse(localStorage.getItem('rr_defect_config')||'null'); return d?.categories||_DEF_CATS; }
-function getDeskDefectReasons()    { const d=JSON.parse(localStorage.getItem('rr_defect_config')||'null'); return d?.reasons||_DEF_REASONS; }
-function saveDeskDefectConfig(cfg) { localStorage.setItem('rr_defect_config', JSON.stringify({categories:cfg.categories||null,reasons:cfg.reasons||null})); }
+function getDeskDefectMap() { return getDefectMap(); }
+function getDeskDefectCategories() { return DEFECT_CATEGORIES(); }
+function getDeskDefectReasons(cat) { return DEFECT_REASONS(cat); }
+function saveDeskDefectConfig(cfg) {
+  if (cfg.map) localStorage.setItem('rr_defect_config', JSON.stringify({ map: cfg.map }));
+}
 async function loadDeskDefectConfig() {
-  try { const cfg=await DefectConfigAPI.get(); saveDeskDefectConfig(cfg); } catch(e) {}
+  try { const cfg=await DefectConfigAPI.get(); if(cfg?.map) saveDeskDefectConfig({ map: cfg.map }); } catch(e) {}
 }
 
 // ── 大分類篩選選項（桌電版）──────────────────────────
@@ -208,7 +212,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   Promise.all([
     RoleAPI.list().then(r => { if (r?.length) saveRoles(r); }).catch(()=>{}),
     BizAttrAPI.list().then(a => { if (a?.length) saveBizAttrs(a); }).catch(()=>{}),
-    DefectConfigAPI.get().then(c => { if (c?.categories||c?.reasons) saveDeskDefectConfig(c); }).catch(()=>{}),
+    DefectConfigAPI.get().then(c => { if (c?.map) saveDeskDefectConfig({ map: c.map }); }).catch(()=>{}),
     CatFilterAPI.get().then(f => { if (f) saveDeskCatFilters(f); }).catch(()=>{})
   ]).then(() => {
     // 重新初始化頁籤（有了 roles 資料後重算可見頁籤）
@@ -1075,7 +1079,10 @@ function renderDeskDefectItems() {
       class="text-xs px-2.5 py-1 rounded-full border transition-colors ${item.category===c?'bg-blue-100 border-blue-400 text-blue-600 font-semibold':'bg-white border-gray-200 text-gray-500 hover:border-blue-300'}">${c}</button>`
   ).join('');
 
-  const subReasons = `<div class="grid gap-1.5 mt-2" style="grid-template-columns:repeat(3,1fr)">${DEFECT_REASONS().map(r=>{const s=(item.reasons||[]).includes(r);return `<button type="button" onclick="deskToggleSubReason(${i},'${r}')" style="padding:7px 4px;border-radius:6px;border:1.5px solid ${s?'#2563eb':'#e5e7eb'};background:${s?'#dbeafe':'#f8fafc'};color:${s?'#1d4ed8':'#6b7280'};font-size:12px;font-weight:${s?'700':'400'};cursor:pointer;line-height:1.4;text-align:center;word-break:break-all">${r}</button>`;}).join('')}</div>`;
+  const reasonsForCat = item.category ? DEFECT_REASONS(item.category) : [];
+  const subReasons = !item.category
+    ? `<div style="margin-top:6px;padding:8px 12px;background:#f3f4f6;border-radius:8px;font-size:12px;color:#9ca3af;text-align:center">請先選擇上方大分類</div>`
+    : `<div class="grid gap-1.5 mt-2" style="grid-template-columns:repeat(3,1fr)">${reasonsForCat.map(r=>{const s=(item.reasons||[]).includes(r);return `<button type="button" onclick="deskToggleSubReason(${i},'${r}')" style="padding:7px 4px;border-radius:6px;border:1.5px solid ${s?'#2563eb':'#e5e7eb'};background:${s?'#dbeafe':'#f8fafc'};color:${s?'#1d4ed8':'#6b7280'};font-size:12px;font-weight:${s?'700':'400'};cursor:pointer;line-height:1.4;text-align:center;word-break:break-all">${r}</button>`;}).join('')}</div>`;
 
   container.innerHTML = `
     <div class="flex gap-2 items-center overflow-x-auto pb-2 mb-2">
@@ -1276,8 +1283,9 @@ function renderReviewPhotoPanel(p) {
   ).join('');
 
   // 原因勾選（預填 + 可修改）
+  const reasonsForRv = cur?.category ? DEFECT_REASONS(cur.category) : DEFECT_REASONS();
   const subReasons = `<div class="grid gap-1.5 mt-2" style="grid-template-columns:repeat(3,1fr)">
-    ${DEFECT_REASONS().map(r=>{
+    ${reasonsForRv.map(r=>{
       const s=(cur.reasons||[]).includes(r);
       return `<button type="button" onclick="deskRvToggleReason(${i},'${r}')"
         style="padding:7px 4px;border-radius:6px;border:1.5px solid ${s?'#2563eb':'#e5e7eb'};
@@ -1604,8 +1612,9 @@ function compressImage(file, maxBytes) {
 function removePhoto(i) { uploadedPhotos.splice(i,1); renderPhotoSlots(); }
 
 // ── 異常原因複選 ─────────────────────────────────────
-function renderDefectReasonList(containerId, selected=[]) {
-  document.getElementById(containerId).innerHTML = DEFECT_REASONS().map(r => `
+function renderDefectReasonList(containerId, selected=[], cat='') {
+  const reasons = cat ? DEFECT_REASONS(cat) : DEFECT_REASONS();
+  document.getElementById(containerId).innerHTML = reasons.map(r => `
     <label class="flex items-center gap-2 text-xs cursor-pointer hover:text-red-600">
       <input type="checkbox" value="${r}" ${selected.includes(r)?'checked':''}
         class="accent-red-500 w-3.5 h-3.5 flex-shrink-0" />${r}
@@ -1655,11 +1664,11 @@ async function loadAndRenderAdmin() {
     ]);
     saveRoles(roles); saveUsers(users);
     if(attrs.length) saveBizAttrs(attrs);
-    if(defectCfg?.categories||defectCfg?.reasons) saveDeskDefectConfig(defectCfg);
+    if(defectCfg?.map) saveDeskDefectConfig({ map: defectCfg.map });
     saveDeskCatFilters(catItems);
   } catch(e) { console.warn('admin load:', e.message); }
   renderRoleTable(); renderUserTable(); renderDesktopBizAttrList();
-  renderDeskDefectCatList(); renderDeskDefectReasonList(); renderDeskCatFilterList();
+  renderDeskDefectMapAdmin(); renderDeskCatFilterList();
 }
 
 // ── 業務屬性管理 ─────────────────────────────────────
@@ -1699,68 +1708,82 @@ async function desktopDeleteBizAttr(idOrIdx) {
 }
 
 // ── 異常設定管理（桌電版）────────────────────────────
-function renderDeskDefectCatList() {
-  const el = document.getElementById('deskDefectCatList');
-  if (!el) return;
-  const cats = getDeskDefectCategories();
-  el.innerHTML = cats.length
-    ? cats.map((c,i) => `
-        <div class="flex items-center gap-1.5 bg-yellow-50 border border-yellow-300 rounded-full px-3 py-1.5">
-          <span class="text-sm font-medium text-yellow-800">${c}</span>
-          <button onclick="deskDeleteDefectCategory(${i})" class="text-yellow-400 hover:text-yellow-600 text-sm leading-none">✕</button>
-        </div>`).join('')
-    : '<span class="text-sm text-gray-400">尚無異常分類</span>';
+function renderDeskDefectMapAdmin() {
+  const container = document.getElementById('deskDefectMapContainer');
+  if (!container) return;
+  const map = getDefectMap();
+  const cats = Object.keys(map);
+  if (!cats.length) { container.innerHTML='<div class="text-sm text-gray-400 p-2">尚無分類</div>'; return; }
+  container.innerHTML = cats.map((cat, ci) => `
+    <div class="border border-yellow-200 rounded-xl overflow-hidden mb-3">
+      <div class="flex items-center justify-between bg-yellow-50 px-4 py-2 gap-2">
+        <span class="text-sm font-bold text-yellow-800 flex-shrink-0">${cat}</span>
+        <div class="flex gap-2 flex-1 min-w-0">
+          <input id="deskDefectMapRI_${ci}" type="text" placeholder="新增細項..."
+            class="flex-1 min-w-0 border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-yellow-400"
+            onkeydown="if(event.key==='Enter')deskAddDefectMapReason(${ci})" />
+          <button onclick="deskAddDefectMapReason(${ci})" class="bg-yellow-500 hover:bg-yellow-600 text-white text-xs px-3 py-1 rounded-lg flex-shrink-0">新增</button>
+          <button onclick="deskDeleteDefectMapCategory(${ci})" class="bg-red-100 hover:bg-red-200 text-red-600 text-xs px-3 py-1 rounded-lg flex-shrink-0">刪除</button>
+        </div>
+      </div>
+      <div class="p-3 flex flex-wrap gap-2">
+        ${(map[cat]||[]).map((r,ri) => `
+          <span class="flex items-center gap-1 bg-red-50 border border-red-200 rounded-full px-3 py-1 text-xs text-red-700">
+            ${r}
+            <button onclick="deskDeleteDefectMapReason(${ci},${ri})" class="text-red-300 hover:text-red-500 leading-none ml-0.5">✕</button>
+          </span>`).join('')}
+        ${!(map[cat]||[]).length ? '<span class="text-xs text-gray-400">尚無細項</span>' : ''}
+      </div>
+    </div>`).join('');
 }
 
-function renderDeskDefectReasonList() {
-  const el = document.getElementById('deskDefectReasonList');
-  if (!el) return;
-  const reasons = getDeskDefectReasons();
-  el.innerHTML = reasons.length
-    ? reasons.map((r,i) => `
-        <div class="flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-full px-3 py-1.5">
-          <span class="text-sm font-medium text-red-700">${r}</span>
-          <button onclick="deskDeleteDefectReason(${i})" class="text-red-300 hover:text-red-500 text-sm leading-none">✕</button>
-        </div>`).join('')
-    : '<span class="text-sm text-gray-400">尚無異常原因</span>';
-}
-
-async function deskAddDefectCategory() {
-  const input = document.getElementById('deskDefectCatInput');
-  const name  = input?.value.trim();
+async function deskAddDefectMapCategory() {
+  const input = document.getElementById('deskDefectNewCatInput');
+  const name = input?.value.trim();
   if (!name) return;
-  const cfg = { categories: [...getDeskDefectCategories(), name], reasons: getDeskDefectReasons() };
-  saveDeskDefectConfig(cfg);
-  try { await DefectConfigAPI.saveCategories(cfg.categories); } catch(e) { console.warn(e.message); }
-  input.value = ''; renderDeskDefectCatList();
+  const map = getDefectMap();
+  if (map[name]) { alert('大分類已存在'); return; }
+  map[name] = [];
+  saveDeskDefectConfig({ map });
+  try { await DefectConfigAPI.saveMap(map); } catch(e) { console.warn(e.message); }
+  input.value = '';
+  renderDeskDefectMapAdmin();
 }
 
-async function deskDeleteDefectCategory(idx) {
-  if (!confirm('確定刪除此異常分類？')) return;
-  const cats = getDeskDefectCategories(); cats.splice(idx,1);
-  const cfg = { categories: cats, reasons: getDeskDefectReasons() };
-  saveDeskDefectConfig(cfg);
-  try { await DefectConfigAPI.saveCategories(cats.length ? cats : null); } catch(e) { console.warn(e.message); }
-  renderDeskDefectCatList();
-}
-
-async function deskAddDefectReason() {
-  const input = document.getElementById('deskDefectReasonInput');
-  const name  = input?.value.trim();
+async function deskAddDefectMapReason(catIdx) {
+  const input = document.getElementById(`deskDefectMapRI_${catIdx}`);
+  const name = input?.value.trim();
   if (!name) return;
-  const cfg = { categories: getDeskDefectCategories(), reasons: [...getDeskDefectReasons(), name] };
-  saveDeskDefectConfig(cfg);
-  try { await DefectConfigAPI.saveReasons(cfg.reasons); } catch(e) { console.warn(e.message); }
-  input.value = ''; renderDeskDefectReasonList();
+  const map = getDefectMap();
+  const cat = Object.keys(map)[catIdx];
+  if (!cat) return;
+  if ((map[cat]||[]).includes(name)) { alert('細項已存在'); return; }
+  map[cat] = [...(map[cat]||[]), name];
+  saveDeskDefectConfig({ map });
+  try { await DefectConfigAPI.saveMap(map); } catch(e) { console.warn(e.message); }
+  input.value = '';
+  renderDeskDefectMapAdmin();
 }
 
-async function deskDeleteDefectReason(idx) {
-  if (!confirm('確定刪除此異常原因？')) return;
-  const reasons = getDeskDefectReasons(); reasons.splice(idx,1);
-  const cfg = { categories: getDeskDefectCategories(), reasons };
-  saveDeskDefectConfig(cfg);
-  try { await DefectConfigAPI.saveReasons(reasons.length ? reasons : null); } catch(e) { console.warn(e.message); }
-  renderDeskDefectReasonList();
+async function deskDeleteDefectMapCategory(catIdx) {
+  if (!confirm('確定刪除此大分類及所有細項？')) return;
+  const map = getDefectMap();
+  const cat = Object.keys(map)[catIdx];
+  if (!cat) return;
+  delete map[cat];
+  saveDeskDefectConfig({ map });
+  try { await DefectConfigAPI.saveMap(map); } catch(e) { console.warn(e.message); }
+  renderDeskDefectMapAdmin();
+}
+
+async function deskDeleteDefectMapReason(catIdx, reasonIdx) {
+  const map = getDefectMap();
+  const cat = Object.keys(map)[catIdx];
+  if (!cat) return;
+  map[cat].splice(reasonIdx, 1);
+  saveDeskDefectConfig({ map });
+  try { await DefectConfigAPI.saveMap(map); } catch(e) { console.warn(e.message); }
+  renderDeskDefectMapAdmin();
 }
 
 // ── 大分類篩選管理（桌電版）──────────────────────────

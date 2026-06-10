@@ -6,7 +6,7 @@
 // 大分類（三選一）
 // 分類與原因改為動態（由 Firestore defect_config 管理），以下 getter 取代固定常數
 function DEFECT_CATEGORIES() { return getDefectCategories(); }
-function DEFECT_REASONS()    { return getDefectReasonsList(); }
+function DEFECT_REASONS(cat) { return getDefectReasonsList(cat); }
 // 向下相容
 const DEFECT_SUB_REASONS = {};
 // 取得顯示用原因文字（供卡片/報表顯示）
@@ -54,36 +54,34 @@ async function loadBizAttrs() {
 }
 
 // ── 異常設定 ──────────────────────────────────────────
-const DEFAULT_DEFECT_CATEGORIES = ['臨時到貨','取消到貨','其他異常'];
-const DEFAULT_DEFECT_REASONS = [
-  '品名不符','數量不符','規格不符','外箱標示異常','條碼異常',
-  '臨時到貨','取消到貨','商品異常-(多筆)','商品異常-殘膠','商品異常-汙損',
-  '商品異常-破膜','商品異常-凹損','商品異常-破損','商品異常-未封口',
-  '商品異常-效期模糊','裸瓶','混效期','效期異常-無第二條件','效期異常-未來日',
-  '效期異常-效期超允收','效期異常-保存期限不合理','其他'
-];
-function getDefectCategories() {
+const DEFAULT_DEFECT_MAP = {
+  '外箱問題': ['外箱無麥頭','外箱嘜頭箱入數不符','外箱嘜頭品號不符','外箱嘜頭品名不符','外箱條碼與商品相同','外箱破損','外箱凹損','外箱濕損','外箱其它問題'],
+  '效期問題': ['效期過允收','保不合(保存天數與主檔不符)','無第二效期條件','無效期標示','效期模糊或不完整','外袋無效期，包裝內有多種效期','外袋無效期，包裝內僅看到部份效期','外袋效期與內容物不符','效期用貼紙或手寫或塗改','效期其它問題'],
+  '條碼問題': ['條碼不符','條碼無法讀取','未貼條碼','條碼標破損','條碼模糊或不完整','條碼其它問題'],
+  '品名規格': ['品名不符或不完整','品名對不到','規格對不到','規格不符','無中標','中標破損','品名規格其它問題'],
+  '商品問題': ['凹','破','汙','凹汙','凹破','破汙','凹汙破','瑕疵','生鏽','發霉','有蟲','失真空','多款式','未封口','裸裝','商品混放','商品未綑綁','商品其它問題'],
+  '其它問題': ['到錯貨','數量不符','標籤破(污)損或模糊不清','其它異常','臨時到貨']
+};
+function getDefectMap() {
   const d = JSON.parse(localStorage.getItem('rr_defect_config') || 'null');
-  return d?.categories || DEFAULT_DEFECT_CATEGORIES;
+  return d?.map || DEFAULT_DEFECT_MAP;
 }
-function getDefectReasonsList() {
-  const d = JSON.parse(localStorage.getItem('rr_defect_config') || 'null');
-  return d?.reasons || DEFAULT_DEFECT_REASONS;
+function getDefectCategories() { return Object.keys(getDefectMap()); }
+function getDefectReasonsList(cat) {
+  const map = getDefectMap();
+  return cat ? (map[cat] || []) : Object.values(map).flat();
 }
 function saveDefectConfig(cfg) {
-  // null 表示尚未自訂，保留 null 讓 getter 繼續使用預設清單
-  const toSave = {
-    categories: cfg.categories || null,
-    reasons:    cfg.reasons    || null
-  };
-  localStorage.setItem('rr_defect_config', JSON.stringify(toSave));
+  if (cfg.map) {
+    localStorage.setItem('rr_defect_config', JSON.stringify({ map: cfg.map }));
+  }
 }
 async function loadDefectConfig() {
   try {
     const cfg = await DefectConfigAPI.get();
-    saveDefectConfig(cfg);
+    if (cfg.map) saveDefectConfig({ map: cfg.map });
     return cfg;
-  } catch(e) { return { categories: getDefectCategories(), reasons: getDefectReasonsList() }; }
+  } catch(e) { return { map: getDefectMap() }; }
 }
 
 
@@ -600,9 +598,12 @@ function renderDefectItems(readonly) {
 
   const catBtns = DEFECT_CATEGORIES().map(c=>{const active=item.category===c;return `<button onclick="${readonly?'':`setDefectCategory(${i},'${c}')`}" style="padding:6px 12px;border-radius:18px;border:1.5px solid ${active?'#2563eb':'#e5e7eb'};background:${active?'#dbeafe':'#f8fafc'};color:${active?'#1d4ed8':'#6b7280'};font-size:12px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap">${c}</button>`;}).join('');
 
+  const reasonsForCat = item.category ? DEFECT_REASONS(item.category) : [];
   const reasonChips = !readonly
-    ? `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:6px">${DEFECT_REASONS().map(r=>{const sel=(item.reasons||[]).includes(r);return `<button type="button" onclick="toggleDefectSubReason(${i},'${r}')" style="padding:8px 4px;border-radius:8px;border:1.5px solid ${sel?'#2563eb':'#e5e7eb'};background:${sel?'#dbeafe':'#f8fafc'};color:${sel?'#1d4ed8':'#6b7280'};font-size:12px;font-weight:${sel?'700':'400'};cursor:pointer;line-height:1.4;text-align:center;word-break:break-all">${r}</button>`;}).join('')}</div>`
-    : ((item.reasons||[]).length?`<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${(item.reasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')}</div>`:'');
+    ? (item.category
+        ? `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:6px">${reasonsForCat.map(r=>{const sel=(item.reasons||[]).includes(r);return `<button type="button" onclick="toggleDefectSubReason(${i},'${r}')" style="padding:8px 4px;border-radius:8px;border:1.5px solid ${sel?'#2563eb':'#e5e7eb'};background:${sel?'#dbeafe':'#f8fafc'};color:${sel?'#1d4ed8':'#6b7280'};font-size:12px;font-weight:${sel?'700':'400'};cursor:pointer;line-height:1.4;text-align:center;word-break:break-all">${r}</button>`;}).join('')}</div>`
+        : `<div style="margin-top:6px;padding:8px 12px;background:#f3f4f6;border-radius:8px;font-size:12px;color:#9ca3af;text-align:center">請先選擇上方大分類</div>`)
+    : ((item.reasons||[]).length ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${(item.reasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')}</div>` : '');
 
   const photoMain = item.photo
     ? `<div style="position:relative;display:inline-block;flex-shrink:0"><img src="${item.photo}" style="width:80px;height:80px;border-radius:10px;object-fit:cover;display:block;cursor:pointer" onclick="viewDefectPhoto(${i})" />${!readonly?`<button onclick="clearDefectPhotoItem(${i})" style="position:absolute;top:-5px;right:-5px;width:16px;height:16px;background:#ef4444;color:#fff;border:none;border-radius:50%;font-size:10px;cursor:pointer">x</button>`:''}</div>`
@@ -1066,8 +1067,9 @@ function renderReviewSheetBody(p) {
         font-size:12px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap">${c}</button>`;
   }).join('');
   // 原因勾選（預填，可修改）
+  const reasonsForCat = cur?.category ? DEFECT_REASONS(cur.category) : DEFECT_REASONS();
   const reasonChips = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:6px">
-    ${DEFECT_REASONS().map(r => {
+    ${reasonsForCat.map(r => {
       const sel = (cur?.reasons||[]).includes(r);
       return `<button type="button" onclick="rvToggleReason(${i},'${r}')"
         style="padding:8px 4px;border-radius:8px;border:1.5px solid ${sel?'#f59e0b':'#e5e7eb'};
@@ -1422,11 +1424,11 @@ async function loadAndRenderAdmin() {
     ]);
     saveRoles(roles); saveUsers(users);
     if(attrs.length) saveBizAttrs(attrs);
-    saveDefectConfig(defectCfg);
+    if (defectCfg?.map) saveDefectConfig({ map: defectCfg.map });
     saveCatFilters(catItems);
   } catch(e) { console.warn('admin load:', e.message); }
   renderRoleCards(); renderUserCards(); refreshRoleOptions(); renderBizAttrCards();
-  renderDefectCatCards(); renderDefectReasonCards(); renderCatFilterCards();
+  renderDefectMapAdmin(); renderCatFilterCards();
   const user = getCurrentUser();
   const el = document.getElementById('userDisplay-a');
   if (el) el.textContent = `${user?.name||''} · ${getRoleName(currentRole)}`;
@@ -1509,74 +1511,80 @@ async function deleteCatFilter(idx) {
 }
 
 // ── 異常設定管理 ──────────────────────────────────────
-function renderDefectCatCards() {
-  const container = document.getElementById('defectCatListContainer');
+function renderDefectMapAdmin() {
+  const container = document.getElementById('defectMapContainer');
   if (!container) return;
-  const cats = getDefectCategories();
-  if (!cats.length) { container.innerHTML='<div style="padding:8px 16px;font-size:13px;color:#9ca3af">尚無分類，請新增</div>'; return; }
-  container.innerHTML = `<div style="padding:8px 16px;display:flex;flex-wrap:wrap;gap:8px">
-    ${cats.map((c,i) => `
-      <div style="display:flex;align-items:center;gap:6px;background:#fef3c7;border:1.5px solid #fde68a;border-radius:20px;padding:6px 12px">
-        <span style="font-size:13px;font-weight:600;color:#92400e">${c}</span>
-        <button onclick="deleteDefectCategory(${i})" style="background:none;border:none;color:#d97706;cursor:pointer;font-size:14px;line-height:1;padding:0">✕</button>
-      </div>`).join('')}
-  </div>`;
+  const map = getDefectMap();
+  const cats = Object.keys(map);
+  if (!cats.length) { container.innerHTML='<div style="padding:8px 16px;font-size:13px;color:#9ca3af">尚無分類</div>'; return; }
+  container.innerHTML = cats.map((cat, ci) => `
+    <div style="margin:0 12px 10px;border:1.5px solid #fde68a;border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;background:#fef3c7;padding:8px 12px;gap:8px">
+        <span style="font-size:14px;font-weight:700;color:#92400e;flex-shrink:0">${cat}</span>
+        <div style="display:flex;gap:6px;flex:1;min-width:0">
+          <input id="defectMapRI_${ci}" placeholder="新增細項..." class="input" style="flex:1;min-width:0;font-size:12px;padding:6px 8px" onkeydown="if(event.key==='Enter')addDefectMapReason(${ci})" />
+          <button onclick="addDefectMapReason(${ci})" class="btn btn-primary btn-sm" style="flex-shrink:0;white-space:nowrap">新增</button>
+          <button onclick="deleteDefectMapCategory(${ci})" class="btn btn-sm" style="background:#fee2e2;color:#991b1b;border:none;flex-shrink:0">刪除</button>
+        </div>
+      </div>
+      <div style="padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px">
+        ${(map[cat]||[]).map((r,ri) => `
+          <div style="display:flex;align-items:center;gap:4px;background:#fef2f2;border:1px solid #fecaca;border-radius:16px;padding:4px 10px">
+            <span style="font-size:12px;color:#991b1b">${r}</span>
+            <button onclick="deleteDefectMapReason(${ci},${ri})" style="background:none;border:none;color:#fca5a5;cursor:pointer;font-size:13px;line-height:1;padding:0">✕</button>
+          </div>`).join('')}
+        ${!(map[cat]||[]).length ? '<span style="font-size:12px;color:#9ca3af">尚無細項</span>' : ''}
+      </div>
+    </div>`).join('');
 }
 
-function renderDefectReasonCards() {
-  const container = document.getElementById('defectReasonListContainer');
-  if (!container) return;
-  const reasons = getDefectReasonsList();
-  if (!reasons.length) { container.innerHTML='<div style="padding:8px 16px;font-size:13px;color:#9ca3af">尚無原因，請新增</div>'; return; }
-  container.innerHTML = `<div style="padding:8px 16px;display:flex;flex-wrap:wrap;gap:8px">
-    ${reasons.map((r,i) => `
-      <div style="display:flex;align-items:center;gap:6px;background:#fef2f2;border:1.5px solid #fecaca;border-radius:20px;padding:6px 12px">
-        <span style="font-size:13px;font-weight:600;color:#991b1b">${r}</span>
-        <button onclick="deleteDefectReason(${i})" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:14px;line-height:1;padding:0">✕</button>
-      </div>`).join('')}
-  </div>`;
-}
-
-async function addDefectCategory() {
-  const input = document.getElementById('defectCatInput');
+async function addDefectMapCategory() {
+  const input = document.getElementById('defectNewCatInput');
   const name = input?.value.trim();
   if (!name) return;
-  const cfg = { categories: [...getDefectCategories(), name], reasons: getDefectReasonsList() };
-  saveDefectConfig(cfg);
-  try { await DefectConfigAPI.saveCategories(cfg.categories); } catch(e) { console.warn(e.message); }
+  const map = getDefectMap();
+  if (map[name]) { alert('大分類已存在'); return; }
+  map[name] = [];
+  saveDefectConfig({ map });
+  try { await DefectConfigAPI.saveMap(map); } catch(e) { console.warn(e.message); }
   input.value = '';
-  renderDefectCatCards();
+  renderDefectMapAdmin();
 }
 
-async function deleteDefectCategory(idx) {
-  if (!confirm('確定刪除此異常分類？')) return;
-  const cats = getDefectCategories();
-  cats.splice(idx, 1);
-  const cfg = { categories: cats, reasons: getDefectReasonsList() };
-  saveDefectConfig(cfg);
-  try { await DefectConfigAPI.saveCategories(cats); } catch(e) { console.warn(e.message); }
-  renderDefectCatCards();
-}
-
-async function addDefectReason() {
-  const input = document.getElementById('defectReasonInput');
+async function addDefectMapReason(catIdx) {
+  const input = document.getElementById(`defectMapRI_${catIdx}`);
   const name = input?.value.trim();
   if (!name) return;
-  const cfg = { categories: getDefectCategories(), reasons: [...getDefectReasonsList(), name] };
-  saveDefectConfig(cfg);
-  try { await DefectConfigAPI.saveReasons(cfg.reasons); } catch(e) { console.warn(e.message); }
+  const map = getDefectMap();
+  const cat = Object.keys(map)[catIdx];
+  if (!cat) return;
+  if ((map[cat]||[]).includes(name)) { alert('細項已存在'); return; }
+  map[cat] = [...(map[cat]||[]), name];
+  saveDefectConfig({ map });
+  try { await DefectConfigAPI.saveMap(map); } catch(e) { console.warn(e.message); }
   input.value = '';
-  renderDefectReasonCards();
+  renderDefectMapAdmin();
 }
 
-async function deleteDefectReason(idx) {
-  if (!confirm('確定刪除此異常原因？')) return;
-  const reasons = getDefectReasonsList();
-  reasons.splice(idx, 1);
-  const cfg = { categories: getDefectCategories(), reasons };
-  saveDefectConfig(cfg);
-  try { await DefectConfigAPI.saveReasons(reasons); } catch(e) { console.warn(e.message); }
-  renderDefectReasonCards();
+async function deleteDefectMapCategory(catIdx) {
+  if (!confirm('確定刪除此大分類及所有細項？')) return;
+  const map = getDefectMap();
+  const cat = Object.keys(map)[catIdx];
+  if (!cat) return;
+  delete map[cat];
+  saveDefectConfig({ map });
+  try { await DefectConfigAPI.saveMap(map); } catch(e) { console.warn(e.message); }
+  renderDefectMapAdmin();
+}
+
+async function deleteDefectMapReason(catIdx, reasonIdx) {
+  const map = getDefectMap();
+  const cat = Object.keys(map)[catIdx];
+  if (!cat) return;
+  map[cat].splice(reasonIdx, 1);
+  saveDefectConfig({ map });
+  try { await DefectConfigAPI.saveMap(map); } catch(e) { console.warn(e.message); }
+  renderDefectMapAdmin();
 }
 
 function renderRoleCards() {

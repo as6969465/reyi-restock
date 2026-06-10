@@ -70,10 +70,6 @@
         待回覆清單
         <span id="badge-purchase" class="ml-1.5 bg-blue-500 text-white text-xs rounded-full px-1.5 py-0.5 hidden"></span>
       </button>
-      <button onclick="switchTab('resolved')" id="tab-resolved" data-role="purchase"
-        class="tab-btn hidden px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
-        已處理記錄
-      </button>
       <!-- 管理員 tab -->
       <button onclick="switchTab('admin')" id="tab-admin" data-role="admin"
         class="tab-btn hidden px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
@@ -329,46 +325,6 @@
     </div>
   </div>
 
-  <!-- ===== 6. 已處理記錄 (採購人員) ===== -->
-  <div id="page-resolved" class="p-6 hidden">
-    <div class="flex items-center justify-between mb-4">
-      <div><h2 class="text-lg font-semibold text-gray-800">已處理記錄</h2>
-        <p class="text-xs text-gray-500 mt-0.5">已回覆完成的異常商品記錄</p></div>
-      <button onclick="exportResolvedExcel()" class="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded-lg flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>匯出 Excel
-      </button>
-    </div>
-    <div class="mb-4">
-      <select id="res-cat-filter-desk" onchange="renderResolvedTable()"
-        class="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none bg-white">
-        <option value="">全部大分類</option>
-        <option value="食品">食品</option>
-        <option value="居家美妝">居家美妝</option>
-        <option value="預購項目">預購項目</option>
-      </select>
-    </div>
-    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm whitespace-nowrap">
-          <thead><tr class="bg-gray-50 border-b border-gray-200">
-            <th class="text-left px-4 py-3 font-medium text-gray-600">日期</th>
-            <th class="text-left px-4 py-3 font-medium text-gray-600">連動時間</th>
-            <th class="text-left px-4 py-3 font-medium text-gray-600">異常分類</th>
-            <th class="text-left px-4 py-3 font-medium text-gray-600">廠商</th>
-            <th class="text-left px-4 py-3 font-medium text-gray-600">大分類</th>
-            <th class="text-left px-4 py-3 font-medium text-gray-600">商品編號</th>
-            <th class="text-left px-4 py-3 font-medium text-gray-600">商品名稱</th>
-            <th class="text-left px-4 py-3 font-medium text-gray-600">異常原因</th>
-            <th class="text-left px-4 py-3 font-medium text-gray-600">其他說明</th>
-            <th class="text-left px-4 py-3 font-medium text-gray-600">物流回覆專員</th>
-            <th class="text-left px-4 py-3 font-medium text-gray-600">照片</th>
-          </tr></thead>
-          <tbody id="resolvedTableBody"><tr><td colspan="11" class="px-4 py-12 text-center text-gray-400 text-sm">尚無已處理記錄</td></tr></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
   <!-- ===== 帳號管理 (管理員) ===== -->
   <div id="page-admin" class="p-6 hidden space-y-8">
 
@@ -408,38 +364,21 @@
       </div>
     </div>
 
-    <!-- 異常分類管理 -->
+    <!-- 異常分類與細項管理 -->
     <div>
       <div class="flex items-center justify-between mb-4">
         <div>
-          <h2 class="text-lg font-semibold text-gray-800">異常分類</h2>
-          <p class="text-xs text-gray-500 mt-0.5">驗收時可選擇的異常大分類</p>
+          <h2 class="text-lg font-semibold text-gray-800">異常分類與細項</h2>
+          <p class="text-xs text-gray-500 mt-0.5">設定大分類及其對應的細項描述（細項可複選）</p>
         </div>
       </div>
       <div class="bg-white rounded-xl border border-gray-200 p-4">
-        <div id="deskDefectCatList" class="flex flex-wrap gap-2 mb-3"></div>
+        <div id="deskDefectMapContainer" class="mb-3"></div>
         <div class="flex gap-2">
-          <input id="deskDefectCatInput" type="text" placeholder="輸入新異常分類名稱"
-            class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400" />
-          <button onclick="deskAddDefectCategory()" class="bg-yellow-500 hover:bg-yellow-600 text-white text-sm px-4 py-2 rounded-lg">新增</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 異常原因管理 -->
-    <div>
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h2 class="text-lg font-semibold text-gray-800">異常原因</h2>
-          <p class="text-xs text-gray-500 mt-0.5">驗收時可選擇的異常原因項目</p>
-        </div>
-      </div>
-      <div class="bg-white rounded-xl border border-gray-200 p-4">
-        <div id="deskDefectReasonList" class="flex flex-wrap gap-2 mb-3"></div>
-        <div class="flex gap-2">
-          <input id="deskDefectReasonInput" type="text" placeholder="輸入新異常原因名稱"
-            class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400" />
-          <button onclick="deskAddDefectReason()" class="bg-red-500 hover:bg-red-600 text-white text-sm px-4 py-2 rounded-lg">新增</button>
+          <input id="deskDefectNewCatInput" type="text" placeholder="新增大分類名稱"
+            class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            onkeydown="if(event.key==='Enter')deskAddDefectMapCategory()" />
+          <button onclick="deskAddDefectMapCategory()" class="bg-yellow-500 hover:bg-yellow-600 text-white text-sm px-4 py-2 rounded-lg">＋ 新增大分類</button>
         </div>
       </div>
     </div>
@@ -531,7 +470,6 @@
               <input type="checkbox" value="purchase" class="rm-tab accent-purple-500" /> 待回覆清單
             </label>
             <label class="flex items-center gap-2 text-sm cursor-pointer">
-              <input type="checkbox" value="resolved" class="rm-tab accent-purple-500" /> 已處理記錄
             </label>
           </div>
         </div>

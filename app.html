@@ -168,32 +168,6 @@
     <div id="purchaseListContainer" class="card-list" style="flex:1"></div>
   </div>
 
-  <!-- 已處理記錄 -->
-  <div id="page-resolved" class="app-page">
-    <div class="page-header">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
-        <div><h1>已處理記錄</h1><p>採購回覆完成的異常商品</p></div>
-        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
-          <input type="date" id="res-from" onchange="renderResolvedCards()"
-            style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;padding:5px 7px;font-size:11px;font-weight:600;outline:none;width:112px" />
-          <span style="color:rgba(255,255,255,.7);font-size:11px">～</span>
-          <input type="date" id="res-to" onchange="renderResolvedCards()"
-            style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;padding:5px 7px;font-size:11px;font-weight:600;outline:none;width:112px" />
-        </div>
-      </div>
-    </div>
-    <div style="padding:8px 12px 0">
-      <select id="res-cat-filter" onchange="renderResolvedCards()"
-        style="width:100%;border:1.5px solid #e5e7eb;border-radius:12px;padding:9px 12px;font-size:13px;outline:none;background:#fff">
-        <option value="">全部大分類</option>
-        <option value="食品">食品</option>
-        <option value="居家美妝">居家美妝</option>
-        <option value="預購項目">預購項目</option>
-      </select>
-    </div>
-    <div id="resolvedListContainer" class="card-list" style="flex:1"></div>
-    <div style="padding:12px"><button onclick="exportResolvedExcel()" class="btn" style="width:100%;background:#059669;color:#fff;border:none">匯出 Excel</button></div>
-  </div>
 
   <!-- 帳號管理 -->
   <div id="page-admin" class="app-page">
@@ -221,22 +195,13 @@
         <button onclick="addCatFilter()" class="btn btn-primary btn-sm" style="flex-shrink:0;white-space:nowrap">新增</button>
       </div>
     </div>
-    <!-- 異常分類管理 -->
-    <div class="section-title" style="margin-top:8px">異常分類</div>
-    <div id="defectCatListContainer" class="card-list"></div>
+    <!-- 異常分類與細項管理 -->
+    <div class="section-title" style="margin-top:8px">異常分類與細項</div>
+    <div id="defectMapContainer" class="card-list"></div>
     <div style="padding:0 12px 4px">
       <div style="display:flex;gap:8px;padding:0 0 4px">
-        <input id="defectCatInput" class="input" style="font-size:14px;padding:10px 12px" placeholder="新增異常分類名稱" />
-        <button onclick="addDefectCategory()" class="btn btn-primary btn-sm" style="flex-shrink:0;white-space:nowrap">新增</button>
-      </div>
-    </div>
-    <!-- 異常原因管理 -->
-    <div class="section-title" style="margin-top:8px">異常原因</div>
-    <div id="defectReasonListContainer" class="card-list"></div>
-    <div style="padding:0 12px 4px">
-      <div style="display:flex;gap:8px;padding:0 0 4px">
-        <input id="defectReasonInput" class="input" style="font-size:14px;padding:10px 12px" placeholder="新增異常原因名稱" />
-        <button onclick="addDefectReason()" class="btn btn-primary btn-sm" style="flex-shrink:0;white-space:nowrap">新增</button>
+        <input id="defectNewCatInput" class="input" style="font-size:14px;padding:10px 12px" placeholder="新增大分類名稱" />
+        <button onclick="addDefectMapCategory()" class="btn btn-primary btn-sm" style="flex-shrink:0;white-space:nowrap">＋ 新增大分類</button>
       </div>
     </div>
     <div class="section-title" style="margin-top:8px">成員帳號</div>
@@ -249,15 +214,6 @@
 
   <!-- 遮罩 -->
   <div class="sheet-overlay" id="overlay" onclick="closeAllSheets()"></div>
-
-  <!-- 已處理照片檢視 Sheet -->
-  <div class="sheet" id="resolvedPhotoSheet">
-    <div class="sheet-handle"></div>
-    <div class="sheet-header">
-      <h2 style="font-size:18px;font-weight:700">異常照片</h2>
-    </div>
-    <div class="sheet-body" id="resolvedPhotoBody"></div>
-  </div>
 
   <!-- 業務屬性選擇 Sheet -->
   <div class="sheet" id="bizAttrSelectSheet">
@@ -323,7 +279,6 @@
         <span class="reason-chip" data-tab="review" onclick="toggleRoleTab(this)">異常檢核</span>
         <span class="reason-chip" data-tab="report" onclick="toggleRoleTab(this)">異常回覆</span>
         <span class="reason-chip" data-tab="purchase" onclick="toggleRoleTab(this)">待回覆清單</span>
-        <span class="reason-chip" data-tab="resolved" onclick="toggleRoleTab(this)">已處理記錄</span>
       </div>
       <div id="roleSheetError" style="display:none;padding:12px;background:#fee2e2;border-radius:12px;font-size:13px;color:#991b1b;margin-bottom:12px"></div>
       <button onclick="saveRole()" class="btn btn-primary" style="width:100%">儲存角色</button>

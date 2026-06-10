@@ -88,6 +88,8 @@ const BizAttrAPI = {
 // ── 異常設定 API ──────────────────────────────────────
 const DefectConfigAPI = {
   async get() {
+    const ms = await db.collection('defect_config').doc('map').get();
+    if (ms.exists && ms.data().data) return { map: ms.data().data };
     const [cs, rs] = await Promise.all([
       db.collection('defect_config').doc('categories').get(),
       db.collection('defect_config').doc('reasons').get()
@@ -95,6 +97,9 @@ const DefectConfigAPI = {
     const cats    = (cs.exists && cs.data().items?.length) ? cs.data().items : null;
     const reasons = (rs.exists && rs.data().items?.length) ? rs.data().items : null;
     return { categories: cats, reasons };
+  },
+  async saveMap(map) {
+    await db.collection('defect_config').doc('map').set({ data: map });
   },
   async saveCategories(items) {
     await db.collection('defect_config').doc('categories').set({ items });
