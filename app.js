@@ -602,7 +602,7 @@ function batchAddDefectPhotos(input) {
   let done = 0;
   const firstNewIdx = _defectItems.length;
   toProcess.forEach(file => {
-    compressImage(file, 800*1024).then(dataUrl => {
+    compressImage(file, 200*1024).then(dataUrl => {
       _defectItems.push({ photo: dataUrl, category: '', reasons: [], note: '' });
       done++;
       if (done === toProcess.length) {
@@ -632,7 +632,7 @@ function setDefectReason(i, r) { _defectItems[i].reason = r; renderDefectItems(f
 function setDefectReasonSelect(i, r) { _defectItems[i].reason = r; }
 function setDefectPhoto(i, input) {
   const file = input.files[0]; if (!file) return;
-  compressImage(file, 800*1024).then(dataUrl => { _defectItems[i].photo=dataUrl; renderDefectItems(false); });
+  compressImage(file, 200*1024).then(dataUrl => { _defectItems[i].photo=dataUrl; renderDefectItems(false); });
 }
 function viewDefectPhoto(i) {
   const p = _defectItems[i];
@@ -1810,7 +1810,7 @@ function renderPhotoSlots(gridId, photos, inputId, countId) {
 function handlePhotoUpload(input, gridId) {
   const files=Array.from(input.files);
   files.slice(0,6-uploadedPhotos.length).forEach(file=>{
-    compressImage(file,1000*1024).then(dataUrl=>{
+    compressImage(file,200*1024).then(dataUrl=>{
       uploadedPhotos.push(dataUrl);
       renderPhotoSlots(gridId,uploadedPhotos,'rs-photoInput','rs-photoCount');
     });
@@ -1824,14 +1824,21 @@ function compressImage(file,maxBytes){
     img.onload=()=>{
       URL.revokeObjectURL(url);
       const canvas=document.createElement('canvas');
-      let{width,height}=img;let quality=0.92;
+      let{width,height}=img;
+      // 先限制最大解析度（長邊 1280px）
+      const MAX_DIM=1280;
+      if(width>MAX_DIM||height>MAX_DIM){
+        const s=MAX_DIM/Math.max(width,height);
+        width=Math.round(width*s);height=Math.round(height*s);
+      }
+      let quality=0.82;
       const tryCompress=()=>{
         canvas.width=width;canvas.height=height;canvas.getContext('2d').drawImage(img,0,0,width,height);
         const dataUrl=canvas.toDataURL('image/jpeg',quality);
         const bytes=Math.round((dataUrl.length-22)*3/4);
         if(bytes<=maxBytes||quality<=0.1){resolve(dataUrl);return;}
-        if(quality>0.3){quality-=0.08;tryCompress();}
-        else{const s=Math.sqrt(maxBytes/bytes);width=Math.round(width*s);height=Math.round(height*s);quality=0.85;tryCompress();}
+        if(quality>0.3){quality-=0.1;tryCompress();}
+        else{const s=Math.sqrt(maxBytes/bytes);width=Math.round(width*s);height=Math.round(height*s);quality=0.8;tryCompress();}
       };
       tryCompress();
     };

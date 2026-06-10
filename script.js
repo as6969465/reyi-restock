@@ -1168,7 +1168,7 @@ function batchAddDeskDefectPhotos(input) {
   const firstNewIdx = _deskDefectItems.length;
   let done = 0;
   toProcess.forEach(file => {
-    compressImage(file, 800*1024).then(dataUrl => {
+    compressImage(file, 200*1024).then(dataUrl => {
       _deskDefectItems.push({ photo: dataUrl, category:'', reasons:[], note:'' });
       done++;
       if (done === toProcess.length) { _activeDeskDefectIdx = firstNewIdx; renderDeskDefectItems(); }
@@ -1185,7 +1185,7 @@ function deskSetDefectCategory(i, cat) { _deskDefectItems[i].category=cat; rende
 function deskToggleSubReason(i, r) { const item=_deskDefectItems[i]; if(!item.reasons)item.reasons=[]; const idx=item.reasons.indexOf(r); if(idx>=0)item.reasons.splice(idx,1); else item.reasons.push(r); renderDeskDefectItems(); }
 function deskSetDefectPhoto(i, input) {
   const file = input.files[0]; if (!file) return;
-  compressImage(file, 800*1024).then(dataUrl => { _deskDefectItems[i].photo=dataUrl; renderDeskDefectItems(); });
+  compressImage(file, 200*1024).then(dataUrl => { _deskDefectItems[i].photo=dataUrl; renderDeskDefectItems(); });
 }
 function deskViewDefectPhoto(i) {
   const item = _deskDefectItems[i];
@@ -1615,7 +1615,7 @@ function renderPhotoSlots() {
 function handlePhotoUpload(input) {
   const files = Array.from(input.files);
   files.slice(0, 6 - uploadedPhotos.length).forEach(file => {
-    compressImage(file, 1000*1024).then(dataUrl => { uploadedPhotos.push(dataUrl); renderPhotoSlots(); });
+    compressImage(file, 200*1024).then(dataUrl => { uploadedPhotos.push(dataUrl); renderPhotoSlots(); });
   });
   input.value = '';
 }
@@ -1627,15 +1627,21 @@ function compressImage(file, maxBytes) {
       URL.revokeObjectURL(url);
       const canvas = document.createElement('canvas');
       let { width, height } = img;
-      let quality = 0.92;
+      // 先限制最大解析度（長邊 1280px）
+      const MAX_DIM = 1280;
+      if (width > MAX_DIM || height > MAX_DIM) {
+        const s = MAX_DIM / Math.max(width, height);
+        width = Math.round(width * s); height = Math.round(height * s);
+      }
+      let quality = 0.82;
       const tryCompress = () => {
         canvas.width=width; canvas.height=height;
         canvas.getContext('2d').drawImage(img,0,0,width,height);
         const dataUrl = canvas.toDataURL('image/jpeg', quality);
         const bytes = Math.round((dataUrl.length-22)*3/4);
         if (bytes<=maxBytes||quality<=0.1) { resolve(dataUrl); return; }
-        if (quality>0.3) { quality-=0.08; tryCompress(); }
-        else { const s=Math.sqrt(maxBytes/bytes); width=Math.round(width*s); height=Math.round(height*s); quality=0.85; tryCompress(); }
+        if (quality>0.3) { quality-=0.1; tryCompress(); }
+        else { const s=Math.sqrt(maxBytes/bytes); width=Math.round(width*s); height=Math.round(height*s); quality=0.8; tryCompress(); }
       };
       tryCompress();
     };
