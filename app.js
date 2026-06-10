@@ -29,7 +29,9 @@ const NAV_ICONS = {
 };
 
 // ── 全域狀態 ──────────────────────────────────────────
-let productsByDate = {};
+let productsByDate  = {};
+let _allKnownDates  = [];   // 所有已知日期，供懶載入使用
+let _allDatesLoaded = false; // 是否已完成全日期載入
 let currentRole    = 'field';
 let currentPage    = 'receiving';
 let currentIdx     = null;   // { date, idx }
@@ -169,27 +171,16 @@ window.addEventListener('DOMContentLoaded', async () => {
   // 5 秒後強制移除 loading（防止 Firestore 卡住）
   const loadingTimer = setTimeout(hideLoading, 5000);
 
-  // 載入 Firestore 資料（所有日期，確保各頁籤皆有資料）
+  // 載入 Firestore 資料（只載入最佳日期，其餘日期切換頁籤時懶載入）
   try {
     const withTimeout = (p, ms) => Promise.race([p, new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),ms))]);
     const dates = await withTimeout(ProductAPI.getDates(), 6000);
     if (dates && dates.length > 0) {
+      _allKnownDates = dates; // 記錄所有已知日期供懶載入使用
       const best = dates.includes(today) ? today : dates[0];
       if (dateEl) dateEl.value = best;
-      // 先載入最佳日期（快速顯示）
       const items = await withTimeout(ProductAPI.getByDate(best), 6000);
       productsByDate[best] = normalizeProducts(items);
-      // 背景載入其餘所有日期
-      const otherDates = dates.filter(d => d !== best);
-      Promise.all(otherDates.map(async d => {
-        try {
-          const its = await ProductAPI.getByDate(d);
-          productsByDate[d] = normalizeProducts(its);
-        } catch(e) { console.warn('load date failed:', d, e.message); }
-      })).then(() => {
-        // 若當前頁籤非進貨確認，重新渲染以顯示完整資料
-        if (currentPage && currentPage !== 'receiving') switchPage(currentPage);
-      }).catch(()=>{});
     }
   } catch(e) { console.warn('load failed:', e.message); }
 
@@ -224,6 +215,21 @@ function buildNav(user) {
     </div>`).join('');
 }
 
+// ── 全日期懶載入（切到需要跨日期資料的頁籤時才載入）────
+async function ensureAllDatesLoaded(thenRender) {
+  if (_allDatesLoaded || _allKnownDates.length === 0) { thenRender(); return; }
+  const missing = _allKnownDates.filter(d => !productsByDate[d]);
+  if (missing.length === 0) { _allDatesLoaded = true; thenRender(); return; }
+  try {
+    for (const d of missing) {
+      const its = await ProductAPI.getByDate(d);
+      productsByDate[d] = normalizeProducts(its);
+    }
+    _allDatesLoaded = true;
+  } catch(e) { console.warn('lazy load failed:', e.message); }
+  thenRender();
+}
+
 // ── 頁面切換 ──────────────────────────────────────────
 function switchPage(name) {
   currentPage = name;
@@ -234,14 +240,14 @@ function switchPage(name) {
   const nav  = document.getElementById(`nav-${name}`);
   if (page) page.classList.add('active');
   if (nav)  nav.classList.add('active');
-  // 渲染對應頁面
+  // 渲染對應頁面（跨日期頁籤先確保資料全部載入）
   if (name==='receiving')  { renderProductCards(); updateStats(); }
-  if (name==='warehouse')  renderWarehouseCards();
-  if (name==='review')     renderReviewCards();
-  if (name==='report')     renderReportCards();
-  if (name==='purchase')   renderPurchaseCards();
-  if (name==='resolved')   renderResolvedCards();
-  if (name==='admin')      loadAndRenderAdmin();
+  else if (name==='warehouse') ensureAllDatesLoaded(renderWarehouseCards);
+  else if (name==='review')    ensureAllDatesLoaded(renderReviewCards);
+  else if (name==='report')    ensureAllDatesLoaded(renderReportCards);
+  else if (name==='purchase')  ensureAllDatesLoaded(renderPurchaseCards);
+  else if (name==='resolved')  ensureAllDatesLoaded(renderResolvedCards);
+  else if (name==='admin')     loadAndRenderAdmin();
 }
 
 // ── Sheet 控制 ────────────────────────────────────────
