@@ -393,8 +393,11 @@ function renderProductCards() {
   const container = document.getElementById('productListContainer');
   if (!container) return;
   const date = currentReceivingDate();
-  const list  = getDateProducts(date).filter(p => p.status === STATUS.PENDING)
-    .sort((a,b) => (a.po||'').localeCompare(b.po||''));
+  const allProducts = getDateProducts(date);
+  const list = allProducts
+    .map((p, origIdx) => ({ p, origIdx }))
+    .filter(({ p }) => p.status === STATUS.PENDING)
+    .sort((a, b) => (a.p.po||'').localeCompare(b.p.po||''));
   if (!list.length) {
     container.innerHTML = `<div class="empty-state">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -405,8 +408,8 @@ function renderProductCards() {
       <small>點右下角 ↑ 匯入 Excel</small></div>`;
     return;
   }
-  container.innerHTML = list.map((p, i) => `
-    <div class="product-card slide-up" data-status="${p.status}" onclick="startReceiving('${date}',${i})">
+  container.innerHTML = list.map(({ p, origIdx }, i) => `
+    <div class="product-card slide-up" data-status="${p.status}" onclick="startReceiving('${date}',${origIdx})">
       <div class="product-card-inner">
         ${p.po ? `<div style="font-size:13px;font-weight:600;color:#4b5563;margin-bottom:2px">PO：${p.po}</div>` : ''}
         <div class="product-card-name">${p.name}</div>
@@ -414,7 +417,7 @@ function renderProductCards() {
         ${p.received && p.badQty > 0 ? `<div style="margin-top:6px">${(p.defectReasons||[]).slice(0,2).map(r=>`<span class="badge badge-abnormal" style="font-size:10px;margin-right:3px">${r}</span>`).join('')}</div>` : ''}
       </div>
       ${p.barcode ? `<div style="flex-shrink:0;width:108px;display:flex;align-items:center;justify-content:flex-start;padding:0 6px 0 0">
-        <canvas id="bc-r-${date}-${i}" style="width:108px;height:40px;display:block"></canvas>
+        <canvas id="bc-r-${date}-${origIdx}" style="width:108px;height:40px;display:block"></canvas>
       </div>` : ''}
       <div class="product-card-right">
         ${statusBadgeHtml(p)}
@@ -429,9 +432,9 @@ function renderProductCards() {
 
   // 繪製條碼
   if (typeof JsBarcode !== 'undefined') {
-    list.forEach((p, i) => {
+    list.forEach(({ p, origIdx }) => {
       if (!p.barcode) return;
-      const el = document.getElementById(`bc-r-${date}-${i}`);
+      const el = document.getElementById(`bc-r-${date}-${origIdx}`);
       if (!el) return;
       try {
         JsBarcode(el, p.barcode, {
@@ -672,8 +675,7 @@ async function startReceiving(date, idx) {
 }
 
 function selectBizAttrAndReceive(date, idx, attrName) {
-  closeAllSheets(); // 先關閉（可能會 applyChanges 替換 product 物件）
-  // 關閉後重新取得最新物件參照，再設定 bizAttr，避免被覆蓋
+  closeAllSheets();
   const p = getDateProducts(date)[idx];
   if (p) p.bizAttr = attrName;
   setTimeout(() => openReceiveSheet(date, idx), 200);
