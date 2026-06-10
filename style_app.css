@@ -52,14 +52,15 @@ body { font-family: -apple-system,'Segoe UI',Arial,sans-serif;
 .page-header p  { font-size:12px; opacity:.7; margin-top:3px; }
 
 /* ── 統計卡片 ── */
-.stat-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; padding:12px 12px 0; }
-.stat-card { border-radius:14px; padding:14px 12px; display:flex; align-items:center;
-  gap:10px; box-shadow:0 2px 8px rgba(0,0,0,.06); overflow:hidden; }
-.stat-card-icon { width:38px; height:38px; border-radius:11px; display:flex;
-  align-items:center; justify-content:center; flex-shrink:0; }
-.stat-card-icon svg { width:19px; height:19px; }
-.stat-card-val { font-size:26px; font-weight:900; line-height:1; }
-.stat-card-lbl { font-size:11px; font-weight:600; margin-top:2px; opacity:.75; }
+.stat-grid { display:flex; flex-direction:row; gap:7px; padding:12px 12px 0; overflow-x:auto; }
+.stat-card { border-radius:12px; padding:10px 8px; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; text-align:center;
+  flex:1; min-width:0; box-shadow:0 2px 8px rgba(0,0,0,.06); overflow:hidden; }
+.stat-card-icon { width:28px; height:28px; border-radius:8px; display:flex;
+  align-items:center; justify-content:center; flex-shrink:0; margin-bottom:5px; }
+.stat-card-icon svg { width:14px; height:14px; }
+.stat-card-val { font-size:20px; font-weight:900; line-height:1; }
+.stat-card-lbl { font-size:10px; font-weight:600; margin-top:2px; opacity:.75; }
 .stat-total   { background:#fff; color:#374151; }
 .stat-total   .stat-card-icon { background:var(--blue-lt); color:var(--blue); }
 .stat-done    { background:var(--green-lt); color:#065f46; }
