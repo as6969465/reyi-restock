@@ -157,10 +157,18 @@ window.addEventListener('DOMContentLoaded', async () => {
   // 初始化底部導航
   buildNav(user);
 
-  // 載入業務屬性
-  loadBizAttrs().catch(()=>{});
-  loadDefectConfig().catch(()=>{});
-  loadCatFilters().catch(()=>{});
+  // 背景載入設定（不擋 UI）；新電腦 localStorage 空時從 Firestore 補回
+  Promise.all([
+    RoleAPI.list().then(r => { if (r?.length) saveRoles(r); }).catch(()=>{}),
+    loadBizAttrs().catch(()=>{}),
+    loadDefectConfig().catch(()=>{}),
+    loadCatFilters().catch(()=>{})
+  ]).then(() => {
+    // 設定載入後重建導航（以正確的 role tabs 顯示）
+    buildNav(user);
+    // 重繪當前頁面以套用最新設定（bizAttr 篩選等）
+    rerenderCurrentView();
+  }).catch(()=>{});
 
   // 移除 Loading 遮罩的函式（確保一定會執行）
   const hideLoading = () => {
@@ -185,10 +193,13 @@ window.addEventListener('DOMContentLoaded', async () => {
   } catch(e) { console.warn('load failed:', e.message); }
 
   // 切換到上次頁面（若有權限），否則切至第一個可用頁面
+  // 新電腦 localStorage 空時，用 session 的 tabs 作為 fallback
   const roleObj = getRoleById(currentRole);
-  const allowedPages = currentRole==='admin' ? Object.keys(TAB_LABELS) : (roleObj?.tabs || []);
+  const allowedPages = currentRole==='admin'
+    ? Object.keys(TAB_LABELS)
+    : (roleObj?.tabs || user.tabs || []);
   const savedPage = localStorage.getItem('rr_last_tab');
-  const defaultPage = currentRole==='admin' ? 'receiving' : (roleObj?.tabs?.[0] || 'receiving');
+  const defaultPage = currentRole==='admin' ? 'receiving' : (allowedPages[0] || 'receiving');
   const firstPage = (savedPage && allowedPages.includes(savedPage)) ? savedPage : defaultPage;
   switchPage(firstPage);
 
@@ -206,7 +217,9 @@ function buildNav(user) {
   const nav = document.getElementById('bottomNav');
   if (!nav) return;
   const roleObj = getRoleById(currentRole);
-  const allowedTabs = currentRole==='admin' ? Object.keys(TAB_LABELS) : (roleObj?.tabs || []);
+  const allowedTabs = currentRole==='admin'
+    ? Object.keys(TAB_LABELS)
+    : (roleObj?.tabs || user?.tabs || []);
   const pages = allowedTabs.filter(t => document.getElementById(`page-${t}`));
   if (!pages.length) return;
   nav.style.display = 'flex';

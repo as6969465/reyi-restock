@@ -180,6 +180,20 @@ window.addEventListener('DOMContentLoaded', async () => {
   initTabsByRole(currentRole);
   renderPhotoSlots();
 
+  // 背景載入設定（roles / bizAttrs / defectConfig / catFilters）
+  // 新電腦 localStorage 空時確保資料從 Firestore 取回，完成後重繪頁籤
+  Promise.all([
+    RoleAPI.list().then(r => { if (r?.length) saveRoles(r); }).catch(()=>{}),
+    BizAttrAPI.list().then(a => { if (a?.length) saveBizAttrs(a); }).catch(()=>{}),
+    DefectConfigAPI.get().then(c => { if (c?.categories||c?.reasons) saveDeskDefectConfig(c); }).catch(()=>{}),
+    CatFilterAPI.get().then(f => { if (f) saveDeskCatFilters(f); }).catch(()=>{})
+  ]).then(() => {
+    // 重新初始化頁籤（有了 roles 資料後重算可見頁籤）
+    initTabsByRole(currentRole);
+    // 重繪當前頁籤以套用最新設定
+    rerenderDeskCurrentView();
+  }).catch(()=>{});
+
   // 啟動即時同步監聽
   startDeskRealtimeSync();
 
@@ -292,7 +306,11 @@ function normalizeProducts(items) {
 // ── 依角色初始化頁籤 ─────────────────────────────────
 function initTabsByRole(roleId) {
   const roleObj = getRoleById(roleId);
-  const allowedTabs = roleObj?.tabs || [];
+  // 新電腦 localStorage 空時，用 session 內的 tabs 作為 fallback（登入時伺服器回傳）
+  const sessionUser = getCurrentUser();
+  const allowedTabs = roleId === 'admin'
+    ? Object.keys(TAB_LABELS)
+    : (roleObj?.tabs || sessionUser?.tabs || []);
 
   // 管理員顯示所有頁籤；其他角色依設定顯示
   ALL_PAGES.forEach(t => {
