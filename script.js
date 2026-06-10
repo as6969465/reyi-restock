@@ -205,9 +205,16 @@ function rerenderDeskCurrentView() {
   updateBadges();
 }
 
+let _deskSyncReady = false;
+let _deskSyncSuppressUntil = 0;
+function suppressDeskSyncRender(ms = 3000) { _deskSyncSuppressUntil = Date.now() + ms; }
+
 function startDeskRealtimeSync() {
   if (_deskRealtimeUnsub) { _deskRealtimeUnsub(); _deskRealtimeUnsub = null; }
+  _deskSyncReady = false;
   _deskRealtimeUnsub = db.collection('products').onSnapshot(snapshot => {
+    // 跳過初始 snapshot（資料已手動載入）
+    if (!_deskSyncReady) { _deskSyncReady = true; return; }
     let changed = false;
     snapshot.docChanges().forEach(change => {
       const date = change.doc.data()?.arrival_date;
@@ -228,7 +235,10 @@ function startDeskRealtimeSync() {
     });
     if (!changed) return;
     clearTimeout(_deskSyncTimer);
-    _deskSyncTimer = setTimeout(rerenderDeskCurrentView, 500);
+    _deskSyncTimer = setTimeout(() => {
+      if (Date.now() < _deskSyncSuppressUntil) return;
+      rerenderDeskCurrentView();
+    }, 1000);
   }, err => console.warn('desk realtime sync err:', err.message));
 }
 
@@ -1211,6 +1221,7 @@ function saveReceiving() {
   p.operatorName  = user?.name  || '';
   p.status        = bad > 0 ? STATUS.ABNORMAL_PENDING : STATUS.RECEIVED;
 
+  suppressDeskSyncRender(3000);
   // 呼叫後端 API 後重載 Firestore 資料（確保多台同步）
   const receiveDate = date;
   if (p.id) {
@@ -1383,6 +1394,7 @@ function submitReview() {
     p.defectNote    = p.defectItems.map(it=>it.note).filter(Boolean).join('；');
   }
   p.status = STATUS.PROCUREMENT;
+  suppressDeskSyncRender(3000);
   if (p.id) {
     ProductAPI.review(p.id, {
       defectTime: p.defectTime, defectClass: p.defectClass,
@@ -1558,6 +1570,7 @@ function submitPurchaseReply() {
   } else {
     p.defectTime = '～' + nowT;
   }
+  suppressDeskSyncRender(3000);
   const replyArrivalDate = arrivalDate;
   if (p.id) {
     ProductAPI.reply(p.id, { procAction: p.procAction, procReply: p.procReply, defectItems: p.defectItems, defectTime: p.defectTime, status: p.status })

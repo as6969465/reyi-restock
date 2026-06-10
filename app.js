@@ -264,15 +264,20 @@ function closeAllSheets() {
 }
 
 // ── 即時同步（onSnapshot）────────────────────────────
-let _realtimeUnsub = null;
+let _realtimeUnsub    = null;
 let _syncDebounceTimer = null;
+let _syncReady        = false;  // 跳過初始 snapshot
+let _syncSuppressUntil = 0;     // 使用者儲存後短暫壓制 re-render
+
+function suppressSyncRender(ms = 2000) { _syncSuppressUntil = Date.now() + ms; }
 
 function isUserOperating() {
   return document.getElementById('overlay')?.classList.contains('open') || false;
 }
 
 function rerenderCurrentView() {
-  if (isUserOperating()) return; // 使用者正在操作中，不打斷
+  if (isUserOperating()) return;
+  if (Date.now() < _syncSuppressUntil) return; // 剛完成儲存，暫不 re-render
   if (currentPage === 'receiving')       { renderProductCards(); updateStats(); }
   else if (currentPage === 'warehouse')  renderWarehouseCards();
   else if (currentPage === 'review')     renderReviewCards();
@@ -284,7 +289,10 @@ function rerenderCurrentView() {
 
 function startRealtimeSync() {
   if (_realtimeUnsub) { _realtimeUnsub(); _realtimeUnsub = null; }
+  _syncReady = false;
   _realtimeUnsub = db.collection('products').onSnapshot(snapshot => {
+    // 第一次回呼是初始狀態（資料已手動載入），跳過避免不必要的重繪
+    if (!_syncReady) { _syncReady = true; return; }
     let changed = false;
     snapshot.docChanges().forEach(change => {
       const date = change.doc.data()?.arrival_date;
@@ -305,9 +313,9 @@ function startRealtimeSync() {
       }
     });
     if (!changed) return;
-    // 防抖：500ms 內只重繪一次
+    // 防抖：1s 內只重繪一次
     clearTimeout(_syncDebounceTimer);
-    _syncDebounceTimer = setTimeout(rerenderCurrentView, 500);
+    _syncDebounceTimer = setTimeout(rerenderCurrentView, 1000);
   }, err => console.warn('realtime sync err:', err.message));
 }
 
@@ -833,6 +841,7 @@ async function saveReceiving() {
   // bizAttr 已在 rs_setBizAttr 即時更新，無需再次設定
   p.status = bad>0 ? STATUS.ABNORMAL : STATUS.RECEIVED;
   // 立即重新渲染（不等 Firestore），確保已確認項目馬上顯示在確認頁籤
+  suppressSyncRender(3000);
   closeAllSheets();
   renderProductCards(); updateStats();
   if (p.id) {
@@ -1078,6 +1087,7 @@ async function submitReview() {
     p.defectReasons = p.defectItems.flatMap(it=>it.reasons||[]).filter(Boolean);
   }
   p.status      = STATUS.PROCUREMENT;
+  suppressSyncRender(3000);
   if (p.id) {
     ProductAPI.review(p.id, {defectTime:p.defectTime,defectClass:p.defectClass,defectReasons:p.defectReasons,defectNote:p.defectNote})
       .then(async()=>{ await reloadFromFirestore(arrivalDate); renderReviewCards(); updateBadges(); })
@@ -1321,6 +1331,7 @@ async function submitPurchaseReply() {
   } else {
     p.defectTime = '～' + nowT;
   }
+  suppressSyncRender(3000);
   if (p.id) {
     ProductAPI.reply(p.id, {procAction:p.procAction||'（各別回覆）', procReply:p.procReply||'', defectItems:p.defectItems, status:p.status, defectTime:p.defectTime})
       .then(async()=>{ await reloadFromFirestore(arrivalDate); renderPurchaseCards(); renderResolvedCards(); updateBadges(); })
