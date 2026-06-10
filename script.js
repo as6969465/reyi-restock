@@ -1,6 +1,6 @@
 ﻿// ── 異常大分類（三選一）& 原因（固定清單複選，與分類無關）──
-const DEFECT_CATEGORIES = ['臨時到貨', '取消到貨', '其他異常'];
-const DEFECT_REASONS = [
+const _DEFAULT_DEFECT_CATEGORIES = ['臨時到貨', '取消到貨', '其他異常'];
+const _DEFAULT_DEFECT_REASONS = [
   '品名不符','數量不符','規格不符','外箱標示異常','條碼異常',
   '臨時到貨','取消到貨',
   '商品異常-(多筆)','商品異常-殘膠','商品異常-汙損','商品異常-破膜',
@@ -9,6 +9,15 @@ const DEFECT_REASONS = [
   '效期異常-無第二條件','效期異常-未來日','效期異常-效期超允收','效期異常-保存期限不合理',
   '其他'
 ];
+// 動態讀取（與 app.js 相同邏輯，支援管理員自訂）
+function DEFECT_CATEGORIES() {
+  const d = JSON.parse(localStorage.getItem('rr_defect_config') || 'null');
+  return d?.categories || _DEFAULT_DEFECT_CATEGORIES;
+}
+function DEFECT_REASONS() {
+  const d = JSON.parse(localStorage.getItem('rr_defect_config') || 'null');
+  return d?.reasons || _DEFAULT_DEFECT_REASONS;
+}
 const DEFECT_SUB_REASONS = {};
 function getDefectDisplay(item) {
   if (!item) return '—';
@@ -1100,12 +1109,12 @@ function renderDeskDefectItems() {
       oninput="_deskDefectItems[${i}].qty=parseInt(this.value)||0;updateDeskDefectQtyStats()" />
   </div>`;
 
-  const catBtns = DEFECT_CATEGORIES.map(c=>
+  const catBtns = DEFECT_CATEGORIES().map(c=>
     `<button type="button" onclick="deskSetDefectCategory(${i},'${c}')"
       class="text-xs px-2.5 py-1 rounded-full border transition-colors ${item.category===c?'bg-blue-100 border-blue-400 text-blue-600 font-semibold':'bg-white border-gray-200 text-gray-500 hover:border-blue-300'}">${c}</button>`
   ).join('');
 
-  const subReasons = `<div class="grid gap-1.5 mt-2" style="grid-template-columns:repeat(3,1fr)">${DEFECT_REASONS.map(r=>{const s=(item.reasons||[]).includes(r);return `<button type="button" onclick="deskToggleSubReason(${i},'${r}')" style="padding:7px 4px;border-radius:6px;border:1.5px solid ${s?'#2563eb':'#e5e7eb'};background:${s?'#dbeafe':'#f8fafc'};color:${s?'#1d4ed8':'#6b7280'};font-size:12px;font-weight:${s?'700':'400'};cursor:pointer;line-height:1.4;text-align:center;word-break:break-all">${r}</button>`;}).join('')}</div>`;
+  const subReasons = `<div class="grid gap-1.5 mt-2" style="grid-template-columns:repeat(3,1fr)">${DEFECT_REASONS().map(r=>{const s=(item.reasons||[]).includes(r);return `<button type="button" onclick="deskToggleSubReason(${i},'${r}')" style="padding:7px 4px;border-radius:6px;border:1.5px solid ${s?'#2563eb':'#e5e7eb'};background:${s?'#dbeafe':'#f8fafc'};color:${s?'#1d4ed8':'#6b7280'};font-size:12px;font-weight:${s?'700':'400'};cursor:pointer;line-height:1.4;text-align:center;word-break:break-all">${r}</button>`;}).join('')}</div>`;
 
   container.innerHTML = `
     <div class="flex gap-2 items-center overflow-x-auto pb-2 mb-2">
@@ -1306,7 +1315,7 @@ function renderReviewPhotoPanel(p) {
   }).join('');
 
   // 大分類按鈕（預填 + 可修改）
-  const catBtns = DEFECT_CATEGORIES.map(c =>
+  const catBtns = DEFECT_CATEGORIES().map(c =>
     `<button type="button" onclick="deskRvSetCategory(${i},'${c}')"
       class="text-xs px-3 py-1.5 rounded-full border transition-colors ${cur.category===c
         ?'bg-blue-100 border-blue-400 text-blue-600 font-semibold'
@@ -1315,7 +1324,7 @@ function renderReviewPhotoPanel(p) {
 
   // 原因勾選（預填 + 可修改）
   const subReasons = `<div class="grid gap-1.5 mt-2" style="grid-template-columns:repeat(3,1fr)">
-    ${DEFECT_REASONS.map(r=>{
+    ${DEFECT_REASONS().map(r=>{
       const s=(cur.reasons||[]).includes(r);
       return `<button type="button" onclick="deskRvToggleReason(${i},'${r}')"
         style="padding:7px 4px;border-radius:6px;border:1.5px solid ${s?'#2563eb':'#e5e7eb'};
@@ -1637,7 +1646,7 @@ function removePhoto(i) { uploadedPhotos.splice(i,1); renderPhotoSlots(); }
 
 // ── 異常原因複選 ─────────────────────────────────────
 function renderDefectReasonList(containerId, selected=[]) {
-  document.getElementById(containerId).innerHTML = DEFECT_REASONS.map(r => `
+  document.getElementById(containerId).innerHTML = DEFECT_REASONS().map(r => `
     <label class="flex items-center gap-2 text-xs cursor-pointer hover:text-red-600">
       <input type="checkbox" value="${r}" ${selected.includes(r)?'checked':''}
         class="accent-red-500 w-3.5 h-3.5 flex-shrink-0" />${r}
