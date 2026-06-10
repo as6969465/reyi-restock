@@ -525,27 +525,22 @@ function updateStats() {
   const IC = (path) => `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="${path}"/></svg>`;
   grid.innerHTML = `
     <div class="stat-card stat-total">
-      <div class="stat-card-icon">${IC('M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2')}</div>
       <div class="stat-card-val">${list.length}</div>
       <div class="stat-card-lbl">今日進貨</div>
     </div>
     <div class="stat-card" style="background:#ecfdf5;color:#065f46">
-      <div class="stat-card-icon" style="background:#a7f3d0;color:#059669">${IC('M5 13l4 4L19 7')}</div>
       <div class="stat-card-val" style="color:#059669">${arrived}</div>
       <div class="stat-card-lbl" style="color:#059669">已到貨</div>
     </div>
     <div class="stat-card stat-pending">
-      <div class="stat-card-icon">${IC('M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4')}</div>
       <div class="stat-card-val">${notArrived}</div>
       <div class="stat-card-lbl">未到貨</div>
     </div>
     <div class="stat-card stat-done">
-      <div class="stat-card-icon">${IC('M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z')}</div>
       <div class="stat-card-val">${done}</div>
       <div class="stat-card-lbl">已確認</div>
     </div>
     <div class="stat-card stat-bad">
-      <div class="stat-card-icon">${IC('M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z')}</div>
       <div class="stat-card-val">${abnormal}</div>
       <div class="stat-card-lbl">有異常</div>
     </div>`;
