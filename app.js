@@ -563,9 +563,10 @@ function renderDefectItems(readonly) {
   if (_activeDefectIdx < 0) _activeDefectIdx = 0;
   const item = _defectItems[_activeDefectIdx];
   const i    = _activeDefectIdx;
-  const badQty       = parseInt(document.getElementById('rs-bad')?.value)||0;
   const totalEntered = _defectItems.reduce((s,it)=>(s+(parseInt(it.qty)||0)),0);
-  const isMatch      = badQty>0 && totalEntered===badQty;
+  // 同步更新不良品顯示
+  const _bdApp = document.getElementById('rs-bad-display');
+  if (_bdApp) _bdApp.textContent = totalEntered || 0;
 
   const camSvgSm = '<svg style=\"width:16px;height:16px;color:#fca5a5\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M15 13a3 3 0 11-6 0 3 3 0 016 0z\"/></svg>';
   const camSvgLg = '<svg style=\"width:20px;height:20px;color:#fca5a5\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M15 13a3 3 0 11-6 0 3 3 0 016 0z\"/></svg>';
@@ -585,8 +586,8 @@ function renderDefectItems(readonly) {
     </div>`;
   }).join('');
 
-  const statsEl = !readonly ? `<div style="padding:6px 10px;margin-bottom:8px;border-radius:10px;font-size:12px;font-weight:600;background:${isMatch?'#d1fae5':'#fef3c7'};color:${isMatch?'#065f46':'#92400e'}">
-    ${isMatch?'✓':'⚠'} 數量合計：${totalEntered} / ${badQty}
+  const statsEl = (!readonly && totalEntered > 0) ? `<div style="padding:6px 10px;margin-bottom:8px;border-radius:10px;font-size:12px;font-weight:600;background:#d1fae5;color:#065f46">
+    ✓ 不良品合計：${totalEntered} 件
   </div>` : '';
 
   const catBtns = DEFECT_CATEGORIES().map(c=>{const active=item.category===c;return `<button onclick="${readonly?'':`setDefectCategory(${i},'${c}')`}" style="padding:6px 12px;border-radius:18px;border:1.5px solid ${active?'#2563eb':'#e5e7eb'};background:${active?'#dbeafe':'#f8fafc'};color:${active?'#1d4ed8':'#6b7280'};font-size:12px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap">${c}</button>`;}).join('');
@@ -631,19 +632,9 @@ function renderDefectItems(readonly) {
 function switchDefectItem(idx) { _activeDefectIdx = idx; renderDefectItems(false); }
 
 function updateDefectQtyStats() {
-  const badQty       = parseInt(document.getElementById('rs-bad')?.value)||0;
   const totalEntered = _defectItems.reduce((s,it)=>(s+(parseInt(it.qty)||0)),0);
-  const isMatch      = badQty>0 && totalEntered===badQty;
-  // 更新統計列
-  const containers = document.querySelectorAll('#rs-defect-items > div[style*="background"]');
-  if (containers.length > 1) {
-    const statsDiv = containers[0];
-    if (statsDiv && statsDiv.textContent.includes('/')) {
-      statsDiv.style.background = isMatch?'#d1fae5':'#fef3c7';
-      statsDiv.style.color      = isMatch?'#065f46':'#92400e';
-      statsDiv.innerHTML        = `${isMatch?'✓':'⚠'} 數量合計：${totalEntered} / ${badQty}`;
-    }
-  }
+  const _bdApp2 = document.getElementById('rs-bad-display');
+  if (_bdApp2) _bdApp2.textContent = totalEntered || 0;
   // 同時更新縮圖徽章（重繪以顯示綠勾）
   renderDefectItems(false);
 }
@@ -805,19 +796,20 @@ function openReceiveSheet(date, idx) {
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
       <div>
-        <label class="field-label">良品數量 *</label>
+        <label class="field-label">到貨數量 *</label>
         <input id="rs-good" type="number" min="0" value="${p.received?p.goodQty:p.qty}" class="input"
-          style="font-size:20px;font-weight:700;text-align:center" oninput="onRsBadInput()" ${isResolved?'readonly':''} />
+          style="font-size:20px;font-weight:700;text-align:center" ${isResolved?'readonly':''} />
       </div>
       <div>
         <label class="field-label">不良品數量</label>
-        <input id="rs-bad" type="number" min="0" value="${p.received?p.badQty:''}" class="input"
-          style="font-size:20px;font-weight:700;text-align:center;color:#dc2626" oninput="onRsBadInput()" ${isResolved?'readonly':''} />
+        <div id="rs-bad-display" style="font-size:20px;font-weight:700;text-align:center;color:#dc2626;background:#f9fafb;border:1.5px solid #e5e7eb;border-radius:12px;padding:10px 0;line-height:1.3">
+          ${p.received?p.badQty:0}
+        </div>
       </div>
     </div>
 
     <!-- 異常明細區（每張照片各自原因）-->
-    <div id="rs-defect" style="${(!p.received&&!(p.badQty>0))?'display:none':''}">
+    <div id="rs-defect">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <div style="font-size:13px;font-weight:700;color:#dc2626">異常明細</div>
         ${!isResolved ? `<label class="btn btn-sm btn-danger" style="cursor:pointer">
@@ -880,15 +872,7 @@ function rs_setBizAttr(name) {
   }
 }
 
-function onRsBadInput() {
-  const bad  = parseInt(document.getElementById('rs-bad')?.value)||0;
-  if (currentIdx) {
-    const p = getDateProducts(currentIdx.date)[currentIdx.idx];
-    document.getElementById('rs-good').value = Math.max(0, p.qty - bad);
-  }
-  const sec = document.getElementById('rs-defect');
-  if (sec) sec.style.display = bad > 0 ? '' : 'none';
-}
+// onRsBadInput 已移除：不良品數量改由 defect items qty 加總自動計算
 
 function toggleReason(el) { el.classList.toggle('selected'); }
 
@@ -896,11 +880,9 @@ async function saveReceiving() {
   const errDiv = document.getElementById('rs-error');
   errDiv.style.display='none';
   const good = parseInt(document.getElementById('rs-good').value);
-  const bad  = parseInt(document.getElementById('rs-bad').value)||0;
-  if (isNaN(good)||good<0) { errDiv.textContent='請輸入正確的良品數量'; errDiv.style.display='block'; return; }
-  if (bad>0 && _defectItems.length===0) { errDiv.textContent='有不良品時，請新增至少一筆異常明細'; errDiv.style.display='block'; return; }
-  const totalQty = _defectItems.reduce((s,it)=>(s+(parseInt(it.qty)||0)),0);
-  if (bad>0 && totalQty !== bad) { errDiv.textContent=`照片數量合計（${totalQty}）需等於不良品數量（${bad}）`; errDiv.style.display='block'; return; }
+  // 不良品數量 = defect items qty 加總
+  const bad  = _defectItems.reduce((s,it)=>(s+(parseInt(it.qty)||0)),0);
+  if (isNaN(good)||good<0) { errDiv.textContent='請輸入正確的到貨數量'; errDiv.style.display='block'; return; }
   if (bad>0 && _defectItems.some(item=>!item.category)) { errDiv.textContent='每筆異常明細都需選擇異常大分類'; errDiv.style.display='block'; return; }
   if (bad>0 && _defectItems.some(item=>!(item.reasons&&item.reasons.length>0))) { errDiv.textContent='每筆異常明細都需選擇至少一項異常原因'; errDiv.style.display='block'; return; }
 
