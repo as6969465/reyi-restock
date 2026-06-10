@@ -133,25 +133,31 @@
       </div>
     </div>
     <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-5">
-      <div class="bg-white rounded-xl border border-gray-200 p-4">
-        <p class="text-xs text-gray-500">今日進貨項數</p>
-        <p id="stat-total" class="text-2xl font-bold text-gray-800 mt-1">0</p>
+      <div class="bg-white rounded-xl border border-gray-200 p-4 col-span-2 md:col-span-2">
+        <p class="text-xs text-gray-500 mb-1">今日進貨</p>
+        <div class="flex items-end gap-4">
+          <div>
+            <p id="stat-total" class="text-2xl font-bold text-gray-800">0</p>
+            <p class="text-xs text-gray-400 mt-0.5">進貨項數</p>
+          </div>
+          <div class="w-px self-stretch bg-gray-200 mx-1"></div>
+          <div>
+            <p id="stat-arrived" class="text-2xl font-bold text-green-600">0</p>
+            <p class="text-xs text-green-500 mt-0.5">已到貨</p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl border border-amber-200 p-4">
+        <p class="text-xs text-gray-500">未到貨</p>
+        <p id="stat-pending" class="text-2xl font-bold text-amber-500 mt-1">0</p>
       </div>
       <div class="bg-white rounded-xl border border-gray-200 p-4">
         <p class="text-xs text-gray-500">已確認</p>
         <p id="stat-done" class="text-2xl font-bold text-green-600 mt-1">0</p>
       </div>
       <div class="bg-white rounded-xl border border-gray-200 p-4">
-        <p class="text-xs text-gray-500">待確認</p>
-        <p id="stat-pending" class="text-2xl font-bold text-amber-500 mt-1">0</p>
-      </div>
-      <div class="bg-white rounded-xl border border-gray-200 p-4">
         <p class="text-xs text-gray-500">有異常</p>
         <p id="stat-abnormal" class="text-2xl font-bold text-red-500 mt-1">0</p>
-      </div>
-      <div class="bg-white rounded-xl border border-amber-200 p-4">
-        <p class="text-xs text-gray-500">臨時到貨</p>
-        <p id="stat-manual" class="text-2xl font-bold text-amber-500 mt-1">0</p>
       </div>
     </div>
     <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">

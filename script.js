@@ -83,7 +83,7 @@ function _deskArrivedKey(date, origIdx) { return `${date}__${origIdx}`; }
 function toggleDeskArrived(date, origIdx) {
   const key = _deskArrivedKey(date, origIdx);
   if (_deskArrivedSet.has(key)) _deskArrivedSet.delete(key); else _deskArrivedSet.add(key);
-  renderProductTable();
+  renderProductTable(); updateStats();
 }
 
 let _deskReceivingKw = '';
@@ -717,13 +717,16 @@ async function deleteSelected() {
 }
 
 function updateStats() {
-  const list = getDateProducts(currentReceivingDate());
-  document.getElementById('stat-total').textContent    = list.length;
-  document.getElementById('stat-done').textContent     = list.filter(p => p.status !== STATUS.PENDING).length;
-  document.getElementById('stat-pending').textContent  = list.filter(p => p.status === STATUS.PENDING).length;
-  document.getElementById('stat-abnormal').textContent = list.filter(p => [STATUS.ABNORMAL_PENDING, STATUS.PROCUREMENT, STATUS.RESOLVED].includes(p.status)).length;
-  const manualEl = document.getElementById('stat-manual');
-  if (manualEl) manualEl.textContent = list.filter(p => p.isManual).length;
+  const date = currentReceivingDate();
+  const list = getDateProducts(date);
+  const arrived    = list.filter((p,i) => _deskArrivedSet.has(_deskArrivedKey(date, i))).length;
+  const notArrived = list.filter((p,i) => p.status === STATUS.PENDING && !_deskArrivedSet.has(_deskArrivedKey(date, i))).length;
+  const sv = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  sv('stat-total',    list.length);
+  sv('stat-arrived',  arrived);
+  sv('stat-done',     list.filter(p => p.status !== STATUS.PENDING).length);
+  sv('stat-pending',  notArrived);
+  sv('stat-abnormal', list.filter(p => [STATUS.ABNORMAL_PENDING, STATUS.PROCUREMENT, STATUS.RESOLVED].includes(p.status)).length);
 }
 
 // ── 2. 入庫清單 ───────────────────────────────────────
