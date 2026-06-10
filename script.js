@@ -275,6 +275,7 @@ function normalizeProducts(items) {
     photos:         p.photos || [],
     defectItems:    p.defect_items || p.defectItems || [],
     procReplyUnread: !!(p.proc_reply_unread || p.procReplyUnread),
+    bizAttr:        p.biz_attr || p.bizAttr || '',
     time:           p.recv_time || ''
   }));
 }
@@ -1228,7 +1229,7 @@ function saveReceiving() {
     ProductAPI.receive(p.id, {
       goodQty: good, badQty: bad, defectReasons: p.defectReasons,
       defectNote: p.defectNote, defectClass: p.defectClass, photos: p.photos,
-      defectItems: p.defectItems
+      defectItems: p.defectItems, bizAttr: p.bizAttr || ''
     }).then(async () => {
       await reloadFromFirestore(receiveDate);
       renderProductTable(); updateStats(); updateBadges();
