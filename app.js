@@ -169,15 +169,27 @@ window.addEventListener('DOMContentLoaded', async () => {
   // 5 秒後強制移除 loading（防止 Firestore 卡住）
   const loadingTimer = setTimeout(hideLoading, 5000);
 
-  // 載入 Firestore 資料
+  // 載入 Firestore 資料（所有日期，確保各頁籤皆有資料）
   try {
     const withTimeout = (p, ms) => Promise.race([p, new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),ms))]);
-    const dates = await withTimeout(ProductAPI.getDates(), 4000);
+    const dates = await withTimeout(ProductAPI.getDates(), 6000);
     if (dates && dates.length > 0) {
       const best = dates.includes(today) ? today : dates[0];
       if (dateEl) dateEl.value = best;
-      const items = await withTimeout(ProductAPI.getByDate(best), 4000);
+      // 先載入最佳日期（快速顯示）
+      const items = await withTimeout(ProductAPI.getByDate(best), 6000);
       productsByDate[best] = normalizeProducts(items);
+      // 背景載入其餘所有日期
+      const otherDates = dates.filter(d => d !== best);
+      Promise.all(otherDates.map(async d => {
+        try {
+          const its = await ProductAPI.getByDate(d);
+          productsByDate[d] = normalizeProducts(its);
+        } catch(e) { console.warn('load date failed:', d, e.message); }
+      })).then(() => {
+        // 若當前頁籤非進貨確認，重新渲染以顯示完整資料
+        if (currentPage && currentPage !== 'receiving') switchPage(currentPage);
+      }).catch(()=>{});
     }
   } catch(e) { console.warn('load failed:', e.message); }
 
