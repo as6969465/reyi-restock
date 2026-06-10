@@ -17,14 +17,13 @@ function getDefectDisplay(item) {
 }
 const PROC_ACTIONS = ['正常收貨','退貨','換貨','補貨','折讓','報廢','廠商確認後處理','其他'];
 const STATUS = { PENDING:'pending', RECEIVED:'received', ABNORMAL:'abnormal_pending', PROCUREMENT:'procurement', RESOLVED:'resolved' };
-const TAB_LABELS = { receiving:'進貨確認', review:'異常檢核', warehouse:'已確認', report:'異常回覆', purchase:'待回覆', resolved:'記錄', admin:'設定' };
+const TAB_LABELS = { receiving:'進貨確認', review:'異常檢核', warehouse:'已確認', report:'異常回覆', purchase:'待回覆', admin:'設定' };
 const NAV_ICONS = {
   receiving: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>',
   warehouse: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
   review:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
   report:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>',
   purchase:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>',
-  resolved:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>',
   admin:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>'
 };
 
@@ -262,7 +261,6 @@ function switchPage(name) {
   else if (name==='review')    ensureAllDatesLoaded(renderReviewCards);
   else if (name==='report')    ensureAllDatesLoaded(renderReportCards);
   else if (name==='purchase')  ensureAllDatesLoaded(renderPurchaseCards);
-  else if (name==='resolved')  ensureAllDatesLoaded(renderResolvedCards);
   else if (name==='admin')     loadAndRenderAdmin();
 }
 
@@ -341,7 +339,6 @@ function rerenderCurrentView() {
   else if (currentPage === 'review')     renderReviewCards();
   else if (currentPage === 'report')     renderReportCards();
   else if (currentPage === 'purchase')   renderPurchaseCards();
-  else if (currentPage === 'resolved')   renderResolvedCards();
   updateBadges();
 }
 
@@ -1395,75 +1392,14 @@ async function submitPurchaseReply() {
   suppressSyncRender(3000);
   if (p.id) {
     ProductAPI.reply(p.id, {procAction:p.procAction||'（各別回覆）', procReply:p.procReply||'', defectItems:p.defectItems, status:p.status, defectTime:p.defectTime})
-      .then(async()=>{ await reloadFromFirestore(arrivalDate); renderPurchaseCards(); renderResolvedCards(); updateBadges(); })
+      .then(async()=>{ await reloadFromFirestore(arrivalDate); renderPurchaseCards(); updateBadges(); })
       .catch(e=>console.warn('reply:',e.message));
   } else { saveProductsData(); }
   closeAllSheets();
 }
 
 // ══════════════════════════════════════════════════════
-// ── 6. 已處理記錄 ──────────────────────────────────────
-// ══════════════════════════════════════════════════════
-function renderResolvedCards() {
-  const container = document.getElementById('resolvedListContainer');
-  if (!container) return;
-  const from    = document.getElementById('res-from')?.value;
-  const to      = document.getElementById('res-to')?.value;
-  const catSel    = document.getElementById('res-cat-filter');
-  const catFilter = catSel?.value || '';
-  if (catSel) {
-    const cur = catSel.value;
-    catSel.innerHTML = '<option value="">全部大分類</option>' +
-      getCatFilters().map(c=>`<option value="${c}" ${cur===c?'selected':''}>${c}</option>`).join('');
-  }
-  const list = getAllProducts().filter(p=>p.status===STATUS.RESOLVED).filter(p=>
-    (!from||p.arrivalDate>=from) && (!to||p.arrivalDate<=to) &&
-    (!catFilter||p.cat===catFilter)
-  );
-  if (!list.length) { container.innerHTML='<div class="empty-state"><p>尚無已處理記錄</p></div>'; return; }
-  container.innerHTML = list.map(p => `
-    <div class="product-card slide-up" data-status="${p.status}">
-      <div class="product-card-inner">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">
-          <div style="font-size:15px;font-weight:700;color:#111;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</div>
-          <span class="badge badge-resolved" style="flex-shrink:0">已處理</span>
-        </div>
-        <div style="font-size:12px;color:#9ca3af;margin-bottom:6px">${p.arrivalDate||'—'} · ${p.defectTime||'—'}</div>
-        ${(p.defectReasons||[]).length>0 ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${p.defectReasons.map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')}</div>` : ''}
-        <div style="padding:8px 10px;background:#d1fae5;border-radius:10px;font-size:14px;font-weight:700;color:#065f46;margin-bottom:6px">${p.procAction||'—'}</div>
-        ${p.procReply ? `<div style="font-size:13px;color:#6b7280;margin-bottom:4px">${p.procReply}</div>` : ''}
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-          <div style="font-size:11px;color:#9ca3af">物流：${p.defectStaff||'—'} · 採購：${p.procStaffName||'—'}</div>
-          ${(p.photos||[]).length>0 ? `<button onclick="viewResolvedPhotos(${JSON.stringify((p.photos||[]).filter(Boolean)).replace(/"/g,'&quot;')})" style="display:flex;align-items:center;gap:4px;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:8px;padding:4px 8px;font-size:11px;font-weight:600;color:#2563eb;cursor:pointer;flex-shrink:0">
-            <svg style="width:13px;height:13px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-            照片(${(p.photos||[]).filter(Boolean).length})
-          </button>` : ''}
-        </div>
-      </div>
-    </div>`).join('');
-}
-
-function viewResolvedPhotos(photos) {
-  const body = document.getElementById('resolvedPhotoBody');
-  if (!body) return;
-  body.innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:4px 0">
-      ${photos.map((src, i) => `
-        <div style="position:relative;border-radius:12px;overflow:hidden;background:#f3f4f6">
-          <img src="${src}" onclick="openLightbox('${src}')"
-            style="width:100%;aspect-ratio:1;object-fit:cover;cursor:pointer;display:block" />
-          <a href="${src}" download="photo_${i+1}.jpg"
-            style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.55);border-radius:8px;padding:5px 8px;display:flex;align-items:center;gap:4px;font-size:11px;color:#fff;text-decoration:none">
-            <svg style="width:13px;height:13px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-            下載
-          </a>
-        </div>`).join('')}
-    </div>`;
-  openSheet('resolvedPhotoSheet');
-}
-
-// ══════════════════════════════════════════════════════
-// ── 7. 帳號管理 ────────────────────────────────════════
+// ── 6. 帳號管理 ────────────────────────────────════════
 // ══════════════════════════════════════════════════════
 async function loadAndRenderAdmin() {
   try {
@@ -1971,16 +1907,6 @@ function exportReport() {
   const rows=[['日期','連動時間','異常分類','廠商','大分類','商品編號','商品名稱','異常原因','其他說明','物流專員','採購人員','採購處理方式','採購回覆']];
   list.forEach(p=>rows.push([p.arrivalDate,p.defectTime||'',p.defectClass||'其他異常',p.po||'',p.cat||'',p.itemNo,p.name,(p.defectReasons||[]).join('、'),p.defectNote||'',p.defectStaff||'',p.procStaffName||'',p.procAction||'',p.procReply||'']));
   downloadCsv(rows,'商品異常回覆商流.csv');
-}
-function exportResolvedExcel() {
-  const list=getAllProducts().filter(p=>p.status===STATUS.RESOLVED);
-  if(!list.length){alert('尚無已處理記錄');return;}
-  if(typeof XLSX==='undefined'){alert('XLSX 未載入');return;}
-  const rows=[['日期','連動時間','異常分類','廠商','大分類','商品編號','商品名稱','異常原因','其他說明','物流回覆專員']];
-  list.forEach(p=>rows.push([p.arrivalDate,p.defectTime||'',p.defectClass||'其他異常',p.po||'',p.cat||'',p.itemNo,p.name,(p.defectReasons||[]).join('、'),p.defectNote||'',p.defectStaff||'']));
-  const wb=XLSX.utils.book_new();const ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[10,14,12,14,10,14,20,30,20,12].map(w=>({wch:w}));
-  XLSX.utils.book_append_sheet(wb,ws,'已處理記錄');XLSX.writeFile(wb,'商品異常已處理記錄.xlsx');
 }
 function downloadCsv(rows,filename){
   const bom='﻿';const csv=bom+rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');

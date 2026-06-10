@@ -38,7 +38,7 @@ const STATUS = {
 const TAB_LABELS = {
   receiving:'當日驗收作業', warehouse:'入庫清單',
   review:'異常檢核', report:'異常回覆',
-  purchase:'待回覆清單', resolved:'已處理記錄'
+  purchase:'待回覆清單'
 };
 
 function getUsers()        { return JSON.parse(localStorage.getItem('rr_users') || '[]'); }
@@ -247,7 +247,6 @@ function rerenderDeskCurrentView() {
   else if (_deskCurrentTab === 'review')    renderReviewTable();
   else if (_deskCurrentTab === 'report')    renderReportTable();
   else if (_deskCurrentTab === 'purchase')  renderPurchaseTable();
-  else if (_deskCurrentTab === 'resolved')  renderResolvedTable();
   updateBadges();
 }
 
@@ -354,7 +353,7 @@ function initTabsByRole(roleId) {
 }
 
 // ── Tab 切換 ──────────────────────────────────────────
-const ALL_PAGES = ['receiving','warehouse','review','report','purchase','resolved','admin'];
+const ALL_PAGES = ['receiving','warehouse','review','report','purchase','admin'];
 function switchTab(name) {
   _deskCurrentTab = name;
   localStorage.setItem('rr_last_tab', name);
@@ -372,7 +371,6 @@ function switchTab(name) {
   if (name === 'review')    renderReviewTable();
   if (name === 'report')    renderReportTable();
   if (name === 'purchase')  renderPurchaseTable();
-  if (name === 'resolved')  renderResolvedTable();
   if (name === 'admin')     { loadAndRenderAdmin(); }
 }
 
@@ -493,7 +491,6 @@ function applyDateFilter() {
   else if (t==='review') renderReviewTable();
   else if (t==='report') renderReportTable();
   else if (t==='purchase') renderPurchaseTable();
-  else if (t==='resolved') renderResolvedTable();
 }
 function clearDateFilter() { document.getElementById('filterDateFrom').value=''; document.getElementById('filterDateTo').value=''; applyDateFilter(); }
 function getCurrentTab() {
@@ -900,110 +897,6 @@ function renderPurchaseTable() {
         <button onclick="openPurchaseModal('${p.arrivalDate}','${p.itemNo}')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg">回覆</button>
       </td>
     </tr>`).join('');
-}
-
-// ── 6. 已處理記錄 ─────────────────────────────────────
-function renderResolvedTable() {
-  const tbody = document.getElementById('resolvedTableBody');
-  const catSel = document.getElementById('res-cat-filter-desk');
-  const catFilter = catSel?.value || '';
-  if (catSel) {
-    const cur = catSel.value;
-    catSel.innerHTML = '<option value="">全部大分類</option>' +
-      getDeskCatFilters().map(c=>`<option value="${c}" ${cur===c?'selected':''}>${c}</option>`).join('');
-  }
-  let list = getFilteredAllProducts().filter(p => p.status === STATUS.RESOLVED);
-  if (catFilter) list = list.filter(p => p.cat === catFilter);
-  if (!list.length) { tbody.innerHTML='<tr><td colspan="11" class="px-4 py-12 text-center text-gray-400 text-sm">尚無已處理記錄</td></tr>'; return; }
-  tbody.innerHTML = list.map(p => {
-    const photos = (p.photos||[]).filter(Boolean);
-    const photoCell = photos.length
-      ? `<button onclick="openDeskResolvedPhotos(${JSON.stringify(photos).replace(/"/g,'&quot;')})"
-           class="flex items-center gap-1 bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 rounded-lg px-2 py-1 text-xs font-medium">
-           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-           照片(${photos.length})
-         </button>`
-      : '<span class="text-xs text-gray-300">—</span>';
-    return `
-    <tr class="border-b border-gray-100 hover:bg-green-50">
-      <td class="px-4 py-3 text-xs text-gray-500">${p.arrivalDate||'—'}</td>
-      <td class="px-4 py-3 text-xs text-gray-500">${p.defectTime||'—'}</td>
-      <td class="px-4 py-3"><span class="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-xs">${p.defectClass||'其他異常'}</span></td>
-      <td class="px-4 py-3 text-xs text-gray-500">${p.po||'—'}</td>
-      <td class="px-4 py-3 text-xs text-gray-500">${p.cat||'—'}</td>
-      <td class="px-4 py-3 font-mono text-xs">${p.itemNo}</td>
-      <td class="px-4 py-3 font-medium text-sm max-w-[160px] truncate" title="${p.name}">${p.name}</td>
-      <td class="px-4 py-3 text-xs">${(p.defectReasons||[]).map(r=>`<span class="inline-block bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full mr-1 mb-0.5">${r}</span>`).join('')||'—'}</td>
-      <td class="px-4 py-3 text-xs text-gray-600 max-w-[140px] truncate" title="${p.defectNote||''}">${p.defectNote||'—'}</td>
-      <td class="px-4 py-3 text-xs text-gray-600">${p.defectStaff||'—'}</td>
-      <td class="px-4 py-3 text-center">${photoCell}</td>
-    </tr>`;
-  }).join('');
-}
-
-function openDeskResolvedPhotos(photos) {
-  const existing = document.getElementById('deskResolvedPhotoModal');
-  if (existing) existing.remove();
-  const modal = document.createElement('div');
-  modal.id = 'deskResolvedPhotoModal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px';
-  modal.onclick = e => { if (e.target===modal) modal.remove(); };
-  modal.innerHTML = `
-    <div style="background:#fff;border-radius:16px;max-width:640px;width:100%;max-height:80vh;overflow-y:auto;padding:24px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <h3 style="font-size:16px;font-weight:700;color:#111">異常照片</h3>
-        <button onclick="document.getElementById('deskResolvedPhotoModal').remove()" style="background:#f3f4f6;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px;color:#374151">關閉</button>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
-        ${photos.map((src,i)=>`
-          <div style="position:relative;border-radius:10px;overflow:hidden;background:#f3f4f6">
-            <img src="${src}" style="width:100%;aspect-ratio:1;object-fit:cover;cursor:pointer;display:block"
-              onclick="openDeskLightbox('${src}')" />
-            <a href="${src}" download="photo_${i+1}.jpg"
-              style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.55);border-radius:6px;padding:4px 8px;display:flex;align-items:center;gap:3px;font-size:11px;color:#fff;text-decoration:none">
-              <svg style="width:12px;height:12px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-              下載
-            </a>
-          </div>`).join('')}
-      </div>
-    </div>`;
-  document.body.appendChild(modal);
-}
-
-function openDeskLightbox(src) {
-  const existing = document.getElementById('deskLightboxOverlay');
-  if (existing) existing.remove();
-  const el = document.createElement('div');
-  el.id = 'deskLightboxOverlay';
-  el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:2000;display:flex;align-items:center;justify-content:center;cursor:zoom-out';
-  el.onclick = () => el.remove();
-  el.innerHTML = `<img src="${src}" style="max-width:90vw;max-height:90vh;object-fit:contain;border-radius:8px" />`;
-  document.body.appendChild(el);
-}
-
-function exportResolvedExcel() {
-  // TODO: IT 工程師請在此串接後端 API 邏輯
-  const list = getFilteredAllProducts().filter(p => p.status === STATUS.RESOLVED);
-  if (!list.length) { alert('尚無已處理記錄可匯出'); return; }
-  const headers = ['日期','連動時間','異常分類','廠商','大分類','商品編號','商品名稱','異常原因','其他說明','物流回覆專員'];
-  const rows = list.map(p => [
-    p.arrivalDate   || '',
-    p.defectTime    || '',
-    p.defectClass   || '其他異常',
-    p.po            || '',
-    p.cat           || '',
-    p.itemNo,
-    p.name,
-    (p.defectReasons||[]).join('、'),
-    p.defectNote    || '',
-    p.defectStaff   || ''
-  ]);
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-  // 欄寬設定
-  ws['!cols'] = [10,14,12,14,10,14,20,30,20,12].map(w=>({wch:w}));
-  XLSX.utils.book_append_sheet(wb, ws, '已處理記錄');
-  XLSX.writeFile(wb, '商品異常已處理記錄.xlsx');
 }
 
 // ── 徽章計數 ─────────────────────────────────────────
@@ -1646,7 +1539,7 @@ function submitPurchaseReply() {
     ProductAPI.reply(p.id, { procAction: p.procAction, procReply: p.procReply, defectItems: p.defectItems, defectTime: p.defectTime, status: p.status })
       .then(async () => {
         await reloadFromFirestore(replyArrivalDate);
-        renderPurchaseTable(); renderResolvedTable(); updateBadges();
+        renderPurchaseTable(); updateBadges();
       })
       .catch(e => console.warn('reply API:', e.message));
   } else { saveProductsData(); }
