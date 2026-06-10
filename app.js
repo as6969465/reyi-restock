@@ -280,7 +280,7 @@ function _arrivedKey(date, origIdx) { return `${date}__${origIdx}`; }
 function toggleArrived(date, origIdx) {
   const key = _arrivedKey(date, origIdx);
   if (_arrivedSet.has(key)) _arrivedSet.delete(key); else _arrivedSet.add(key);
-  renderProductCards();
+  renderProductCards(); updateStats();
 }
 
 // ── 進貨搜尋關鍵字 ───────────────────────────────────
@@ -508,10 +508,13 @@ function renderProductCards() {
 }
 
 function updateStats() {
-  const list = getDateProducts(currentReceivingDate());
+  const date = currentReceivingDate();
+  const list = getDateProducts(date);
   const done     = list.filter(p=>p.status!==STATUS.PENDING).length;
   const pending  = list.filter(p=>p.status===STATUS.PENDING).length;
   const abnormal = list.filter(p=>[STATUS.ABNORMAL,STATUS.PROCUREMENT,STATUS.RESOLVED].includes(p.status)).length;
+  const arrived    = list.filter((p,i)=>_arrivedSet.has(_arrivedKey(date,i))).length;
+  const notArrived = list.filter((p,i)=>p.status===STATUS.PENDING && !_arrivedSet.has(_arrivedKey(date,i))).length;
   // 更新數字
   const sv = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
   sv('stat-total',   list.length);
@@ -538,6 +541,14 @@ function updateStats() {
     <div class="stat-card stat-bad">
       <div class="stat-card-icon">${IC('M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z')}</div>
       <div><div class="stat-card-val">${abnormal}</div><div class="stat-card-lbl">有異常</div></div>
+    </div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#ecfdf5,#d1fae5)">
+      <div class="stat-card-icon" style="background:#a7f3d0;color:#065f46">${IC('M5 13l4 4L19 7')}</div>
+      <div><div class="stat-card-val" style="color:#065f46">${arrived}</div><div class="stat-card-lbl">已到貨</div></div>
+    </div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#fff7ed,#fed7aa)">
+      <div class="stat-card-icon" style="background:#fdba74;color:#7c2d12">${IC('M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4')}</div>
+      <div><div class="stat-card-val" style="color:#7c2d12">${notArrived}</div><div class="stat-card-lbl">未到貨</div></div>
     </div>`;
 }
 
