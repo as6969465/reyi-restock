@@ -674,10 +674,10 @@ async function startReceiving(date, idx) {
 }
 
 function selectBizAttrAndReceive(date, idx, attrName) {
-  const p   = getDateProducts(date)[idx];
-  p.bizAttr = attrName;
-  closeAllSheets();
-  // 短暫延遲讓 Sheet 關閉動畫完成
+  closeAllSheets(); // 先關閉（可能會 applyChanges 替換 product 物件）
+  // 關閉後重新取得最新物件參照，再設定 bizAttr，避免被覆蓋
+  const p = getDateProducts(date)[idx];
+  if (p) p.bizAttr = attrName;
   setTimeout(() => openReceiveSheet(date, idx), 200);
 }
 
