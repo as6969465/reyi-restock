@@ -63,8 +63,8 @@ body { font-family: -apple-system,'Segoe UI',Arial,sans-serif;
 .stat-card-lbl { font-size:10px; font-weight:600; margin-top:2px; opacity:.75; }
 .stat-total   { background:#fff; color:#374151; }
 .stat-total   .stat-card-icon { background:var(--blue-lt); color:var(--blue); }
-.stat-done    { background:var(--green-lt); color:#065f46; }
-.stat-done    .stat-card-icon { background:rgba(255,255,255,.7); color:var(--green); }
+.stat-done    { background:#eff6ff; color:#1d4ed8; }
+.stat-done    .stat-card-icon { background:rgba(255,255,255,.7); color:#2563eb; }
 .stat-pending { background:var(--amber-lt); color:#78350f; }
 .stat-pending .stat-card-icon { background:rgba(255,255,255,.7); color:var(--amber); }
 .stat-bad     { background:var(--red-lt); color:#7f1d1d; }
