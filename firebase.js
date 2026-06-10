@@ -13,8 +13,7 @@ const firebaseConfig = window.FIREBASE_CONFIG || {
 };
 firebase.initializeApp(firebaseConfig);
 const db=firebase.firestore();
-// 啟用離線持久化快取（加速重複讀取，首次連線後資料本地快取）
-db.enablePersistence({ synchronizeTabs: true }).catch(()=>{});
+// 注意：不啟用 enablePersistence，避免 IndexedDB 鎖在頁面切換時卡住登入流程
 const COL={users:'users',roles:'roles',products:'products',auditLogs:'audit_logs'};
 function nowStr(){return new Date().toLocaleString('zh-TW');}
 async function hashPassword(pw){
