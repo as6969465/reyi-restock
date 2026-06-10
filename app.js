@@ -261,8 +261,6 @@ function openSheet(id) {
 function closeAllSheets() {
   document.getElementById('overlay').classList.remove('open');
   document.querySelectorAll('.sheet.open').forEach(s=>s.classList.remove('open'));
-  // Sheet 關閉後，若有暫存的 snapshot 變更則套用（但不立即重繪，讓呼叫方決定）
-  if (_pendingChanges?.length) { applyChanges(_pendingChanges); _pendingChanges = []; }
 }
 
 // ── 即時同步（onSnapshot）────────────────────────────
@@ -860,7 +858,7 @@ async function saveReceiving() {
   setTimeout(() => { renderProductCards(); updateStats(); }, 150);
   if (p.id) {
     ProductAPI.receive(p.id, {goodQty:good,badQty:bad,defectReasons:p.defectReasons,defectNote:p.defectNote,defectClass:p.defectClass,photos:p.photos,defectItems:p.defectItems,bizAttr:p.bizAttr||''})
-      .then(async()=>{ await reloadFromFirestore(date); renderProductCards(); updateStats(); updateBadges(); })
+      .then(async()=>{ _pendingChanges = []; await reloadFromFirestore(date); renderProductCards(); updateStats(); updateBadges(); })
       .catch(e=>console.warn('receive:',e.message));
   } else { saveProductsData(); }
 }
