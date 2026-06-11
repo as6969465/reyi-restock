@@ -1472,7 +1472,7 @@ function renderPurchasePhotoPanel(p) {
             <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">照片 ${pi+1}</div>
             <div style="display:flex;gap:12px;align-items:stretch">
               <img src="${src}" onclick="openPhotoModal([${allPhotos.map(s=>`'${s}'`).join(',')}],'${p.name}',${globalIdx})"
-                style="width:90px;min-height:90px;height:100%;border-radius:10px;object-fit:cover;flex-shrink:0;cursor:pointer" />
+                style="width:110px;min-height:110px;height:100%;border-radius:10px;object-fit:cover;flex-shrink:0;cursor:pointer" />
               <div style="flex:1;min-width:0">
                 <select onchange="deskPurSetAction(${i},${pi},this.value)"
                   style="width:100%;border:1px solid ${ph.procAction?'#34d399':'#d1d5db'};border-radius:8px;padding:6px 8px;font-size:12px;outline:none;background:#fff;margin-bottom:6px">
