@@ -833,19 +833,45 @@ function renderReportTable() {
     </tr>`).join('');
 }
 
+let _photoDownloadTarget = null;
+
 function downloadDefectPhotos(arrivalDate, itemNo) {
   const p = getAllProducts().find(x=>x.arrivalDate===arrivalDate&&x.itemNo===itemNo);
   if (!p) return;
-  const photos = (p.defectItems||[]).flatMap(it=>(it.photos||[]).map(ph=>ph.src)).filter(Boolean);
+  const photos = (p.defectItems||[]).flatMap((it, ei) =>
+    (it.photos||[]).map((ph, pi) => ({ src: ph.src, label: `異常${ei+1}_照片${pi+1}` }))
+  ).filter(x=>x.src);
   if (!photos.length) { alert('此筆無照片'); return; }
-  photos.forEach((src, i) => {
-    const a = document.createElement('a');
-    a.href = src;
-    a.download = `${p.name}_${p.arrivalDate}_異常${i+1}.jpg`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  });
+  _photoDownloadTarget = { p, photos };
+  document.getElementById('photoDownloadTitle').textContent = `照片下載 — ${p.name}`;
+  const body = document.getElementById('photoDownloadBody');
+  body.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px">
+      ${photos.map((ph, i) => `
+        <div style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#f9fafb">
+          <img src="${ph.src}" style="width:100%;aspect-ratio:1;object-fit:cover;cursor:zoom-in"
+            onclick="openPhotoModal(['${ph.src}'],'${p.name}',0)" />
+          <div style="padding:6px 8px;display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px;color:#6b7280">${ph.label}</span>
+            <button onclick="downloadSinglePhoto('${ph.src}','${p.name}_${p.arrivalDate}_${ph.label}.jpg')"
+              style="font-size:11px;color:#2563eb;background:none;border:none;cursor:pointer;padding:2px 4px;border-radius:4px"
+              onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='none'">↓下載</button>
+          </div>
+        </div>`).join('')}
+    </div>`;
+  document.getElementById('photoDownloadModal').classList.remove('hidden');
+}
+
+function downloadSinglePhoto(src, filename) {
+  const a = document.createElement('a');
+  a.href = src; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+function downloadAllDefectPhotos() {
+  if (!_photoDownloadTarget) return;
+  const { p, photos } = _photoDownloadTarget;
+  photos.forEach(ph => downloadSinglePhoto(ph.src, `${p.name}_${p.arrivalDate}_${ph.label}.jpg`));
 }
 
 function openReplyDetailModal(arrivalDate, itemNo) {
