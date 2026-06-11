@@ -296,6 +296,22 @@ function toggleArrived(date, origIdx) {
 }
 
 // ── 進貨搜尋關鍵字 ───────────────────────────────────
+let _reportSearchKw = '';
+function onReportSearch(val) {
+  _reportSearchKw = (val || '').trim();
+  const clearBtn = document.getElementById('reportSearchClear');
+  if (clearBtn) clearBtn.style.display = _reportSearchKw ? '' : 'none';
+  renderReportCards();
+}
+function clearReportSearch() {
+  _reportSearchKw = '';
+  const input = document.getElementById('reportSearchInput');
+  if (input) input.value = '';
+  const clearBtn = document.getElementById('reportSearchClear');
+  if (clearBtn) clearBtn.style.display = 'none';
+  renderReportCards();
+}
+
 let _receivingSearchKw = '';
 function onReceivingSearch(val) {
   _receivingSearchKw = (val || '').trim();
@@ -1381,7 +1397,11 @@ function renderReportCards() {
   let list = getAllProducts().filter(p=>p.badQty>0);
   if (from) list = list.filter(p=>!p.arrivalDate||p.arrivalDate>=from);
   if (to)   list = list.filter(p=>!p.arrivalDate||p.arrivalDate<=to);
-  if (!list.length) { container.innerHTML='<div class="empty-state"><p>尚無異常記錄</p></div>'; return; }
+  if (_reportSearchKw) {
+    const kw = _reportSearchKw.toLowerCase();
+    list = list.filter(p => (p.itemNo||'').toLowerCase().includes(kw) || (p.name||'').toLowerCase().includes(kw));
+  }
+  if (!list.length) { container.innerHTML=`<div class="empty-state"><p>${_reportSearchKw?`找不到「${_reportSearchKw}」`:'尚無異常記錄'}</p></div>`; return; }
   container.innerHTML = list.map(p => {
     const hasReply = (p.defectItems||[]).some(it=>it.procAction) || (p.procAction && p.procAction!=='—');
     const itemCount = (p.defectItems||[]).length;

@@ -46,33 +46,33 @@
     <nav class="flex gap-0" id="mainTabs">
       <!-- 現場人員 tabs -->
       <button onclick="switchTab('receiving')" id="tab-receiving" data-role="field"
-        class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-blue-600 text-blue-600">
+        class="tab-btn min-w-[110px] text-center px-3 py-3 text-sm font-medium border-b-2 border-blue-600 text-blue-600">
         當日進貨作業
       </button>
       <!-- 物流專員 tabs -->
       <button onclick="switchTab('review')" id="tab-review" data-role="specialist"
-        class="tab-btn hidden px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+        class="tab-btn hidden min-w-[110px] text-center px-3 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
         異常檢核
         <span id="badge-review" class="ml-1.5 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 hidden"></span>
       </button>
       <!-- 採購人員 tabs -->
       <button onclick="switchTab('purchase')" id="tab-purchase" data-role="purchase"
-        class="tab-btn hidden px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+        class="tab-btn hidden min-w-[110px] text-center px-3 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
         待回覆清單
         <span id="badge-purchase" class="ml-1.5 bg-blue-500 text-white text-xs rounded-full px-1.5 py-0.5 hidden"></span>
       </button>
       <button onclick="switchTab('report')" id="tab-report" data-role="specialist"
-        class="tab-btn hidden px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+        class="tab-btn hidden min-w-[110px] text-center px-3 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
         異常紀錄
         <span id="badge-report" class="ml-1.5 bg-blue-500 text-white text-xs rounded-full px-1.5 py-0.5 hidden">0</span>
       </button>
       <button onclick="switchTab('warehouse')" id="tab-warehouse" data-role="field"
-        class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+        class="tab-btn min-w-[110px] text-center px-3 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
         已確認清單
       </button>
       <!-- 管理員 tab -->
       <button onclick="switchTab('admin')" id="tab-admin" data-role="admin"
-        class="tab-btn hidden px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+        class="tab-btn hidden min-w-[110px] text-center px-3 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
         ⚙️ 帳號管理
       </button>
     </nav>
@@ -273,6 +273,17 @@
       <button onclick="exportReport()" class="bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>匯出異常報表
       </button>
+    </div>
+    <!-- 關鍵字搜尋 -->
+    <div class="relative mb-4 max-w-xs">
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
+      </svg>
+      <input id="deskReportSearchInput" type="text" placeholder="品號 / 品名搜尋"
+        oninput="onDeskReportSearch(this.value)"
+        class="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-red-300 focus:ring-1 focus:ring-red-200" />
+      <button id="deskReportSearchClear" onclick="clearDeskReportSearch()"
+        class="hidden absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-base leading-none bg-transparent border-none cursor-pointer">✕</button>
     </div>
     <!-- 子頁籤 -->
     <div class="flex gap-2 mb-4 border-b border-gray-200">

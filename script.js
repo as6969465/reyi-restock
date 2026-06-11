@@ -86,6 +86,21 @@ function toggleDeskArrived(date, origIdx) {
   renderProductTable(); updateStats();
 }
 
+let _deskReportKw = '';
+function onDeskReportSearch(val) {
+  _deskReportKw = (val || '').trim();
+  const clearBtn = document.getElementById('deskReportSearchClear');
+  if (clearBtn) clearBtn.classList.toggle('hidden', !_deskReportKw);
+  renderReportTable();
+}
+function clearDeskReportSearch() {
+  _deskReportKw = '';
+  const input = document.getElementById('deskReportSearchInput');
+  if (input) input.value = '';
+  document.getElementById('deskReportSearchClear')?.classList.add('hidden');
+  renderReportTable();
+}
+
 let _deskReceivingKw = '';
 function onDeskReceivingSearch(val) {
   _deskReceivingKw = (val || '').trim();
@@ -909,8 +924,12 @@ function renderDeskReportStats() {
 
 function renderReportTable() {
   const tbody = document.getElementById('reportTableBody');
-  const list  = getFilteredAllProducts().filter(p => p.badQty > 0);
-  if (!list.length) { tbody.innerHTML='<tr><td colspan="11" class="px-4 py-12 text-center text-gray-400 text-sm">尚無異常記錄</td></tr>'; return; }
+  let list  = getFilteredAllProducts().filter(p => p.badQty > 0);
+  if (_deskReportKw) {
+    const kw = _deskReportKw.toLowerCase();
+    list = list.filter(p => (p.itemNo||'').toLowerCase().includes(kw) || (p.name||'').toLowerCase().includes(kw));
+  }
+  if (!list.length) { tbody.innerHTML=`<tr><td colspan="10" class="px-4 py-12 text-center text-gray-400 text-sm">${_deskReportKw?`找不到「${_deskReportKw}」`:'尚無異常記錄'}</td></tr>`; return; }
   const hasReplyBtn = p => (p.defectItems||[]).some(it=>it.procAction) || (p.procAction && p.procAction!=='—');
   tbody.innerHTML = list.map(p => `
     <tr class="border-b border-gray-100 hover:bg-red-50" style="${p.procReplyUnread?'background:#f3f4f6':''}">
