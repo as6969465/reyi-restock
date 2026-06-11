@@ -635,7 +635,7 @@ function renderDefectItems(readonly) {
         <!-- Qty + Category -->
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
           <div style="flex-shrink:0">
-            <div style="font-size:10px;color:#9ca3af;margin-bottom:3px;text-align:center">不良數量</div>
+            <div style="font-size:10px;color:#9ca3af;margin-bottom:3px;text-align:center">異常數量</div>
             ${qtyEl}
           </div>
           <div style="flex:1;overflow-x:auto">
@@ -890,7 +890,7 @@ function rs_setBizAttr(name) {
   }
 }
 
-// onRsBadInput 已移除：不良品數量改由 defect items qty 加總自動計算
+// onRsBadInput 已移除：異常數量改由 defect items qty 加總自動計算
 
 function toggleReason(el) { el.classList.toggle('selected'); }
 
@@ -898,7 +898,7 @@ async function saveReceiving() {
   const errDiv = document.getElementById('rs-error');
   errDiv.style.display='none';
   const good = parseInt(document.getElementById('rs-good').value);
-  // 不良品數量 = defect items qty 加總
+  // 異常數量 = defect items qty 加總
   const bad  = _defectItems.reduce((s,it)=>(s+(parseInt(it.qty)||0)),0);
   if (isNaN(good)||good<0) { errDiv.textContent='請輸入正確的到貨數量'; errDiv.style.display='block'; return; }
   if (bad>0 && _defectItems.some(item=>!item.category)) { errDiv.textContent='每筆異常明細都需選擇異常大分類'; errDiv.style.display='block'; return; }
@@ -964,7 +964,7 @@ function renderWarehouseCards() {
         <div style="display:flex;align-items:center;justify-content:space-between">
           <div style="display:flex;gap:20px">
             <div><div style="font-size:10px;color:#9ca3af;margin-bottom:2px">良品</div><div style="font-size:18px;font-weight:800;color:#059669;line-height:1">${p.goodQty}</div></div>
-            <div><div style="font-size:10px;color:#9ca3af;margin-bottom:2px">不良品</div><div style="font-size:18px;font-weight:800;color:#dc2626;line-height:1">${p.badQty}</div></div>
+            <div><div style="font-size:10px;color:#9ca3af;margin-bottom:2px">異常</div><div style="font-size:18px;font-weight:800;color:#dc2626;line-height:1">${p.badQty}</div></div>
           </div>
           ${p.badQty>0
             ? (hasReply
@@ -1002,7 +1002,7 @@ function renderReviewCards() {
           <div style="font-size:15px;font-weight:700;color:#111;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</div>
           <div style="flex-shrink:0">${stBadge[p.status]||''}</div>
         </div>
-        <div style="font-size:12px;color:#9ca3af;margin-bottom:6px">${p.arrivalDate||'—'} · 不良：<b style="color:#dc2626">${p.badQty}</b> 件</div>
+        <div style="font-size:12px;color:#9ca3af;margin-bottom:6px">${p.arrivalDate||'—'} · 異常：<b style="color:#dc2626">${p.badQty}</b> 件</div>
         ${p.defectReasons?.length>0 ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">${p.defectReasons.map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')}</div>` : ''}
         ${p.photos?.length>0 ? `<span style="color:#2563eb;font-size:13px;cursor:pointer" onclick="event.stopPropagation();viewPhotos('${p.arrivalDate}','${p.itemNo}')">${p.photos.length} 張照片 ›</span>` : ''}
       </div>
@@ -1275,7 +1275,7 @@ function renderPurchaseCards() {
           <div style="font-size:15px;font-weight:700;color:#111;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</div>
           <span class="badge badge-proc" style="flex-shrink:0">待回覆</span>
         </div>
-        <div style="font-size:12px;color:#9ca3af;margin-bottom:6px">${p.arrivalDate||'—'} · 不良：<b style="color:#dc2626">${p.badQty}</b> 件</div>
+        <div style="font-size:12px;color:#9ca3af;margin-bottom:6px">${p.arrivalDate||'—'} · 異常：<b style="color:#dc2626">${p.badQty}</b> 件</div>
         ${(p.defectReasons||[]).length>0 ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">${p.defectReasons.map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')}</div>` : ''}
         <div style="display:flex;align-items:center;justify-content:space-between">
           <div style="font-size:12px;color:#9ca3af">物流專員：${p.defectStaff||'—'}</div>
