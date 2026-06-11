@@ -1207,7 +1207,7 @@ function renderReportCards() {
         </div>
         <div style="font-size:12px;color:#9ca3af;margin-bottom:6px">${p.arrivalDate||'—'} · ${p.defectTime||'—'}</div>
         ${(p.defectReasons||[]).length>0 ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">${p.defectReasons.map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')}</div>` : ''}
-        <div style="font-size:12px;color:#9ca3af">物流專員：${p.defectStaff||'—'}</div>
+        <div style="font-size:12px;color:#9ca3af">物流專員：${p.defectStaff||'—'}${p.procStaffName?` · 採購：${p.procStaffName}`:''}</div>
         ${hasReply
           ? `<div style="margin-top:8px;padding:8px 10px;background:#d1fae5;border-radius:10px;font-size:12px;color:#065f46;display:flex;justify-content:space-between;align-items:center">
               <span style="font-weight:600">點擊查看各照片回覆 ›</span>
