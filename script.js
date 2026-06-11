@@ -1545,10 +1545,7 @@ function renderReviewPhotoPanel(p) {
   row.innerHTML = `
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${tabs}</div>
     <div style="background:#fffbeb;border-radius:12px;border:1.5px solid #fde68a;padding:12px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <span style="font-size:13px;font-weight:800;color:#92400e">異常${NUMS[i]||i+1}</span>
-        ${(parseInt(item.qty)||0)>0?`<span style="font-size:12px;font-weight:700;color:#d97706">異常數量：${item.qty}</span>`:''}
-      </div>
+      ${(parseInt(item.qty)||0)>0?`<div style="font-size:12px;font-weight:700;color:#d97706;margin-bottom:6px">異常數量：${item.qty}</div>`:''}
       ${photos.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${photoThumbs}</div>`:'<div style="font-size:12px;color:#9ca3af;margin-bottom:8px">無照片</div>'}
       <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:4px">${catBtns}</div>
       ${reasonChips}
@@ -1765,10 +1762,7 @@ function renderPurchasePhotoPanel(p) {
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${tabs}</div>
     ${statHtml}
     <div style="background:#fff1f2;border-radius:12px;border:1.5px solid #fecaca;padding:12px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <span style="font-size:13px;font-weight:800;color:#dc2626">異常${NUMS[i]||i+1}</span>
-        ${(parseInt(item.qty)||0)>0?`<span style="font-size:12px;font-weight:700;color:#dc2626">異常數量：${item.qty}</span>`:''}
-      </div>
+      ${(parseInt(item.qty)||0)>0?`<div style="font-size:12px;font-weight:700;color:#dc2626;margin-bottom:6px">異常數量：${item.qty}</div>`:''}
       ${item.category?`<div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:4px">${item.category}</div>`:''}
       ${reasonsHtml}
       ${item.note?`<div style="font-size:12px;color:#6b7280;margin-bottom:8px">${item.note}</div>`:''}
