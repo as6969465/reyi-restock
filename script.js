@@ -846,28 +846,64 @@ function openReplyDetailModal(arrivalDate, itemNo) {
   if (title) title.textContent = p.name;
   if (!body) return;
 
+  const NUMS = ['一','二','三','四','五','六'];
+  const allSrcs = items.flatMap(it=>(it.photos||[]).map(ph=>ph.src||ph)).filter(Boolean);
+
   const content = items.length
-    ? items.map((item, i) => `
-        <div class="border border-gray-200 rounded-xl overflow-hidden mb-3">
-          <div class="flex gap-3 p-3 items-center">
-            ${item.photo ? `<img src="${item.photo}" onclick="openPhotoModal([${items.filter(x=>x.photo).map(x=>'\''+x.photo+'\'').join(',')}],'${p.name}',${i})"
-              class="w-14 h-14 object-cover rounded-lg cursor-pointer flex-shrink-0" />` : ''}
-            ${(parseInt(item.qty)||0)>0?`<div class="flex-shrink-0 text-center min-w-[40px]"><div class="text-xs text-gray-400">數量</div><div class="font-black text-blue-600" style="font-size:20px;line-height:1">${item.qty}</div></div>`:''}
-            <div class="flex-1 min-w-0">
-              <div class="text-xs text-gray-400 mb-1">照片 ${i+1} / ${items.length}${item.category?' · '+item.category:''}</div>
-              <div class="flex flex-wrap gap-1">${(item.reasons||[]).map(r=>`<span class="text-xs px-1.5 py-0.5 bg-red-100 text-red-600 rounded">${r}</span>`).join('')||'—'}</div>
+    ? items.map((item, i) => {
+        const photos = item.photos || [];
+        const reasonsHtml = (item.reasons||[]).length
+          ? `<div class="flex flex-wrap gap-1 mt-1">${(item.reasons||[]).map(r=>`<span class="text-xs px-1.5 py-0.5 bg-red-100 text-red-600 rounded">${r}</span>`).join('')}</div>` : '';
+
+        // 照片列表 + 個別回覆
+        let photosSection;
+        if (photos.length) {
+          photosSection = photos.map((ph, pi) => {
+            const src = ph.src || ph;
+            const globalIdx = items.slice(0,i).reduce((s,it)=>s+(it.photos||[]).length,0) + pi;
+            const replied = !!ph.procAction;
+            return `
+              <div class="flex gap-3 items-start p-3 border-t border-gray-100 ${replied?'bg-green-50':'bg-gray-50'}">
+                <img src="${src}" onclick="openPhotoModal([${allSrcs.map(s=>`'${s}'`).join(',')}],'${p.name}',${globalIdx})"
+                  class="w-14 h-14 object-cover rounded-lg cursor-pointer flex-shrink-0" />
+                <div class="flex-1 min-w-0">
+                  <div class="text-xs text-gray-400 mb-1">照片 ${pi+1}</div>
+                  ${replied
+                    ? `<div class="text-sm font-semibold text-green-700">✓ ${ph.procAction}</div>
+                       ${ph.procReply?`<div class="text-xs text-green-600 mt-0.5">${ph.procReply}</div>`:''}
+                       <div class="text-xs text-gray-400 mt-0.5">${ph.procStaffName||''} ${ph.procReplyTime?'· '+ph.procReplyTime:''}</div>`
+                    : `<div class="text-xs text-gray-400">尚未回覆</div>`}
+                </div>
+              </div>`;
+          }).join('');
+        } else {
+          // 無照片 → entry 層級回覆
+          const replied = !!(item.procAction);
+          photosSection = `
+            <div class="p-3 border-t border-gray-100 ${replied?'bg-green-50':'bg-gray-50'}">
+              <div class="text-xs text-gray-400 mb-1">無照片</div>
+              ${replied
+                ? `<div class="text-sm font-semibold text-green-700">✓ ${item.procAction}</div>
+                   ${item.procReply?`<div class="text-xs text-green-600 mt-0.5">${item.procReply}</div>`:''}
+                   <div class="text-xs text-gray-400 mt-0.5">${item.procStaffName||''} ${item.procReplyTime?'· '+item.procReplyTime:''}</div>`
+                : `<div class="text-xs text-gray-400">尚未回覆</div>`}
+            </div>`;
+        }
+
+        return `
+          <div class="border border-gray-200 rounded-xl overflow-hidden mb-3">
+            <div class="flex items-center justify-between px-3 py-2 bg-red-50">
+              <span class="text-sm font-bold text-red-600">異常${NUMS[i]||i+1}</span>
+              ${(parseInt(item.qty)||0)>0?`<span class="text-xs font-semibold text-blue-600">異常數量：${item.qty}</span>`:''}
+            </div>
+            <div class="px-3 py-2">
+              ${item.category?`<span class="text-xs font-semibold text-gray-600">${item.category}</span>`:''}
+              ${reasonsHtml}
               ${item.note?`<div class="text-xs text-gray-500 mt-1">${item.note}</div>`:''}
             </div>
-          </div>
-          <div class="px-3 py-2 ${item.procAction?'bg-green-50':'bg-gray-50'} border-t border-gray-100">
-            ${item.procAction
-              ? `<div class="text-sm font-semibold text-green-700">✓ ${item.procAction}</div>
-                 ${item.procReply?`<div class="text-xs text-green-600 mt-0.5">${item.procReply}</div>`:''}
-                 <div class="text-xs text-gray-400 mt-0.5">回覆時間：${item.procReplyTime||'—'}</div>`
-              : `<div class="text-xs text-gray-400">尚未回覆</div>`}
-          </div>
-        </div>`)
-      .join('')
+            ${photosSection}
+          </div>`;
+      }).join('')
     : `<div class="p-3 bg-green-50 rounded-xl text-sm font-semibold text-green-700">採購回覆：${p.procAction||'—'}${p.procReply?'<br><span class="font-normal text-xs">'+p.procReply+'</span>':''}</div>`;
 
   body.innerHTML = `
