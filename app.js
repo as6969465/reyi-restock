@@ -628,15 +628,15 @@ function renderDefectItems(readonly) {
     </div>`).join('');
 
   const addPhotoBtn = !readonly ? `
-    <label style="width:56px;height:56px;border:2px dashed #93c5fd;border-radius:8px;background:#eff6ff;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:2px;flex-shrink:0">
+    <label style="width:72px;height:72px;border:2px dashed #93c5fd;border-radius:10px;background:#eff6ff;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:3px;flex-shrink:0">
       ${camSvg}
-      <span style="font-size:9px;color:#93c5fd">新增</span>
+      <span style="font-size:10px;color:#93c5fd">新增</span>
       <input type="file" accept="image/*" multiple class="hidden" onchange="addDefectEntryPhotos(${i},this)" />
     </label>` : '';
 
   const qtyEl = !readonly
-    ? `<input type="number" min="0" value="${item.qty||''}" placeholder="0"
-         style="width:72px;border:1.5px solid #2563eb;border-radius:10px;padding:8px 4px;font-size:18px;font-weight:800;text-align:center;outline:none;color:#dc2626;background:#fff"
+    ? `<input type="number" min="0" value="${item.qty||''}" placeholder="異常數量" class="defect-qty-input"
+         style="width:80px;height:72px;border:1.5px solid #2563eb;border-radius:10px;padding:4px;font-size:24px;font-weight:800;text-align:center;outline:none;color:#dc2626;background:#fff;box-sizing:border-box"
          oninput="_defectItems[${i}].qty=parseInt(this.value)||0;updateDefectQtyStats()" />`
     : `<div style="font-size:22px;font-weight:900;color:#2563eb;min-width:40px;text-align:center">${item.qty||0}</div>`;
 
@@ -671,22 +671,17 @@ function renderDefectItems(readonly) {
 
   container.innerHTML = `
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${tabs}</div>
-    <div style="background:#eff6ff;border-radius:14px;border:1.5px solid #bfdbfe;padding:12px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <span style="font-size:13px;font-weight:800;color:#1d4ed8">異常${NUMS[i]||i+1}</span>
-        ${!readonly ? `<button onclick="removeDefectItem(${i})" style="background:none;border:none;color:#93c5fd;cursor:pointer;font-size:12px;padding:2px 4px">✕ 刪除</button>` : ''}
-      </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
-        ${photoThumbs}${addPhotoBtn}
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
-        <div style="flex-shrink:0">
-          <div style="font-size:10px;color:#9ca3af;margin-bottom:3px;text-align:center">異常數量</div>
-          ${qtyEl}
+    <div style="background:#eff6ff;border-radius:14px;border:1.5px solid #bfdbfe;padding:12px;position:relative">
+      ${!readonly ? `<button onclick="removeDefectItem(${i})" style="position:absolute;top:8px;right:10px;background:none;border:none;color:#93c5fd;cursor:pointer;font-size:12px;padding:2px 4px">✕ 刪除</button>` : ''}
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px">
+        <div style="flex-shrink:0">${qtyEl}</div>
+        <div style="flex:1;display:flex;gap:6px;flex-wrap:wrap;align-items:center;min-width:0">
+          ${photoThumbs}${addPhotoBtn}
         </div>
-        <div style="flex:1;overflow-x:auto">
-          <div style="display:flex;gap:5px;padding-bottom:2px">${catBtns}</div>
-        </div>
+      </div>
+      <div style="border-top:1.5px solid #bfdbfe;margin-bottom:8px"></div>
+      <div style="overflow-x:auto;margin-bottom:4px">
+        <div style="display:flex;gap:5px;padding-bottom:2px">${catBtns}</div>
       </div>
       ${reasonChips}${noteEl}
     </div>`;
@@ -698,7 +693,6 @@ function updateDefectQtyStats() {
   const totalEntered = _defectItems.reduce((s,it)=>(s+(parseInt(it.qty)||0)),0);
   const bdEl = document.getElementById('rs-bad-display');
   if (bdEl) bdEl.textContent = totalEntered || 0;
-  renderDefectItems(false);
 }
 
 function addDefectItem() {

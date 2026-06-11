@@ -1352,7 +1352,6 @@ function updateDeskDefectQtyStats() {
   const totalEntered = _deskDefectItems.reduce((s,it)=>(s+(parseInt(it.qty)||0)),0);
   const badDisplay = document.getElementById('badQtyDisplay');
   if (badDisplay) badDisplay.textContent = totalEntered || 0;
-  renderDeskDefectItems();
 }
 
 function desktopAddDefectItem() {
