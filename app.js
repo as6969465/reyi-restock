@@ -664,14 +664,30 @@ function addDefectItem() {
   renderDefectItems(false);
 }
 
+const DEFECT_PHOTO_MAX_BYTES = 200 * 1024;       // 單張上限 200KB
+const DEFECT_TOTAL_MAX_BYTES = 5 * 1024 * 1024;  // 全部照片合計上限 5MB
+
+function _defectTotalBytes() {
+  return _defectItems.reduce((s, it) =>
+    s + (it.photos||[]).reduce((s2, ph) => s2 + Math.round((ph.src.length - 22) * 3 / 4), 0), 0);
+}
+
 function addDefectEntryPhotos(i, input) {
   const files = Array.from(input.files);
   if (!files.length) return;
   const item = _defectItems[i];
   if (!item) return;
   let done = 0;
+  const errDiv = document.getElementById('rs-error');
   files.forEach(file => {
-    compressImage(file, 200*1024).then(src => {
+    compressImage(file, DEFECT_PHOTO_MAX_BYTES).then(src => {
+      const newBytes = Math.round((src.length - 22) * 3 / 4);
+      if (_defectTotalBytes() + newBytes > DEFECT_TOTAL_MAX_BYTES) {
+        done++;
+        if (errDiv) { errDiv.textContent = '照片總大小已達 5MB 上限，無法繼續新增'; errDiv.style.display = 'block'; }
+        if (done === files.length) renderDefectItems(false);
+        return;
+      }
       item.photos.push({ src, procAction: '', procReply: '', procStaffName: '' });
       done++;
       if (done === files.length) renderDefectItems(false);
@@ -697,9 +713,17 @@ function batchAddDefectPhotos(input) {
   if (!files.length) return;
   if (remaining <= 0) { alert('最多 6 筆異常，已達上限'); input.value=''; return; }
   const toProcess = files.slice(0, remaining);
+  const errDiv = document.getElementById('rs-error');
   let done = 0;
   toProcess.forEach(file => {
-    compressImage(file, 200*1024).then(src => {
+    compressImage(file, DEFECT_PHOTO_MAX_BYTES).then(src => {
+      const newBytes = Math.round((src.length - 22) * 3 / 4);
+      if (_defectTotalBytes() + newBytes > DEFECT_TOTAL_MAX_BYTES) {
+        done++;
+        if (errDiv) { errDiv.textContent = '照片總大小已達 5MB 上限，無法繼續新增'; errDiv.style.display = 'block'; }
+        if (done === toProcess.length) renderDefectItems(false);
+        return;
+      }
       _defectItems.push({ photos: [{ src, procAction: '', procReply: '', procStaffName: '' }], qty: 0, category: '', reasons: [], note: '' });
       done++;
       if (done === toProcess.length) renderDefectItems(false);
