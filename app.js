@@ -1293,35 +1293,71 @@ function openPurchaseSheet(arrivalDate, itemNo) {
   const items = p.defectItems || [];
   const body  = document.getElementById('purchaseSheetBody');
 
-  // 每筆異常明細各自回覆
+  const NUMS = ['一','二','三','四','五','六'];
+  const allSrcs = items.flatMap(it=>(it.photos||[]).map(ph=>ph.src||ph)).filter(Boolean);
+
+  // 每筆異常明細各自回覆（新格式：photos 陣列）
   const itemsHtml = items.length
-    ? items.map((item, i) => `
-      <div style="background:#f9fafb;border-radius:12px;border:1.5px solid #e5e7eb;padding:12px;margin-bottom:10px">
-        <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px">
-          ${item.photo ? `<img src="${item.photo}" style="width:56px;height:56px;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:zoom-in" onclick="openLightbox('${item.photo}')" />` : ''}
-          ${(parseInt(item.qty)||0)>0?`<div style="flex-shrink:0;text-align:center;min-width:40px"><div style="font-size:10px;color:#9ca3af">數量</div><div style="font-size:20px;font-weight:900;color:#2563eb;line-height:1">${item.qty}</div></div>`:''}
-          <div style="flex:1;min-width:0">
-            <div style="font-size:11px;color:#9ca3af;margin-bottom:3px">照片 ${i+1} / ${items.length}${item.category?' · '+item.category:''}</div>
-            <div style="display:flex;flex-wrap:wrap;gap:3px">${(item.reasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')||''}</div>
-            ${item.note ? `<div style="font-size:12px;color:#6b7280;margin-top:4px">${item.note}</div>` : ''}
+    ? items.map((item, i) => {
+        const photos = item.photos || [];
+        const reasonsHtml = (item.reasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('');
+        // header
+        const header = `
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <span style="font-size:13px;font-weight:800;color:#dc2626">異常${NUMS[i]||i+1}</span>
+            ${(parseInt(item.qty)||0)>0?`<span style="font-size:11px;font-weight:700;color:#2563eb">異常數量：${item.qty}</span>`:''}
           </div>
-        </div>
-        ${item.procAction
-          ? `<div style="background:#d1fae5;border-radius:8px;padding:8px;font-size:12px;color:#065f46">
-               已回覆：<b>${item.procAction}</b>${item.procReply?' — '+item.procReply:''}
-             </div>`
-          : `<div>
-              <select id="pur-action-${i}" class="input" style="appearance:auto;margin-bottom:8px">
-                <option value="">請選擇處理方式</option>
-                ${PROC_ACTIONS.map(v=>`<option>${v}</option>`).join('')}
-              </select>
-              <textarea id="pur-reply-${i}" class="input" rows="2" style="resize:none"
-                placeholder="回覆說明（選填）"></textarea>
-             </div>`}
-      </div>`).join('')
+          ${item.category?`<div style="font-size:11px;font-weight:600;color:#374151;margin-bottom:4px">${item.category}</div>`:''}
+          ${reasonsHtml?`<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px">${reasonsHtml}</div>`:''}
+          ${item.note?`<div style="font-size:12px;color:#6b7280;margin-bottom:8px">${item.note}</div>`:''}`;
+
+        let repliesHtml;
+        if (photos.length) {
+          // 有照片 → 每張各自回覆
+          repliesHtml = photos.map((ph, pi) => {
+            const src = ph.src || ph;
+            const globalIdx = items.slice(0,i).reduce((s,it)=>s+(it.photos||[]).length,0)+pi;
+            return `
+              <div style="border:1px solid ${ph.procAction?'#86efac':'#e5e7eb'};border-radius:10px;padding:10px;margin-bottom:8px;background:${ph.procAction?'#f0fdf4':'#fff'}">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <img src="${src}" onclick="openLightbox('${src}')"
+                    style="width:52px;height:52px;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:zoom-in" />
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:11px;color:#9ca3af;margin-bottom:6px">照片 ${pi+1}</div>
+                    ${ph.procAction
+                      ? `<div style="font-size:12px;font-weight:700;color:#065f46">✓ ${ph.procAction}</div>
+                         ${ph.procReply?`<div style="font-size:11px;color:#047857;margin-top:2px">${ph.procReply}</div>`:''}`
+                      : `<select id="pur-action-${i}-${pi}" class="input" style="appearance:auto;font-size:13px;padding:8px 10px;margin-bottom:6px">
+                           <option value="">請選擇處理方式</option>
+                           ${PROC_ACTIONS.map(v=>`<option>${v}</option>`).join('')}
+                         </select>
+                         <textarea id="pur-reply-${i}-${pi}" class="input" rows="2" style="resize:none;font-size:13px"
+                           placeholder="回覆說明（選填）"></textarea>`}
+                  </div>
+                </div>
+              </div>`;
+          }).join('');
+        } else {
+          // 無照片 → entry 層級回覆
+          repliesHtml = item.procAction
+            ? `<div style="background:#d1fae5;border-radius:10px;padding:10px;font-size:12px;color:#065f46">
+                 ✓ ${item.procAction}${item.procReply?' — '+item.procReply:''}
+               </div>`
+            : `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px">
+                 <div style="font-size:11px;color:#9ca3af;margin-bottom:6px">無照片</div>
+                 <select id="pur-action-${i}" class="input" style="appearance:auto;font-size:13px;padding:8px 10px;margin-bottom:6px">
+                   <option value="">請選擇處理方式</option>
+                   ${PROC_ACTIONS.map(v=>`<option>${v}</option>`).join('')}
+                 </select>
+                 <textarea id="pur-reply-${i}" class="input" rows="2" style="resize:none;font-size:13px"
+                   placeholder="回覆說明（選填）"></textarea>
+               </div>`;
+        }
+
+        return `<div style="background:#fef9f9;border-radius:12px;border:1.5px solid #fecaca;padding:12px;margin-bottom:10px">${header}${repliesHtml}</div>`;
+      }).join('')
     : `<!-- 向下相容舊格式 -->
       <div style="background:#f9fafb;border-radius:14px;padding:14px;margin-bottom:14px">
-        <div style="font-size:16px;font-weight:700;margin-bottom:6px">${p.name}</div>
         <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">
           ${(p.defectReasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:11px">${r}</span>`).join('')}
         </div>
@@ -1356,22 +1392,37 @@ async function submitPurchaseReply() {
   const items   = p.defectItems || [];
 
   if (items.length) {
-    // 每筆各自回覆
+    // 每筆各自回覆（新格式：photos 陣列）
     let hasReply = false;
+    const nowTs = nowStr();
     items.forEach((item, i) => {
-      const action = document.getElementById(`pur-action-${i}`)?.value;
-      const reply  = document.getElementById(`pur-reply-${i}`)?.value.trim() || '';
-      if (action) { item.procAction=action; item.procReply=reply; item.procStaffName=purUser?.name||''; item.procReplyTime=nowStr(); hasReply=true; }
+      const photos = item.photos || [];
+      if (photos.length) {
+        // 有照片 → 讀取各張照片的輸入
+        photos.forEach((ph, pi) => {
+          const action = document.getElementById(`pur-action-${i}-${pi}`)?.value;
+          const reply  = document.getElementById(`pur-reply-${i}-${pi}`)?.value.trim() || '';
+          if (action) { ph.procAction=action; ph.procReply=reply; ph.procStaffName=purUser?.name||''; ph.procReplyTime=nowTs; hasReply=true; }
+        });
+      } else {
+        // 無照片 → 讀取 entry 層級輸入
+        const action = document.getElementById(`pur-action-${i}`)?.value;
+        const reply  = document.getElementById(`pur-reply-${i}`)?.value.trim() || '';
+        if (action) { item.procAction=action; item.procReply=reply; item.procStaffName=purUser?.name||''; item.procReplyTime=nowTs; hasReply=true; }
+      }
     });
     if (!hasReply) { errDiv.textContent='請至少回覆一筆異常明細'; errDiv.style.display='block'; return; }
-    const allReplied = items.length > 0 && items.every(item=>item.procAction);
+    const allReplied = items.every(it =>
+      (it.photos||[]).length ? (it.photos||[]).every(ph=>ph.procAction) : !!it.procAction
+    );
     p.defectItems    = items;
     p.procStaffName  = purUser?.name||'';
     p.procReplyTime  = nowStr();
-    p.procReplyUnread= true;   // 有回覆即設未讀，通知物流查看
-    // 全部回覆完才轉已處理，否則保持待採購
+    p.procReplyUnread= true;
     p.status    = allReplied ? STATUS.RESOLVED : STATUS.PROCUREMENT;
-    p.procAction= items.map(it=>it.procAction).filter(Boolean).join('、') || '';
+    const photoActions = items.flatMap(it=>(it.photos||[]).map(ph=>ph.procAction)).filter(Boolean);
+    const entryActions = items.filter(it=>!(it.photos||[]).length && it.procAction).map(it=>it.procAction);
+    p.procAction= [...photoActions, ...entryActions].join('、') || '';
   } else {
     // 舊格式
     const action = document.getElementById('pur-action-all')?.value;
