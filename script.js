@@ -1469,19 +1469,21 @@ function renderPurchasePhotoPanel(p) {
         const actionOptions = PROC_ACTIONS_DESKTOP.map(v=>`<option value="${v}" ${ph.procAction===v?'selected':''}>${v}</option>`).join('');
         return `
           <div style="border:1px solid ${ph.procAction?'#86efac':'#e5e7eb'};border-radius:10px;padding:12px;margin-bottom:8px;background:${ph.procAction?'#f0fdf4':'#fff'}">
-            <div style="font-size:11px;color:#9ca3af;margin-bottom:8px;text-align:center">照片 ${pi+1}</div>
-            <div style="display:flex;justify-content:center;margin-bottom:10px">
+            <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">照片 ${pi+1}</div>
+            <div style="display:flex;gap:12px;align-items:flex-start">
               <img src="${src}" onclick="openPhotoModal([${allPhotos.map(s=>`'${s}'`).join(',')}],'${p.name}',${globalIdx})"
-                style="width:100px;height:100px;border-radius:10px;object-fit:cover;cursor:pointer" />
+                style="width:90px;height:90px;border-radius:10px;object-fit:cover;flex-shrink:0;cursor:pointer" />
+              <div style="flex:1;min-width:0">
+                <select onchange="deskPurSetAction(${i},${pi},this.value)"
+                  style="width:100%;border:1px solid ${ph.procAction?'#34d399':'#d1d5db'};border-radius:8px;padding:6px 8px;font-size:12px;outline:none;background:#fff;margin-bottom:6px">
+                  <option value="">請選擇處理方式 *</option>
+                  ${actionOptions}
+                </select>
+                <textarea rows="2" placeholder="回覆說明..." oninput="deskPurSetReply(${i},${pi},this.value)"
+                  style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:6px 8px;font-size:11px;outline:none;resize:none;font-family:inherit;box-sizing:border-box">${ph.procReply||''}</textarea>
+                ${ph.procAction?`<div style="font-size:11px;color:#059669;font-weight:600;margin-top:4px">✓ ${ph.procAction}</div>`:''}
+              </div>
             </div>
-            <select onchange="deskPurSetAction(${i},${pi},this.value)"
-              style="width:100%;border:1px solid ${ph.procAction?'#34d399':'#d1d5db'};border-radius:8px;padding:6px 8px;font-size:12px;outline:none;background:#fff;margin-bottom:6px">
-              <option value="">請選擇處理方式 *</option>
-              ${actionOptions}
-            </select>
-            <textarea rows="2" placeholder="回覆說明..." oninput="deskPurSetReply(${i},${pi},this.value)"
-              style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:6px 8px;font-size:11px;outline:none;resize:none;font-family:inherit;box-sizing:border-box">${ph.procReply||''}</textarea>
-            ${ph.procAction?`<div style="font-size:11px;color:#059669;font-weight:600;margin-top:6px;text-align:center">✓ ${ph.procAction}</div>`:''}
           </div>`;
       }).join('');
     } else {
