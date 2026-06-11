@@ -113,6 +113,17 @@ function getRoleById(id) {
 function getRoleName(id) { return getRoleById(id)?.name || id; }
 function getRid(u) { return u.role_id || u.roleId || u.role || 'pending'; }
 
+// ── 使用者名稱快取（userId → name）────────────────────
+let _userNameCache = {};
+function loadUserNameCache() {
+  return UserAPI.list().then(users => {
+    users.forEach(u => { if (u.userId && u.name) _userNameCache[u.userId] = u.name; });
+  }).catch(()=>{});
+}
+function resolveUserName(userId, fallback) {
+  return (userId && _userNameCache[userId]) || fallback || '—';
+}
+
 // ── 登入頁 ────────────────────────────────────────────
 async function handleLogin(e) {
   e.preventDefault();
@@ -157,6 +168,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   // 背景載入設定（不擋 UI）；新電腦 localStorage 空時從 Firestore 補回
   Promise.all([
     RoleAPI.list().then(r => { if (r?.length) saveRoles(r); }).catch(()=>{}),
+    loadUserNameCache(),
     loadBizAttrs().catch(()=>{}),
     loadDefectConfig().catch(()=>{}),
     loadCatFilters().catch(()=>{})
@@ -398,9 +410,11 @@ function normalizeProducts(items) {
     received:!!p.received, goodQty:p.good_qty||p.goodQty||0, badQty:p.bad_qty||p.badQty||0,
     defectTime:p.defect_time||p.defectTime||'', defectClass:p.defect_class||p.defectClass||'其他異常',
     defectReasons:p.defect_reasons||p.defectReasons||[], defectNote:p.defect_note||p.defectNote||'',
-    defectStaff:p.defect_staff||p.defectStaff||'', procAction:p.proc_action||p.procAction||'',
+    defectStaff:p.defect_staff||p.defectStaff||'', defectStaffId:p.defect_staff_id||p.defectStaffId||'',
+    procAction:p.proc_action||p.procAction||'',
     procReply:p.proc_reply||p.procReply||'', procReplyTime:p.proc_reply_time||p.procReplyTime||'',
-    procStaffName:p.proc_staff_name||p.procStaffName||'', operatorName:p.operator_name||p.operatorName||'',
+    procStaffName:p.proc_staff_name||p.procStaffName||'', procStaffId:p.proc_staff_id||p.procStaffId||'',
+    operatorName:p.operator_name||p.operatorName||'',
     photos:p.photos||[], defectItems:p.defect_items||p.defectItems||[], procReplyUnread:!!(p.proc_reply_unread||p.procReplyUnread), time:p.recv_time||p.time||'',
     bizAttr:p.biz_attr||p.bizAttr||''
   }));
@@ -939,7 +953,7 @@ async function saveReceiving() {
   p.photos       = _defectItems.flatMap(item => (item.photos||[]).map(ph => ph.src || ph)).filter(Boolean);
   p.defectNote   = _defectItems.map(item=>item.note).filter(Boolean).join('；');
   p.defectClass  = '其他異常';
-  p.defectStaff=user?.name||''; p.time=nowStr(); p.operatorName=user?.name||'';
+  p.defectStaff=user?.name||''; p.defectStaffId=user?.userId||''; p.time=nowStr(); p.operatorName=user?.name||'';
   // bizAttr 已在 rs_setBizAttr 即時更新，無需再次設定
   p.status = bad>0 ? STATUS.ABNORMAL : STATUS.RECEIVED;
   _arrivedSet.delete(_arrivedKey(date, idx)); // 確認完成後移除已到貨標記
@@ -1162,7 +1176,7 @@ async function submitReview() {
   let dt = document.getElementById('rv-time')?.value.trim() || '';
   if (!dt) dt = `${_reviewStartTime}～`;
   p.defectTime  = dt;
-  p.defectStaff = rvUser?.name||'';
+  p.defectStaff = rvUser?.name||''; p.defectStaffId = rvUser?.userId||'';
   // 同步 defectReasons 為各照片原因的彙整（向下相容）
   if (p.defectItems?.length) {
     p.defectReasons = p.defectItems.flatMap(it=>it.reasons||[]).filter(Boolean);
@@ -1207,7 +1221,7 @@ function renderReportCards() {
         </div>
         <div style="font-size:12px;color:#9ca3af;margin-bottom:6px">${p.arrivalDate||'—'} · ${p.defectTime||'—'}</div>
         ${(p.defectReasons||[]).length>0 ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">${p.defectReasons.map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')}</div>` : ''}
-        <div style="font-size:12px;color:#9ca3af">物流專員：${p.defectStaff||'—'}${p.procStaffName?` · 採購：${p.procStaffName}`:''}</div>
+        <div style="font-size:12px;color:#9ca3af">物流專員：${resolveUserName(p.defectStaffId,p.defectStaff)}${(p.procStaffId||p.procStaffName)?` · 採購：${resolveUserName(p.procStaffId,p.procStaffName)}`:''}</div>
         ${hasReply
           ? `<div style="margin-top:8px;padding:8px 10px;background:#d1fae5;border-radius:10px;font-size:12px;color:#065f46;display:flex;justify-content:space-between;align-items:center">
               <span style="font-weight:600">點擊查看各照片回覆 ›</span>
@@ -1288,7 +1302,7 @@ function openReplyDetail(arrivalDate, itemNo) {
   body.innerHTML = `
     <div style="margin-bottom:12px">
       <div style="font-size:15px;font-weight:700;margin-bottom:4px">${p.name}</div>
-      <div style="font-size:12px;color:#9ca3af">${p.arrivalDate||'—'} · 物流專員：${p.defectStaff||'—'}</div>
+      <div style="font-size:12px;color:#9ca3af">${p.arrivalDate||'—'} · 物流專員：${resolveUserName(p.defectStaffId,p.defectStaff)}</div>
     </div>
     ${content}
     <button onclick="closeAllSheets()" class="btn btn-secondary" style="width:100%;margin-top:4px">關閉</button>`;
@@ -1422,7 +1436,7 @@ function openPurchaseSheet(arrivalDate, itemNo) {
     <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px">
       ${p.name} — 異常明細回覆
     </div>
-    <div style="font-size:12px;color:#9ca3af;margin-bottom:12px">物流專員：${p.defectStaff||'—'}</div>
+    <div style="font-size:12px;color:#9ca3af;margin-bottom:12px">物流專員：${resolveUserName(p.defectStaffId,p.defectStaff)}</div>
     ${itemsHtml}
     <div id="pur-error" style="display:none;padding:12px;background:#fee2e2;border-radius:12px;font-size:13px;color:#991b1b;margin-bottom:12px"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
@@ -1465,7 +1479,7 @@ async function submitPurchaseReply() {
       (it.photos||[]).length ? (it.photos||[]).every(ph=>ph.procAction) : !!it.procAction
     );
     p.defectItems    = items;
-    p.procStaffName  = purUser?.name||'';
+    p.procStaffName  = purUser?.name||''; p.procStaffId = purUser?.userId||'';
     p.procReplyTime  = nowStr();
     p.procReplyUnread= true;
     p.status    = allReplied ? STATUS.RESOLVED : STATUS.PROCUREMENT;
