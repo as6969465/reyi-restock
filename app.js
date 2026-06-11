@@ -818,19 +818,19 @@ function openReceiveSheet(date, idx) {
         </div>` : ''}
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-      <div>
+    <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:16px">
+      <div style="flex:1;min-width:0">
         <label class="field-label">到貨數量 *</label>
         <input id="rs-good" type="number" min="0" value="${p.received?p.goodQty:p.qty}" class="input"
-          style="font-size:20px;font-weight:700;text-align:center" ${isResolved?'readonly':''} />
+          style="font-size:17px;font-weight:700;text-align:center;padding:10px 8px" ${isResolved?'readonly':''} />
       </div>
-      <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="flex:1;min-width:0">
         <label class="field-label">異常數量</label>
-        <div id="rs-bad-display" style="font-size:20px;font-weight:700;text-align:center;color:#dc2626;background:#f9fafb;border:1.5px solid #e5e7eb;border-radius:12px;padding:13px 14px;line-height:1.2">
+        <div id="rs-bad-display" style="font-size:17px;font-weight:700;text-align:center;color:#dc2626;background:#f9fafb;border:1.5px solid #e5e7eb;border-radius:12px;padding:10px 8px;line-height:1.2">
           ${p.received?p.badQty:0}
         </div>
-        ${!isResolved ? `<button onclick="addDefectItem()" class="btn btn-sm btn-danger" style="cursor:pointer;width:100%">＋ 新增異常</button>` : ''}
       </div>
+      ${!isResolved ? `<div style="flex-shrink:0"><label class="field-label" style="visibility:hidden">btn</label><button onclick="addDefectItem()" class="btn btn-sm btn-danger" style="cursor:pointer;white-space:nowrap;padding:10px 14px;font-size:13px">＋ 新增異常</button></div>` : ''}
     </div>
 
     <!-- 異常明細區 -->
