@@ -821,14 +821,31 @@ function renderReportTable() {
       <td class="px-4 py-3 font-medium text-sm max-w-[160px] truncate" title="${p.name}">${p.name}</td>
       <td class="px-4 py-3 text-xs">${(p.defectReasons||[]).map(r=>`<span class="inline-block bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full mr-1 mb-0.5">${r}</span>`).join('')||'—'}</td>
       <td class="px-4 py-3 text-xs text-gray-600 max-w-[140px] truncate" title="${p.defectNote||''}">${p.defectNote||'—'}</td>
-      <td class="px-4 py-3 text-xs text-gray-600">${p.defectStaff||'—'}</td>
       <td class="px-4 py-3 text-center">
         ${hasReplyBtn(p)
           ? `<button onclick="openReplyDetailModal('${p.arrivalDate}','${p.itemNo}')"
               class="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 rounded-lg">查看回覆</button>`
           : '<span class="text-gray-400 text-xs">—</span>'}
       </td>
+      <td class="px-4 py-3 text-center">
+        ${(() => { const photos = (p.defectItems||[]).flatMap(it=>(it.photos||[]).map(ph=>ph.src)).filter(Boolean); return photos.length ? `<button onclick="downloadDefectPhotos('${p.arrivalDate}','${p.itemNo}')" class="bg-blue-50 hover:bg-blue-100 text-blue-600 text-xs px-3 py-1.5 rounded-lg border border-blue-200">${photos.length} 張↓</button>` : '<span class="text-gray-400 text-xs">—</span>'; })()}
+      </td>
     </tr>`).join('');
+}
+
+function downloadDefectPhotos(arrivalDate, itemNo) {
+  const p = getAllProducts().find(x=>x.arrivalDate===arrivalDate&&x.itemNo===itemNo);
+  if (!p) return;
+  const photos = (p.defectItems||[]).flatMap(it=>(it.photos||[]).map(ph=>ph.src)).filter(Boolean);
+  if (!photos.length) { alert('此筆無照片'); return; }
+  photos.forEach((src, i) => {
+    const a = document.createElement('a');
+    a.href = src;
+    a.download = `${p.name}_${p.arrivalDate}_異常${i+1}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
 }
 
 function openReplyDetailModal(arrivalDate, itemNo) {
