@@ -373,7 +373,7 @@ function switchTab(name) {
   else { gdf.classList.remove('hidden'); gdf.classList.add('flex'); }
   if (name === 'warehouse') renderWarehouseTable();
   if (name === 'review')    renderReviewTable();
-  if (name === 'report')    renderReportTable();
+  if (name === 'report')    { if(_deskReportSubTab==='stats') renderDeskReportStats(); else renderReportTable(); }
   if (name === 'purchase')  renderPurchaseTable();
   if (name === 'admin')     { loadAndRenderAdmin(); }
 }
@@ -447,19 +447,19 @@ function importExcel(input) {
         if (top) dateInput.value = top;
       }
       const dates = [...new Set(parsed.map(p=>p.arrivalDate).filter(Boolean))].sort();
-      document.getElementById('importStatus').textContent = `已載入 ${parsed.length} 筆 · ${dates.join('、')||file.name}`;
-      // 儲存到 Firestore，再重載確保多台同步
       const importDate = document.getElementById('receivingDate').value;
       try {
         const result = await ProductAPI.importItems(parsed, importDate);
-        document.getElementById('importStatus').textContent += ` (入庫 ${result?.inserted || 0} 筆)`;
+        const inserted = result?.inserted || 0;
+        const dateLabel = dates.join('、') || file.name;
+        showToast(`匯入成功　${parsed.length} 筆 · ${dateLabel}　(入庫 ${inserted} 筆)`, 'success', 4000);
       } catch(apiErr) {
         console.warn('Firestore 匯入失敗:', apiErr.message);
+        showToast(`已讀取 ${parsed.length} 筆，雲端同步失敗`, 'error', 4000);
       }
-      // 無論成功與否，從 Firestore 重載最新資料
       await reloadFromFirestore(importDate);
       renderProductTable(); updateStats();
-    } catch(err) { alert('匯入失敗：'+err.message); }
+    } catch(err) { showToast('匯入失敗：' + err.message, 'error', 5000); }
   };
   reader.readAsBinaryString(file);
   input.value = '';
@@ -806,6 +806,93 @@ function renderReviewTable() {
 }
 
 // ── 4. 異常報表 ───────────────────────────────────────
+let _deskReportSubTab = 'list';
+let _deskReportSort   = 'count';
+
+function switchDeskReportSubTab(tab) {
+  _deskReportSubTab = tab;
+  const listPanel  = document.getElementById('drp-panel-list');
+  const statsPanel = document.getElementById('drp-panel-stats');
+  const tabList    = document.getElementById('drp-tab-list');
+  const tabStats   = document.getElementById('drp-tab-stats');
+  if (tab === 'stats') {
+    listPanel.classList.add('hidden');
+    statsPanel.classList.remove('hidden');
+    tabList.className  = 'px-4 py-2 text-sm font-medium text-gray-500 border-b-2 border-transparent -mb-px hover:text-gray-700 transition-colors';
+    tabStats.className = 'px-4 py-2 text-sm font-bold text-blue-600 border-b-2 border-blue-600 -mb-px transition-colors';
+    renderDeskReportStats();
+  } else {
+    listPanel.classList.remove('hidden');
+    statsPanel.classList.add('hidden');
+    tabList.className  = 'px-4 py-2 text-sm font-bold text-blue-600 border-b-2 border-blue-600 -mb-px transition-colors';
+    tabStats.className = 'px-4 py-2 text-sm font-medium text-gray-500 border-b-2 border-transparent -mb-px hover:text-gray-700 transition-colors';
+    renderReportTable();
+  }
+}
+
+function setDeskReportSort(sort) {
+  _deskReportSort = sort;
+  const cntBtn = document.getElementById('drp-sort-cnt');
+  const qtyBtn = document.getElementById('drp-sort-qty');
+  cntBtn.className = `px-4 py-1.5 rounded-full text-sm font-bold transition-colors border ${sort==='count' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-500 border-gray-300 hover:border-blue-400'}`;
+  qtyBtn.className = `px-4 py-1.5 rounded-full text-sm font-bold transition-colors border ${sort==='qty'   ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-500 border-gray-300 hover:border-blue-400'}`;
+  renderDeskReportStats();
+}
+
+function renderDeskReportStats() {
+  const container = document.getElementById('reportStatsContainer');
+  if (!container) return;
+  const list = getFilteredAllProducts().filter(p => p.badQty > 0);
+  if (!list.length) {
+    container.innerHTML = '<div class="col-span-full text-center py-16 text-gray-400 text-sm">尚無異常記錄</div>';
+    return;
+  }
+
+  const map = {};
+  list.forEach(p => {
+    const key = p.name || p.itemNo || '—';
+    if (!map[key]) map[key] = { name: key, itemNo: p.itemNo||'', count: 0, qty: 0, reasons: {} };
+    map[key].count += 1;
+    map[key].qty   += (parseInt(p.badQty) || 0);
+    (p.defectReasons || []).forEach(r => { map[key].reasons[r] = (map[key].reasons[r]||0) + 1; });
+    (p.defectItems || []).forEach(it => {
+      (it.reasons || []).forEach(r => { map[key].reasons[r] = (map[key].reasons[r]||0) + 1; });
+    });
+  });
+
+  let rows = Object.values(map);
+  rows.sort((a, b) => _deskReportSort === 'qty' ? b.qty - a.qty : b.count - a.count);
+
+  const medals = ['🥇','🥈','🥉'];
+  container.innerHTML = rows.map((row, idx) => {
+    const topReasons = Object.entries(row.reasons)
+      .sort((a,b) => b[1]-a[1]).slice(0,4)
+      .map(([r, n]) => `<span class="inline-block bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded-full">${r}×${n}</span>`).join('');
+    const rankEl = idx < 3
+      ? `<span class="text-2xl leading-none">${medals[idx]}</span>`
+      : `<span class="text-lg font-black text-gray-400 w-7 text-center">${idx+1}</span>`;
+    return `
+    <div class="bg-white rounded-xl border border-gray-200 px-5 py-4 flex items-center gap-4 hover:shadow-sm transition-shadow">
+      ${rankEl}
+      <div class="flex-1 min-w-0">
+        <div class="font-semibold text-gray-800 truncate">${row.name}</div>
+        <div class="text-xs text-gray-400 mb-1">${row.itemNo}</div>
+        ${topReasons ? `<div class="flex flex-wrap gap-1">${topReasons}</div>` : ''}
+      </div>
+      <div class="flex gap-6 shrink-0 text-center">
+        <div>
+          <div class="text-xl font-black text-red-600">${row.count}</div>
+          <div class="text-xs text-gray-400 mt-0.5">異常次數</div>
+        </div>
+        <div>
+          <div class="text-xl font-black text-blue-600">${row.qty}</div>
+          <div class="text-xs text-gray-400 mt-0.5">異常數量</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function renderReportTable() {
   const tbody = document.getElementById('reportTableBody');
   const list  = getFilteredAllProducts().filter(p => p.badQty > 0);
@@ -2161,6 +2248,35 @@ function exportWarehouseList() {
   list.forEach(p=>rows.push([p.arrivalDate,p.itemNo,p.barcode,p.name,p.spec,p.qty,p.goodQty,p.badQty,(p.defectReasons||[]).join('、'),p.photos.length,p.time]));
   downloadCsv(rows,'入庫清單.csv');
 }
+function showToast(msg, type = 'success', duration = 3000) {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  const colors = {
+    success: 'bg-white border-l-4 border-green-500 text-green-800',
+    error:   'bg-white border-l-4 border-red-500   text-red-800',
+    info:    'bg-white border-l-4 border-blue-500  text-blue-800'
+  };
+  const el = document.createElement('div');
+  el.className = `pointer-events-auto flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-semibold ${colors[type]} transition-all duration-300 opacity-0 translate-y-1`;
+  const iconSpan = document.createElement('span');
+  iconSpan.textContent = icons[type];
+  const msgSpan = document.createElement('span');
+  msgSpan.textContent = msg;
+  el.appendChild(iconSpan);
+  el.appendChild(msgSpan);
+  container.appendChild(el);
+  requestAnimationFrame(() => {
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
+  });
+  setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(-8px)';
+    setTimeout(() => el.remove(), 300);
+  }, duration);
+}
+
 function exportReport() {
   // TODO: IT 工程師請在此串接後端 API 邏輯
   const list = getFilteredAllProducts().filter(p=>p.badQty>0);

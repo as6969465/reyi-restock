@@ -122,22 +122,51 @@
     <div id="reviewListContainer" class="card-list" style="flex:1"></div>
   </div>
 
-  <!-- 異常回覆 -->
+  <!-- 異常紀錄 -->
   <div id="page-report" class="app-page">
     <div class="page-header">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
-        <div><h1>異常回覆</h1><p>商品異常回覆商流</p></div>
+        <div><h1>異常紀錄</h1><p>商品異常回覆商流</p></div>
         <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
-          <input type="date" id="rp-from" onchange="renderReportCards()"
+          <input type="date" id="rp-from" onchange="onReportDateChange()"
             style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;padding:5px 7px;font-size:11px;font-weight:600;outline:none;width:112px" />
           <span style="color:rgba(255,255,255,.7);font-size:11px">～</span>
-          <input type="date" id="rp-to" onchange="renderReportCards()"
+          <input type="date" id="rp-to" onchange="onReportDateChange()"
             style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;padding:5px 7px;font-size:11px;font-weight:600;outline:none;width:112px" />
         </div>
       </div>
+      <!-- 子頁籤 -->
+      <div style="display:flex;gap:6px;margin-top:10px">
+        <button id="rp-tab-list" onclick="switchReportSubTab('list')"
+          style="padding:5px 16px;border-radius:20px;border:1.5px solid rgba(255,255,255,.6);background:rgba(255,255,255,.25);color:#fff;font-size:12px;font-weight:700;cursor:pointer">
+          異常紀錄
+        </button>
+        <button id="rp-tab-stats" onclick="switchReportSubTab('stats')"
+          style="padding:5px 16px;border-radius:20px;border:1.5px solid rgba(255,255,255,.25);background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer">
+          異常統計
+        </button>
+      </div>
     </div>
-    <div id="reportListContainer" class="card-list" style="flex:1"></div>
-    <div style="padding:12px"><button onclick="exportReport()" class="btn" style="width:100%;background:#dc2626;color:#fff;border:none">匯出異常報表</button></div>
+    <!-- 紀錄清單 -->
+    <div id="rp-panel-list" style="flex:1;display:flex;flex-direction:column">
+      <div id="reportListContainer" class="card-list" style="flex:1"></div>
+      <div style="padding:12px"><button onclick="exportReport()" class="btn" style="width:100%;background:#dc2626;color:#fff;border:none">匯出異常報表</button></div>
+    </div>
+    <!-- 統計分頁 -->
+    <div id="rp-panel-stats" style="flex:1;display:none;flex-direction:column">
+      <div style="padding:10px 12px;display:flex;align-items:center;gap:8px">
+        <span style="font-size:12px;font-weight:700;color:#374151">排序依據</span>
+        <button id="rp-sort-cnt" onclick="setReportSort('count')"
+          style="padding:5px 14px;border-radius:20px;border:1.5px solid #2563eb;background:#2563eb;color:#fff;font-size:12px;font-weight:700;cursor:pointer">
+          異常次數
+        </button>
+        <button id="rp-sort-qty" onclick="setReportSort('qty')"
+          style="padding:5px 14px;border-radius:20px;border:1.5px solid #e5e7eb;background:#fff;color:#6b7280;font-size:12px;font-weight:600;cursor:pointer">
+          異常數量
+        </button>
+      </div>
+      <div id="reportStatsContainer" class="card-list" style="flex:1"></div>
+    </div>
   </div>
 
   <!-- 待回覆清單 -->

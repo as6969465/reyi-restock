@@ -125,7 +125,6 @@
             class="border-none bg-transparent text-sm text-gray-700 focus:outline-none w-full placeholder-gray-400" />
           <button id="deskReceivingSearchClear" onclick="clearDeskReceivingSearch()" class="hidden text-gray-400 hover:text-gray-600 text-base leading-none">✕</button>
         </div>
-        <span id="importStatus" class="text-xs text-gray-500"></span>
         <button id="deleteSelectedBtn" onclick="deleteSelected()" class="hidden bg-red-500 hover:bg-red-600 text-white text-sm px-4 py-2 rounded-lg flex items-center gap-2">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
           刪除勾選
@@ -268,31 +267,52 @@
 
   <!-- ===== 4. 異常紀錄 (物流專員) ===== -->
   <div id="page-report" class="p-6 hidden">
-    <div class="flex items-center justify-between mb-5">
+    <div class="flex items-center justify-between mb-4">
       <div><h2 class="text-lg font-semibold text-gray-800">異常紀錄</h2>
         <p class="text-xs text-gray-500 mt-0.5">對齊商品異常紀錄商流格式</p></div>
       <button onclick="exportReport()" class="bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>匯出異常報表
       </button>
     </div>
-    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm whitespace-nowrap">
-          <thead><tr class="bg-gray-50 border-b border-gray-200">
-            <th class="text-left px-4 py-3 font-medium text-gray-600">日期</th>
-            <th class="text-left px-4 py-3 font-medium text-gray-600">連動時間</th>
-            <th class="text-left px-4 py-3 font-medium text-gray-600">異常分類</th>
-            <th class="text-left px-4 py-3 font-medium text-gray-600">大分類</th>
-            <th class="text-left px-4 py-3 font-medium text-gray-600">商品編號</th>
-            <th class="text-left px-4 py-3 font-medium text-gray-600">商品名稱</th>
-            <th class="text-left px-4 py-3 font-medium text-gray-600">異常原因</th>
-            <th class="text-left px-4 py-3 font-medium text-gray-600">其他說明</th>
-            <th class="text-center px-4 py-3 font-medium text-gray-600">採購回覆</th>
-            <th class="text-center px-4 py-3 font-medium text-gray-600">照片下載</th>
-          </tr></thead>
-          <tbody id="reportTableBody"><tr><td colspan="10" class="px-4 py-12 text-center text-gray-400 text-sm">尚無異常記錄</td></tr></tbody>
-        </table>
+    <!-- 子頁籤 -->
+    <div class="flex gap-2 mb-4 border-b border-gray-200">
+      <button id="drp-tab-list" onclick="switchDeskReportSubTab('list')"
+        class="px-4 py-2 text-sm font-bold text-blue-600 border-b-2 border-blue-600 -mb-px transition-colors">異常紀錄</button>
+      <button id="drp-tab-stats" onclick="switchDeskReportSubTab('stats')"
+        class="px-4 py-2 text-sm font-medium text-gray-500 border-b-2 border-transparent -mb-px hover:text-gray-700 transition-colors">異常統計</button>
+    </div>
+    <!-- 紀錄表 -->
+    <div id="drp-panel-list">
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm whitespace-nowrap">
+            <thead><tr class="bg-gray-50 border-b border-gray-200">
+              <th class="text-left px-4 py-3 font-medium text-gray-600">日期</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-600">連動時間</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-600">異常分類</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-600">大分類</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-600">商品編號</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-600">商品名稱</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-600">異常原因</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-600">其他說明</th>
+              <th class="text-center px-4 py-3 font-medium text-gray-600">採購回覆</th>
+              <th class="text-center px-4 py-3 font-medium text-gray-600">照片下載</th>
+            </tr></thead>
+            <tbody id="reportTableBody"><tr><td colspan="10" class="px-4 py-12 text-center text-gray-400 text-sm">尚無異常記錄</td></tr></tbody>
+          </table>
+        </div>
       </div>
+    </div>
+    <!-- 統計分頁 -->
+    <div id="drp-panel-stats" class="hidden">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="text-sm font-semibold text-gray-600">排序依據</span>
+        <button id="drp-sort-cnt" onclick="setDeskReportSort('count')"
+          class="px-4 py-1.5 rounded-full text-sm font-bold bg-blue-600 text-white border border-blue-600 transition-colors">異常次數</button>
+        <button id="drp-sort-qty" onclick="setDeskReportSort('qty')"
+          class="px-4 py-1.5 rounded-full text-sm font-medium bg-white text-gray-500 border border-gray-300 hover:border-blue-400 transition-colors">異常數量</button>
+      </div>
+      <div id="reportStatsContainer" class="grid grid-cols-1 gap-3"></div>
     </div>
   </div>
 
@@ -759,6 +779,9 @@
   </div>
 
   <!-- ===== 照片下載 Modal ===== -->
+  <!-- Toast 通知 -->
+  <div id="toastContainer" class="fixed top-5 right-5 z-[200] flex flex-col gap-2 pointer-events-none"></div>
+
   <div id="photoDownloadModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">

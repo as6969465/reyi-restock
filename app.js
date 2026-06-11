@@ -271,7 +271,7 @@ function switchPage(name) {
   if (name==='receiving')  { renderProductCards(); updateStats(); }
   else if (name==='warehouse') ensureAllDatesLoaded(renderWarehouseCards);
   else if (name==='review')    ensureAllDatesLoaded(renderReviewCards);
-  else if (name==='report')    ensureAllDatesLoaded(renderReportCards);
+  else if (name==='report')    ensureAllDatesLoaded(()=>{ if(_reportSubTab==='stats') renderReportStats(); else renderReportCards(); });
   else if (name==='purchase')  ensureAllDatesLoaded(renderPurchaseCards);
   else if (name==='admin')     loadAndRenderAdmin();
 }
@@ -349,7 +349,7 @@ function rerenderCurrentView() {
   if (currentPage === 'receiving')       { renderProductCards(); updateStats(); }
   else if (currentPage === 'warehouse')  renderWarehouseCards();
   else if (currentPage === 'review')     renderReviewCards();
-  else if (currentPage === 'report')     renderReportCards();
+  else if (currentPage === 'report')     { if(_reportSubTab==='stats') renderReportStats(); else renderReportCards(); }
   else if (currentPage === 'purchase')   renderPurchaseCards();
   updateBadges();
 }
@@ -585,7 +585,7 @@ function renderDefectItems(readonly) {
   const i = _activeDefectTab;
   const item = _defectItems[i];
 
-  const camSvg = '<svg style="width:18px;height:18px;color:#fca5a5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>';
+  const camSvg = '<svg style="width:18px;height:18px;color:#93c5fd" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>';
   const NUMS = ['一','二','三','四','五','六'];
 
   // Tab bar
@@ -593,8 +593,8 @@ function renderDefectItems(readonly) {
     const active = idx === i;
     const hasQty = (parseInt(it.qty)||0) > 0;
     return `<button onclick="${readonly ? `switchDefectTabRO(${idx})` : `switchDefectTab(${idx})`}"
-      style="padding:6px 14px;border-radius:20px;border:1.5px solid ${active?'#dc2626':'#e5e7eb'};
-        background:${active?'#dc2626':'#fff'};color:${active?'#fff':'#6b7280'};
+      style="padding:6px 14px;border-radius:20px;border:1.5px solid ${active?'#2563eb':'#e5e7eb'};
+        background:${active?'#2563eb':'#fff'};color:${active?'#fff':'#6b7280'};
         font-size:12px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap;flex-shrink:0">
       異常${NUMS[idx]||idx+1}${hasQty&&!active?` (${it.qty})`:''}
     </button>`;
@@ -606,29 +606,29 @@ function renderDefectItems(readonly) {
   const photoThumbs = photos.map((ph, pi) => `
     <div style="position:relative;flex-shrink:0">
       <img src="${ph.src}" onclick="viewDefectEntryPhoto(${i},${pi})"
-        style="width:56px;height:56px;border-radius:8px;object-fit:cover;cursor:pointer;display:block;border:1.5px solid #fde68a" />
+        style="width:56px;height:56px;border-radius:8px;object-fit:cover;cursor:pointer;display:block;border:1.5px solid #93c5fd" />
       ${!readonly ? `<button onclick="removeDefectEntryPhoto(${i},${pi})" style="position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:#ef4444;color:#fff;border:none;border-radius:50%;font-size:10px;cursor:pointer;line-height:1;padding:0">×</button>` : ''}
       ${ph.procAction && readonly ? `<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(5,150,105,.85);border-radius:0 0 6px 6px;font-size:8px;color:#fff;text-align:center;padding:1px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ph.procAction}</div>` : ''}
     </div>`).join('');
 
   const addPhotoBtn = !readonly ? `
-    <label style="width:56px;height:56px;border:2px dashed #fca5a5;border-radius:8px;background:#fff5f5;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:2px;flex-shrink:0">
+    <label style="width:56px;height:56px;border:2px dashed #93c5fd;border-radius:8px;background:#eff6ff;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:2px;flex-shrink:0">
       ${camSvg}
-      <span style="font-size:9px;color:#fca5a5">新增</span>
+      <span style="font-size:9px;color:#93c5fd">新增</span>
       <input type="file" accept="image/*" multiple class="hidden" onchange="addDefectEntryPhotos(${i},this)" />
     </label>` : '';
 
   const qtyEl = !readonly
     ? `<input type="number" min="0" value="${item.qty||''}" placeholder="0"
-         style="width:72px;border:1.5px solid ${(parseInt(item.qty)||0)>0?'#2563eb':'#fecaca'};border-radius:10px;padding:8px 4px;font-size:18px;font-weight:800;text-align:center;outline:none;color:#2563eb;background:#f0f7ff"
+         style="width:72px;border:1.5px solid #2563eb;border-radius:10px;padding:8px 4px;font-size:18px;font-weight:800;text-align:center;outline:none;color:#dc2626;background:#fff"
          oninput="_defectItems[${i}].qty=parseInt(this.value)||0;updateDefectQtyStats()" />`
     : `<div style="font-size:22px;font-weight:900;color:#2563eb;min-width:40px;text-align:center">${item.qty||0}</div>`;
 
   const catBtns = DEFECT_CATEGORIES().map(c => {
     const active = item.category === c;
     return `<button onclick="${readonly?'':`setDefectCategory(${i},'${c}')`}"
-      style="padding:5px 10px;border-radius:16px;border:1.5px solid ${active?'#f59e0b':'#e5e7eb'};
-        background:${active?'#fef3c7':'#f8fafc'};color:${active?'#92400e':'#6b7280'};
+      style="padding:5px 10px;border-radius:16px;border:1.5px solid ${active?'#2563eb':'#e5e7eb'};
+        background:${active?'#dbeafe':'#f8fafc'};color:${active?'#1d4ed8':'#6b7280'};
         font-size:11px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap;flex-shrink:0">${c}</button>`;
   }).join('');
 
@@ -655,10 +655,10 @@ function renderDefectItems(readonly) {
 
   container.innerHTML = `
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${tabs}</div>
-    <div style="background:#fef9f9;border-radius:14px;border:1.5px solid #fecaca;padding:12px">
+    <div style="background:#eff6ff;border-radius:14px;border:1.5px solid #bfdbfe;padding:12px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <span style="font-size:13px;font-weight:800;color:#dc2626">異常${NUMS[i]||i+1}</span>
-        ${!readonly ? `<button onclick="removeDefectItem(${i})" style="background:none;border:none;color:#fca5a5;cursor:pointer;font-size:12px;padding:2px 4px">✕ 刪除</button>` : ''}
+        <span style="font-size:13px;font-weight:800;color:#1d4ed8">異常${NUMS[i]||i+1}</span>
+        ${!readonly ? `<button onclick="removeDefectItem(${i})" style="background:none;border:none;color:#93c5fd;cursor:pointer;font-size:12px;padding:2px 4px">✕ 刪除</button>` : ''}
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
         ${photoThumbs}${addPhotoBtn}
@@ -892,17 +892,19 @@ function openReceiveSheet(date, idx) {
 
     <!-- 異常明細區 -->
     <div id="rs-defect">
-      ${_defectItems.length||!isResolved?`<div style="font-size:13px;font-weight:700;color:#dc2626;margin-bottom:8px">異常明細</div>`:''}
+      ${_defectItems.length||!isResolved?`<div style="font-size:13px;font-weight:700;color:#1d4ed8;margin-bottom:8px">異常明細</div>`:''}
       <div id="rs-defect-items"></div>
     </div>
 
     <div id="rs-error" style="display:none;padding:12px;background:#fee2e2;border-radius:12px;font-size:13px;color:#991b1b;margin-bottom:12px"></div>
+    <div style="margin-top:20px">
     ${isResolved
       ? `<button onclick="closeAllSheets()" class="btn" style="width:100%;background:#f3f4f6;color:#374151;border:none">關閉</button>`
       : `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <button onclick="closeAllSheets()" class="btn" style="background:#f3f4f6;color:#374151;border:none">取消</button>
           <button onclick="saveReceiving()" class="btn btn-primary">確認</button>
-         </div>`}`;
+         </div>`}
+    </div>`;
 
   renderDefectItems(isResolved);
   openSheet('receiveSheet');
@@ -1090,19 +1092,39 @@ function openReviewSheet(arrivalDate, itemNo) {
     });
   }
 
+  _activeReviewTab = 0;
   renderReviewSheetBody(p);
   openSheet('reviewSheet');
 }
+
+let _activeReviewTab = 0;
+function switchReviewTab(i) { _activeReviewTab = i; renderReviewSheetBody(null); }
 
 function renderReviewSheetBody(p) {
   if (!p) { p = getAllProducts().find(x=>x.arrivalDate===reviewIdx.arrivalDate&&x.itemNo===reviewIdx.itemNo); }
   if (!p) return;
   const body = document.getElementById('reviewSheetBody');
+  const timeVal = document.getElementById('rv-time')?.value || p.defectTime || _reviewStartTime+'～';
 
   const items = p.defectItems || [];
   const NUMS = ['一','二','三','四','五','六'];
 
-  const entriesHtml = items.length ? items.map((item, i) => {
+  let entriesHtml;
+  if (items.length) {
+    if (_activeReviewTab >= items.length) _activeReviewTab = items.length - 1;
+    const i = _activeReviewTab;
+    const item = items[i];
+
+    const tabs = items.map((it, idx) => {
+      const active = idx === i;
+      return `<button onclick="switchReviewTab(${idx})"
+        style="padding:6px 14px;border-radius:20px;border:1.5px solid ${active?'#f59e0b':'#e5e7eb'};
+          background:${active?'#f59e0b':'#fff'};color:${active?'#fff':'#6b7280'};
+          font-size:12px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap;flex-shrink:0">
+        異常${NUMS[idx]||idx+1}${(parseInt(it.qty)||0)>0&&!active?` (${it.qty})`:''}
+      </button>`;
+    }).join('');
+
     const photos = item.photos || [];
     const photoThumbs = photos.map(ph => `
       <img src="${ph.src}" onclick="openLightbox('${ph.src}')"
@@ -1127,11 +1149,12 @@ function renderReviewSheetBody(p) {
       }).join('')}
     </div>`;
 
-    return `
+    entriesHtml = `
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${tabs}</div>
       <div style="background:#fffbeb;border-radius:14px;border:1.5px solid #fde68a;padding:12px;margin-bottom:10px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <span style="font-size:13px;font-weight:800;color:#92400e">異常${NUMS[i]||i+1}</span>
-          ${(parseInt(item.qty)||0)>0 ? `<span style="font-size:12px;font-weight:700;color:#d97706">不良 ${item.qty} 件</span>` : ''}
+          ${(parseInt(item.qty)||0)>0 ? `<span style="font-size:12px;font-weight:700;color:#d97706">異常 ${item.qty} 件</span>` : ''}
         </div>
         ${photos.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center">${photoThumbs}</div>` : ''}
         <div style="overflow-x:auto;margin-bottom:4px">
@@ -1142,17 +1165,19 @@ function renderReviewSheetBody(p) {
           style="width:100%;margin-top:8px;border:1px solid #e5e7eb;border-radius:8px;padding:7px 10px;font-size:12px;outline:none;background:#fff;font-family:inherit"
           oninput="rvSetNote(${i},this.value)" />
       </div>`;
-  }).join('') : `
-    <div style="background:#fffbeb;border-radius:12px;padding:12px;margin-bottom:10px">
-      <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:6px">現場記錄</div>
-      <div style="display:flex;flex-wrap:wrap;gap:3px">${(p.defectReasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')||'無'}</div>
-    </div>`;
+  } else {
+    entriesHtml = `
+      <div style="background:#fffbeb;border-radius:12px;padding:12px;margin-bottom:10px">
+        <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:6px">現場記錄</div>
+        <div style="display:flex;flex-wrap:wrap;gap:3px">${(p.defectReasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')||'無'}</div>
+      </div>`;
+  }
 
   body.innerHTML = `
     ${entriesHtml}
     <div style="margin-bottom:10px">
       <label class="field-label">連動時間</label>
-      <input id="rv-time" class="input" value="${p.defectTime||_reviewStartTime+'～'}" placeholder="09:00～09:30" />
+      <input id="rv-time" class="input" value="${timeVal}" placeholder="09:00～09:30" />
     </div>
     <div id="rv-error" style="display:none;padding:12px;background:#fee2e2;border-radius:12px;font-size:13px;color:#991b1b;margin-bottom:10px"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -1213,6 +1238,122 @@ async function submitReview() {
 // ══════════════════════════════════════════════════════
 // ── 4. 異常報表 ────────────────────────────────────────
 // ══════════════════════════════════════════════════════
+let _reportSubTab = 'list';
+let _reportSort   = 'count';
+
+function switchReportSubTab(tab) {
+  _reportSubTab = tab;
+  const listPanel  = document.getElementById('rp-panel-list');
+  const statsPanel = document.getElementById('rp-panel-stats');
+  const tabList    = document.getElementById('rp-tab-list');
+  const tabStats   = document.getElementById('rp-tab-stats');
+  if (!listPanel) return;
+  if (tab === 'stats') {
+    listPanel.style.display  = 'none';
+    statsPanel.style.display = 'flex';
+    tabList.style.background  = 'transparent';
+    tabList.style.color       = 'rgba(255,255,255,.7)';
+    tabList.style.borderColor = 'rgba(255,255,255,.25)';
+    tabList.style.fontWeight  = '600';
+    tabStats.style.background  = 'rgba(255,255,255,.25)';
+    tabStats.style.color       = '#fff';
+    tabStats.style.borderColor = 'rgba(255,255,255,.6)';
+    tabStats.style.fontWeight  = '700';
+    renderReportStats();
+  } else {
+    listPanel.style.display  = 'flex';
+    statsPanel.style.display = 'none';
+    tabList.style.background  = 'rgba(255,255,255,.25)';
+    tabList.style.color       = '#fff';
+    tabList.style.borderColor = 'rgba(255,255,255,.6)';
+    tabList.style.fontWeight  = '700';
+    tabStats.style.background  = 'transparent';
+    tabStats.style.color       = 'rgba(255,255,255,.7)';
+    tabStats.style.borderColor = 'rgba(255,255,255,.25)';
+    tabStats.style.fontWeight  = '600';
+    renderReportCards();
+  }
+}
+
+function setReportSort(sort) {
+  _reportSort = sort;
+  document.getElementById('rp-sort-cnt').style.background   = sort==='count' ? '#2563eb' : '#fff';
+  document.getElementById('rp-sort-cnt').style.color        = sort==='count' ? '#fff'    : '#6b7280';
+  document.getElementById('rp-sort-cnt').style.borderColor  = sort==='count' ? '#2563eb' : '#e5e7eb';
+  document.getElementById('rp-sort-qty').style.background   = sort==='qty'   ? '#2563eb' : '#fff';
+  document.getElementById('rp-sort-qty').style.color        = sort==='qty'   ? '#fff'    : '#6b7280';
+  document.getElementById('rp-sort-qty').style.borderColor  = sort==='qty'   ? '#2563eb' : '#e5e7eb';
+  renderReportStats();
+}
+
+function onReportDateChange() {
+  if (_reportSubTab === 'stats') renderReportStats();
+  else renderReportCards();
+}
+
+function renderReportStats() {
+  const container = document.getElementById('reportStatsContainer');
+  if (!container) return;
+  const from = document.getElementById('rp-from')?.value;
+  const to   = document.getElementById('rp-to')?.value;
+  let list = getAllProducts().filter(p => p.badQty > 0);
+  if (from) list = list.filter(p => !p.arrivalDate || p.arrivalDate >= from);
+  if (to)   list = list.filter(p => !p.arrivalDate || p.arrivalDate <= to);
+
+  if (!list.length) {
+    container.innerHTML = '<div class="empty-state"><p>尚無異常記錄</p></div>';
+    return;
+  }
+
+  // 依商品名稱聚合
+  const map = {};
+  list.forEach(p => {
+    const key = p.name || p.itemNo || '—';
+    if (!map[key]) map[key] = { name: key, count: 0, qty: 0, reasons: {} };
+    map[key].count += 1;
+    map[key].qty   += (parseInt(p.badQty) || 0);
+    (p.defectReasons || []).forEach(r => {
+      map[key].reasons[r] = (map[key].reasons[r] || 0) + 1;
+    });
+    (p.defectItems || []).forEach(it => {
+      (it.reasons || []).forEach(r => {
+        map[key].reasons[r] = (map[key].reasons[r] || 0) + 1;
+      });
+    });
+  });
+
+  let rows = Object.values(map);
+  rows.sort((a, b) => _reportSort === 'qty' ? b.qty - a.qty : b.count - a.count);
+
+  const medals = ['🥇','🥈','🥉'];
+  container.innerHTML = rows.map((row, idx) => {
+    const topReasons = Object.entries(row.reasons)
+      .sort((a,b) => b[1]-a[1]).slice(0,3)
+      .map(([r, n]) => `<span class="badge badge-abnormal" style="font-size:10px">${r}×${n}</span>`).join('');
+    const rankBadge = idx < 3
+      ? `<span style="font-size:22px;line-height:1">${medals[idx]}</span>`
+      : `<span style="font-size:14px;font-weight:900;color:#9ca3af;min-width:24px;text-align:center">${idx+1}</span>`;
+    return `
+    <div class="card slide-up" style="display:flex;align-items:center;gap:12px;padding:14px 14px">
+      ${rankBadge}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:700;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${row.name}</div>
+        ${topReasons ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:5px">${topReasons}</div>` : ''}
+      </div>
+      <div style="display:flex;gap:14px;flex-shrink:0;text-align:center">
+        <div>
+          <div style="font-size:18px;font-weight:900;color:#dc2626;line-height:1">${row.count}</div>
+          <div style="font-size:10px;color:#9ca3af;margin-top:2px">異常次數</div>
+        </div>
+        <div>
+          <div style="font-size:18px;font-weight:900;color:#2563eb;line-height:1">${row.qty}</div>
+          <div style="font-size:10px;color:#9ca3af;margin-top:2px">異常數量</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function renderReportCards() {
   const container = document.getElementById('reportListContainer');
   if (!container) return;
@@ -1368,100 +1509,141 @@ function renderPurchaseCards() {
     </div>`).join('');
 }
 
-function openPurchaseSheet(arrivalDate, itemNo) {
-  const p = getAllProducts().find(x=>x.arrivalDate===arrivalDate&&x.itemNo===itemNo);
-  if (!p) return;
-  purchaseIdx = { arrivalDate, itemNo };
+let _activePurchaseTab = 0;
+function switchPurchaseTab(i) { _activePurchaseTab = i; _renderPurchaseSheetItems(); }
+function _getPurProduct() {
+  if (!purchaseIdx) return null;
+  return getAllProducts().find(x=>x.arrivalDate===purchaseIdx.arrivalDate&&x.itemNo===purchaseIdx.itemNo);
+}
+function _setPurPhotoAction(i, pi, val) { const p=_getPurProduct(); if(p&&p.defectItems[i]&&p.defectItems[i].photos[pi]) p.defectItems[i].photos[pi]._draftAction=val; }
+function _setPurPhotoReply(i, pi, val)  { const p=_getPurProduct(); if(p&&p.defectItems[i]&&p.defectItems[i].photos[pi]) p.defectItems[i].photos[pi]._draftReply=val; }
+function _setPurEntryAction(i, val) { const p=_getPurProduct(); if(p&&p.defectItems[i]) p.defectItems[i]._draftAction=val; }
+function _setPurEntryReply(i, val)  { const p=_getPurProduct(); if(p&&p.defectItems[i]) p.defectItems[i]._draftReply=val; }
+
+function _renderPurchaseSheetItems() {
+  const p = _getPurProduct();
+  const body = document.getElementById('purchaseSheetBody');
+  if (!p || !body) return;
   const items = p.defectItems || [];
-  const body  = document.getElementById('purchaseSheetBody');
-
   const NUMS = ['一','二','三','四','五','六'];
-  const allSrcs = items.flatMap(it=>(it.photos||[]).map(ph=>ph.src||ph)).filter(Boolean);
 
-  // 每筆異常明細各自回覆（新格式：photos 陣列）
-  const itemsHtml = items.length
-    ? items.map((item, i) => {
-        const photos = item.photos || [];
-        const reasonsHtml = (item.reasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('');
-        // header
-        const header = `
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-            <span style="font-size:13px;font-weight:800;color:#dc2626">異常${NUMS[i]||i+1}</span>
-            ${(parseInt(item.qty)||0)>0?`<span style="font-size:11px;font-weight:700;color:#2563eb">異常數量：${item.qty}</span>`:''}
-          </div>
-          ${item.category?`<div style="font-size:11px;font-weight:600;color:#374151;margin-bottom:4px">${item.category}</div>`:''}
-          ${reasonsHtml?`<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px">${reasonsHtml}</div>`:''}
-          ${item.note?`<div style="font-size:12px;color:#6b7280;margin-bottom:8px">${item.note}</div>`:''}`;
+  let itemsHtml;
+  if (items.length) {
+    if (_activePurchaseTab >= items.length) _activePurchaseTab = items.length - 1;
+    const i = _activePurchaseTab;
+    const item = items[i];
 
-        let repliesHtml;
-        if (photos.length) {
-          // 有照片 → 每張各自回覆
-          repliesHtml = photos.map((ph, pi) => {
-            const src = ph.src || ph;
-            const globalIdx = items.slice(0,i).reduce((s,it)=>s+(it.photos||[]).length,0)+pi;
-            return `
-              <div style="border:1px solid ${ph.procAction?'#86efac':'#e5e7eb'};border-radius:10px;padding:12px;margin-bottom:8px;background:${ph.procAction?'#f0fdf4':'#fff'}">
-                <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">照片 ${pi+1}</div>
-                <div style="display:flex;gap:12px;align-items:stretch">
-                  <img src="${src}" onclick="openLightbox('${src}')"
-                    style="width:110px;min-height:110px;height:100%;border-radius:10px;object-fit:cover;flex-shrink:0;cursor:zoom-in" />
-                  <div style="flex:1;min-width:0">
-                    ${ph.procAction
-                      ? `<div style="font-size:12px;font-weight:700;color:#065f46">✓ ${ph.procAction}</div>
-                         ${ph.procReply?`<div style="font-size:11px;color:#047857;margin-top:2px">${ph.procReply}</div>`:''}`
-                      : `<select id="pur-action-${i}-${pi}" class="input" style="appearance:auto;font-size:13px;padding:8px 10px;margin-bottom:6px">
-                           <option value="">請選擇處理方式</option>
-                           ${PROC_ACTIONS.map(v=>`<option>${v}</option>`).join('')}
-                         </select>
-                         <textarea id="pur-reply-${i}-${pi}" class="input" rows="2" style="resize:none;font-size:13px"
-                           placeholder="回覆說明（選填）"></textarea>`}
-                  </div>
-                </div>
-              </div>`;
-          }).join('');
-        } else {
-          // 無照片 → entry 層級回覆
-          repliesHtml = item.procAction
-            ? `<div style="background:#d1fae5;border-radius:10px;padding:10px;font-size:12px;color:#065f46">
-                 ✓ ${item.procAction}${item.procReply?' — '+item.procReply:''}
-               </div>`
-            : `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px">
-                 <div style="font-size:11px;color:#9ca3af;margin-bottom:6px">無照片</div>
-                 <select id="pur-action-${i}" class="input" style="appearance:auto;font-size:13px;padding:8px 10px;margin-bottom:6px">
-                   <option value="">請選擇處理方式</option>
-                   ${PROC_ACTIONS.map(v=>`<option>${v}</option>`).join('')}
-                 </select>
-                 <textarea id="pur-reply-${i}" class="input" rows="2" style="resize:none;font-size:13px"
-                   placeholder="回覆說明（選填）"></textarea>
-               </div>`;
-        }
+    // 頁籤行
+    const tabs = items.map((it, idx) => {
+      const active = idx === i;
+      const replied = (it.photos||[]).length
+        ? (it.photos||[]).every(ph=>ph.procAction||(ph._draftAction&&ph._draftAction!==''))
+        : !!(it.procAction || (it._draftAction&&it._draftAction!==''));
+      return `<button onclick="switchPurchaseTab(${idx})"
+        style="padding:6px 14px;border-radius:20px;border:1.5px solid ${active?'#dc2626':'#e5e7eb'};
+          background:${active?'#dc2626':'#fff'};color:${active?'#fff':replied?'#059669':'#6b7280'};
+          font-size:12px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap;flex-shrink:0">
+        ${replied&&!active?'✓ ':''}異常${NUMS[idx]||idx+1}
+      </button>`;
+    }).join('');
 
-        return `<div style="background:#fef9f9;border-radius:12px;border:1.5px solid #fecaca;padding:12px;margin-bottom:10px">${header}${repliesHtml}</div>`;
-      }).join('')
-    : `<!-- 向下相容舊格式 -->
+    const photos = item.photos || [];
+    const reasonsHtml = (item.reasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('');
+    const header = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:800;color:#dc2626">異常${NUMS[i]||i+1}</span>
+        ${(parseInt(item.qty)||0)>0?`<span style="font-size:11px;font-weight:700;color:#2563eb">異常數量：${item.qty}</span>`:''}
+      </div>
+      ${item.category?`<div style="font-size:11px;font-weight:600;color:#374151;margin-bottom:4px">${item.category}</div>`:''}
+      ${reasonsHtml?`<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px">${reasonsHtml}</div>`:''}
+      ${item.note?`<div style="font-size:12px;color:#6b7280;margin-bottom:8px">${item.note}</div>`:''}`;
+
+    let repliesHtml;
+    if (photos.length) {
+      repliesHtml = photos.map((ph, pi) => {
+        const src = ph.src || ph;
+        return `
+          <div style="border:1px solid ${ph.procAction?'#86efac':'#e5e7eb'};border-radius:10px;padding:12px;margin-bottom:8px;background:${ph.procAction?'#f0fdf4':'#fff'}">
+            <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">照片 ${pi+1}</div>
+            <div style="display:flex;gap:12px;align-items:stretch">
+              <img src="${src}" onclick="openLightbox('${src}')"
+                style="width:110px;min-height:110px;height:100%;border-radius:10px;object-fit:cover;flex-shrink:0;cursor:zoom-in" />
+              <div style="flex:1;min-width:0">
+                ${ph.procAction
+                  ? `<div style="font-size:12px;font-weight:700;color:#065f46">✓ ${ph.procAction}</div>
+                     ${ph.procReply?`<div style="font-size:11px;color:#047857;margin-top:2px">${ph.procReply}</div>`:''}`
+                  : `<select class="input" style="appearance:auto;font-size:13px;padding:8px 10px;margin-bottom:6px"
+                       oninput="_setPurPhotoAction(${i},${pi},this.value)">
+                       <option value="">請選擇處理方式</option>
+                       ${PROC_ACTIONS.map(v=>`<option${ph._draftAction===v?' selected':''}>${v}</option>`).join('')}
+                     </select>
+                     <textarea class="input" rows="2" style="resize:none;font-size:13px"
+                       placeholder="回覆說明（選填）"
+                       oninput="_setPurPhotoReply(${i},${pi},this.value)">${ph._draftReply||''}</textarea>`}
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+    } else {
+      repliesHtml = item.procAction
+        ? `<div style="background:#d1fae5;border-radius:10px;padding:10px;font-size:12px;color:#065f46">
+             ✓ ${item.procAction}${item.procReply?' — '+item.procReply:''}
+           </div>`
+        : `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px">
+             <div style="font-size:11px;color:#9ca3af;margin-bottom:6px">無照片</div>
+             <select class="input" style="appearance:auto;font-size:13px;padding:8px 10px;margin-bottom:6px"
+               oninput="_setPurEntryAction(${i},this.value)">
+               <option value="">請選擇處理方式</option>
+               ${PROC_ACTIONS.map(v=>`<option${item._draftAction===v?' selected':''}>${v}</option>`).join('')}
+             </select>
+             <textarea class="input" rows="2" style="resize:none;font-size:13px"
+               placeholder="回覆說明（選填）"
+               oninput="_setPurEntryReply(${i},this.value)">${item._draftReply||''}</textarea>
+           </div>`;
+    }
+
+    itemsHtml = `
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${tabs}</div>
+      <div style="background:#fef9f9;border-radius:12px;border:1.5px solid #fecaca;padding:12px;margin-bottom:10px">
+        ${header}${repliesHtml}
+      </div>`;
+  } else {
+    itemsHtml = `
       <div style="background:#f9fafb;border-radius:14px;padding:14px;margin-bottom:14px">
         <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">
           ${(p.defectReasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:11px">${r}</span>`).join('')}
         </div>
         <div style="font-size:13px;color:#6b7280">${p.defectNote||'—'}</div>
       </div>
-      <select id="pur-action-all" class="input" style="appearance:auto;margin-bottom:12px">
+      <select class="input" style="appearance:auto;margin-bottom:12px" id="pur-action-all">
         <option value="">請選擇處理方式</option>
         ${PROC_ACTIONS.map(v=>`<option>${v}</option>`).join('')}
       </select>
       <textarea id="pur-reply-all" class="input" rows="3" style="resize:none;margin-bottom:8px" placeholder="回覆說明"></textarea>`;
+  }
+
+  const container = document.getElementById('purchaseSheetItemsWrap');
+  if (container) { container.innerHTML = itemsHtml; return; }
 
   body.innerHTML = `
     <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px">
       ${p.name} — 異常明細回覆
     </div>
     <div style="font-size:12px;color:#9ca3af;margin-bottom:12px">物流專員：${resolveUserName(p.defectStaffId,p.defectStaff)}</div>
-    ${itemsHtml}
+    <div id="purchaseSheetItemsWrap">${itemsHtml}</div>
     <div id="pur-error" style="display:none;padding:12px;background:#fee2e2;border-radius:12px;font-size:13px;color:#991b1b;margin-bottom:12px"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
       <button onclick="closeAllSheets()" class="btn" style="background:#f3f4f6;color:#374151;border:none">取消</button>
       <button onclick="submitPurchaseReply()" class="btn btn-primary">確認全部回覆</button>
     </div>`;
+}
+
+function openPurchaseSheet(arrivalDate, itemNo) {
+  const p = getAllProducts().find(x=>x.arrivalDate===arrivalDate&&x.itemNo===itemNo);
+  if (!p) return;
+  purchaseIdx = { arrivalDate, itemNo };
+  _activePurchaseTab = 0;
+  _renderPurchaseSheetItems();
   openSheet('purchaseSheet');
 }
 
@@ -1474,23 +1656,24 @@ async function submitPurchaseReply() {
   const items   = p.defectItems || [];
 
   if (items.length) {
-    // 每筆各自回覆（新格式：photos 陣列）
     let hasReply = false;
     const nowTs = nowStr();
     items.forEach((item, i) => {
       const photos = item.photos || [];
       if (photos.length) {
-        // 有照片 → 讀取各張照片的輸入
         photos.forEach((ph, pi) => {
-          const action = document.getElementById(`pur-action-${i}-${pi}`)?.value;
-          const reply  = document.getElementById(`pur-reply-${i}-${pi}`)?.value.trim() || '';
-          if (action) { ph.procAction=action; ph.procReply=reply; ph.procStaffName=purUser?.name||''; ph.procReplyTime=nowTs; hasReply=true; }
+          const action = ph.procAction || ph._draftAction || '';
+          const reply  = ph.procReply  || ph._draftReply  || '';
+          if (action && !ph.procAction) { ph.procAction=action; ph.procReply=reply; ph.procStaffName=purUser?.name||''; ph.procReplyTime=nowTs; }
+          if (ph.procAction) hasReply = true;
+          delete ph._draftAction; delete ph._draftReply;
         });
       } else {
-        // 無照片 → 讀取 entry 層級輸入
-        const action = document.getElementById(`pur-action-${i}`)?.value;
-        const reply  = document.getElementById(`pur-reply-${i}`)?.value.trim() || '';
-        if (action) { item.procAction=action; item.procReply=reply; item.procStaffName=purUser?.name||''; item.procReplyTime=nowTs; hasReply=true; }
+        const action = item.procAction || item._draftAction || '';
+        const reply  = item.procReply  || item._draftReply  || '';
+        if (action && !item.procAction) { item.procAction=action; item.procReply=reply; item.procStaffName=purUser?.name||''; item.procReplyTime=nowTs; }
+        if (item.procAction) hasReply = true;
+        delete item._draftAction; delete item._draftReply;
       }
     });
     if (!hasReply) { errDiv.textContent='請至少回覆一筆異常明細'; errDiv.style.display='block'; return; }
