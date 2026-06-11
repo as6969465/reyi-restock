@@ -106,7 +106,7 @@ let reviewIdx      = null;
 let purchaseIdx    = null;
 let editUserIdx    = null;
 let uploadedPhotos = [];
-let _deskDefectItems = []; // 桌機版：每張照片各自原因 [{photo, reason, note}]
+let _deskDefectItems = []; // 桌機版：異常明細 [{photos:[{src,procAction,procReply,procStaffName}], qty, category, reasons[], note}]
 let _activeDeskDefectIdx = 0;
 let _photoList = [], _photoIdx = 0;
 let _reviewStartTime = '';
@@ -927,24 +927,29 @@ function openModal(date, idx) {
   const p = getDateProducts(date)[idx];
   // 載入已有的異常明細（含舊格式自動轉換）
   if ((p.defectItems||[]).length) {
-    _deskDefectItems = p.defectItems.map(item => ({
-      photo:    item.photo    || '',
-      category: item.category || '',
-      reasons:  item.reasons  || (item.reason ? [item.reason] : []),
-      note:     item.note     || ''
-    }));
+    _deskDefectItems = p.defectItems.map(item => {
+      if (item.photos) return {
+        photos:   item.photos.map(ph => typeof ph === 'string' ? { src: ph, procAction:'', procReply:'', procStaffName:'' } : { ...ph }),
+        qty:      parseInt(item.qty) || 0,
+        category: item.category || '',
+        reasons:  item.reasons  || [],
+        note:     item.note     || ''
+      };
+      // 舊格式：單張照片 → 轉換
+      return {
+        photos:   item.photo ? [{ src: item.photo, procAction: item.procAction||'', procReply: item.procReply||'', procStaffName: item.procStaffName||'' }] : [],
+        qty:      parseInt(item.qty) || 0,
+        category: item.category || '',
+        reasons:  item.reasons  || (item.reason ? [item.reason] : []),
+        note:     item.note     || ''
+      };
+    });
   } else if (p.photos?.length && p.badQty > 0) {
     const allReasons = p.defectReasons || [];
-    _deskDefectItems = p.photos.map((ph, i) => ({
-      photo:    ph,
-      category: '',
-      reasons:  allReasons.length > 0 ? (i === 0 ? allReasons : []) : [],
-      note:     i === 0 ? (p.defectNote || '') : ''
-    }));
+    _deskDefectItems = [{ photos: p.photos.map(ph => ({ src: ph, procAction:'', procReply:'', procStaffName:'' })), qty: p.badQty||0, category:'', reasons: allReasons, note: p.defectNote||'' }];
   } else {
     _deskDefectItems = [];
   }
-  _activeDeskDefectIdx = 0;
   document.getElementById('modalTitle').textContent = p.status === STATUS.PENDING ? '確認登錄' : '修改確認';
   // 業務屬性選擇區
   const bizContainer = document.getElementById('m-biz-attrs');
@@ -1017,119 +1022,102 @@ function desktopSetBizAttr(date, idx, name, el) {
   });
 }
 
-// ── 桌機版異常明細（頁面切換模式，與 App 版一致）──────
+// ── 桌機版異常明細（堆疊卡片模式，與 App 版一致）──────
 function renderDeskDefectItems() {
   const container = document.getElementById('desktopDefectItems');
   if (!container) return;
   if (!_deskDefectItems.length) {
-    container.innerHTML = '<p class="text-xs text-gray-400 py-2 text-center">尚未新增，點「匯入照片」按鈕</p>';
+    container.innerHTML = '<p class="text-xs text-gray-400 py-2 text-center">尚未新增，點「＋ 新增異常」按鈕</p>';
     return;
   }
 
-  _activeDeskDefectIdx = Math.min(_activeDeskDefectIdx, _deskDefectItems.length-1);
-  if (_activeDeskDefectIdx < 0) _activeDeskDefectIdx = 0;
-
   const totalEntered = _deskDefectItems.reduce((s,it)=>(s+(parseInt(it.qty)||0)),0);
-  // 同步更新不良品顯示
-  const _bdEl = document.getElementById('badQtyDisplay');
-  if (_bdEl) _bdEl.textContent = totalEntered || 0;
-  const i    = _activeDeskDefectIdx;
-  const item = _deskDefectItems[i];
+  const bdEl = document.getElementById('badQtyDisplay');
+  if (bdEl) bdEl.textContent = totalEntered || 0;
 
-  // 縮圖列
-  const camSvgSm = `<svg style="width:14px;height:14px;color:#fca5a5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>`;
-  const thumbs = _deskDefectItems.map((it, idx) => {
-    const active  = idx === i;
-    const hasQty  = parseInt(it.qty) > 0;
-    const inner   = it.photo
-      ? `<img src="${it.photo}" style="width:100%;height:100%;object-fit:cover;display:block" />`
-      : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center">${camSvgSm}</div>`;
-    return `<div onclick="deskSwitchDefectItem(${idx})" style="width:48px;height:48px;border-radius:8px;flex-shrink:0;cursor:pointer;overflow:hidden;position:relative;
-        border:2.5px solid ${active?'#2563eb':hasQty?'#86efac':'#fecaca'};
-        background:${active?'#dbeafe':hasQty?'#f0fdf4':'#fff0f0'};
-        box-shadow:${active?'0 2px 8px rgba(37,99,235,.2)':'none'};transition:all .15s">${inner}
-      ${hasQty?`<div style="position:absolute;bottom:1px;right:1px;background:#059669;color:#fff;border-radius:3px;font-size:9px;font-weight:700;padding:0 2px;line-height:13px">${it.qty}</div>`:''}
-    </div>`;
-  }).join('');
+  const camSvg = `<svg style="width:16px;height:16px;color:#fca5a5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>`;
+  const NUMS = ['一','二','三','四','五','六'];
 
-  // 統計列
-  const statsHtml = `<div class="flex items-center gap-2 mb-2 px-3 py-1.5 rounded-xl text-xs font-semibold bg-green-50 text-green-700">
-    ✓ 不良品合計：${totalEntered} 件
-  </div>`;
+  container.innerHTML = _deskDefectItems.map((item, i) => {
+    const photos = item.photos || [];
 
-  // 當前照片
-  const photoEl = item.photo
-    ? `<div class="relative flex-shrink-0">
-        <img src="${item.photo}" class="object-cover rounded-lg cursor-pointer" style="width:80px;height:80px" onclick="deskViewDefectPhoto(${i})" />
-        <button onclick="deskClearDefectPhotoItem(${i})" class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full text-xs flex items-center justify-center leading-none">&times;</button>
-      </div>`
-    : `<label class="flex-shrink-0 flex flex-col items-center justify-center gap-1 border-2 border-dashed border-red-200 rounded-lg bg-red-50 cursor-pointer" style="width:80px;height:80px">
-        <svg class="w-5 h-5 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-        <span class="text-xs text-red-300">上傳</span>
-        <input type="file" accept="image/*" class="hidden" onchange="deskSetDefectPhoto(${i},this)" />
+    const photoThumbs = photos.map((ph, pi) => `
+      <div style="position:relative;flex-shrink:0">
+        <img src="${ph.src}" onclick="deskViewDefectEntryPhoto(${i},${pi})"
+          style="width:56px;height:56px;border-radius:8px;object-fit:cover;cursor:pointer;display:block;border:1.5px solid #fde68a" />
+        <button onclick="deskRemoveDefectEntryPhoto(${i},${pi})" style="position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:#ef4444;color:#fff;border:none;border-radius:50%;font-size:10px;cursor:pointer;line-height:1;padding:0">×</button>
+      </div>`).join('');
+
+    const addPhotoBtn = `
+      <label style="width:56px;height:56px;border:2px dashed #fca5a5;border-radius:8px;background:#fff5f5;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:2px;flex-shrink:0">
+        ${camSvg}
+        <span style="font-size:9px;color:#fca5a5">新增</span>
+        <input type="file" accept="image/*" multiple class="hidden" onchange="deskAddDefectEntryPhotos(${i},this)" />
       </label>`;
 
-  const qtyEl = `<div class="flex-shrink-0 text-center" style="width:80px">
-    <div class="text-xs text-gray-400 mb-1">不良數量</div>
-    <input type="number" min="0" value="${item.qty||''}" placeholder="0"
-      class="w-full border rounded-lg p-1.5 text-center font-bold focus:outline-none focus:ring-1 focus:ring-blue-400"
-      style="font-size:17px;color:#2563eb;background:#f0f7ff;border-color:${(parseInt(item.qty)||0)>0?'#2563eb':'#fecaca'}"
-      oninput="_deskDefectItems[${i}].qty=parseInt(this.value)||0;updateDeskDefectQtyStats()" />
-  </div>`;
+    const qtyEl = `<input type="number" min="0" value="${item.qty||''}" placeholder="0"
+      style="width:72px;border:1.5px solid ${(parseInt(item.qty)||0)>0?'#2563eb':'#fecaca'};border-radius:10px;padding:8px 4px;font-size:18px;font-weight:800;text-align:center;outline:none;color:#2563eb;background:#f0f7ff"
+      oninput="_deskDefectItems[${i}].qty=parseInt(this.value)||0;updateDeskDefectQtyStats()" />`;
 
-  const catBtns = DEFECT_CATEGORIES().map(c=>
-    `<button type="button" onclick="deskSetDefectCategory(${i},'${c}')"
-      class="text-xs px-2.5 py-1 rounded-full border transition-colors ${item.category===c?'bg-blue-100 border-blue-400 text-blue-600 font-semibold':'bg-white border-gray-200 text-gray-500 hover:border-blue-300'}">${c}</button>`
-  ).join('');
+    const catBtns = DEFECT_CATEGORIES().map(c => {
+      const active = item.category === c;
+      return `<button type="button" onclick="deskSetDefectCategory(${i},'${c}')"
+        style="padding:5px 10px;border-radius:16px;border:1.5px solid ${active?'#f59e0b':'#e5e7eb'};
+          background:${active?'#fef3c7':'#f8fafc'};color:${active?'#92400e':'#6b7280'};
+          font-size:11px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap;flex-shrink:0">${c}</button>`;
+    }).join('');
 
-  const reasonsForCat = item.category ? DEFECT_REASONS(item.category) : [];
-  const subReasons = !item.category
-    ? `<div style="margin-top:6px;padding:8px 12px;background:#f3f4f6;border-radius:8px;font-size:12px;color:#9ca3af;text-align:center">請先選擇上方大分類</div>`
-    : `<div class="grid gap-1.5 mt-2" style="grid-template-columns:repeat(3,1fr)">${reasonsForCat.map(r=>{const s=(item.reasons||[]).includes(r);return `<button type="button" onclick="deskToggleSubReason(${i},'${r}')" style="padding:7px 4px;border-radius:6px;border:1.5px solid ${s?'#2563eb':'#e5e7eb'};background:${s?'#dbeafe':'#f8fafc'};color:${s?'#1d4ed8':'#6b7280'};font-size:12px;font-weight:${s?'700':'400'};cursor:pointer;line-height:1.4;text-align:center;word-break:break-all">${r}</button>`;}).join('')}</div>`;
+    const reasonsForCat = item.category ? DEFECT_REASONS(item.category) : [];
+    const reasonChips = item.category
+      ? `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px">
+           ${reasonsForCat.map(r => {
+             const sel = (item.reasons||[]).includes(r);
+             return `<button type="button" onclick="deskToggleSubReason(${i},'${r}')"
+               style="padding:6px 3px;border-radius:8px;border:1.5px solid ${sel?'#2563eb':'#e5e7eb'};
+                 background:${sel?'#dbeafe':'#f8fafc'};color:${sel?'#1d4ed8':'#6b7280'};
+                 font-size:11px;font-weight:${sel?'700':'400'};cursor:pointer;line-height:1.3;text-align:center;word-break:break-all">${r}</button>`;
+           }).join('')}
+         </div>`
+      : `<div style="margin-top:6px;padding:8px;background:#f3f4f6;border-radius:8px;font-size:12px;color:#9ca3af;text-align:center">請先選擇大分類</div>`;
 
-  container.innerHTML = `
-    <div class="flex gap-2 items-center overflow-x-auto pb-2 mb-2">
-      ${thumbs}
-    </div>
-    ${statsHtml}
-    <div class="bg-red-50 border border-red-100 rounded-xl p-3">
-      <div class="flex items-start justify-between mb-2">
-        <div class="flex items-center gap-2">
-          ${photoEl}
-          ${qtyEl}
-          <span class="text-xs text-gray-400">${i+1} / ${_deskDefectItems.length}</span>
+    return `
+      <div style="background:#fef9f9;border-radius:12px;border:1.5px solid #fecaca;padding:12px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:13px;font-weight:800;color:#dc2626">異常${NUMS[i]||i+1}</span>
+          <button onclick="deskRemoveDefectItem(${i})" style="background:none;border:none;color:#fca5a5;cursor:pointer;font-size:12px;padding:2px 6px">✕ 刪除</button>
         </div>
-        <button onclick="deskRemoveDefectItem(${i})" class="text-red-300 hover:text-red-500 text-sm flex-shrink-0">✕ 刪除</button>
-      </div>
-      <div class="flex gap-1.5 flex-wrap">${catBtns}</div>
-      ${subReasons}
-      <input type="text" value="${item.note||''}" placeholder="補充說明（選填）"
-        class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none mt-2"
-        oninput="_deskDefectItems[${i}].note=this.value" />
-    </div>`;
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
+          ${photoThumbs}${addPhotoBtn}
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
+          <div style="flex-shrink:0">
+            <div style="font-size:10px;color:#9ca3af;margin-bottom:3px;text-align:center">不良數量</div>
+            ${qtyEl}
+          </div>
+          <div style="flex:1;overflow-x:auto">
+            <div style="display:flex;gap:5px;padding-bottom:2px;flex-wrap:wrap">
+              ${catBtns}
+            </div>
+          </div>
+        </div>
+        ${reasonChips}
+        <input type="text" value="${item.note||''}" placeholder="補充說明（選填）"
+          style="width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:7px 10px;font-size:12px;outline:none;background:#fff;margin-top:8px;font-family:inherit;box-sizing:border-box"
+          oninput="_deskDefectItems[${i}].note=this.value" />
+      </div>`;
+  }).join('');
 }
-
-function deskSwitchDefectItem(idx) { _activeDeskDefectIdx = idx; renderDeskDefectItems(); }
 
 function updateDeskDefectQtyStats() {
   const totalEntered = _deskDefectItems.reduce((s,it)=>(s+(parseInt(it.qty)||0)),0);
-  // 同步更新不良品顯示
   const badDisplay = document.getElementById('badQtyDisplay');
   if (badDisplay) badDisplay.textContent = totalEntered || 0;
-  // 統計列直接更新文字，避免失焦
-  const statsDiv = document.querySelector('#desktopDefectItems .bg-green-50, #desktopDefectItems .bg-amber-50');
-  if (statsDiv) {
-    statsDiv.className = 'flex items-center gap-2 mb-2 px-3 py-1.5 rounded-xl text-xs font-semibold bg-green-50 text-green-700';
-    statsDiv.innerHTML = `✓ 不良品合計：${totalEntered} 件`;
-  }
   renderDeskDefectItems();
 }
 
-function deskClearDefectPhotoItem(i) { _deskDefectItems[i].photo=''; renderDeskDefectItems(); }
 function desktopAddDefectItem() {
-  if (_deskDefectItems.length >= 6) { alert('最多 6 筆'); return; }
-  _deskDefectItems.push({ photo:'', category:'', reasons:[], note:'' });
-  _activeDeskDefectIdx = _deskDefectItems.length - 1;
+  if (_deskDefectItems.length >= 6) { alert('最多 6 筆異常'); return; }
+  _deskDefectItems.push({ photos: [], qty: 0, category: '', reasons: [], note: '' });
   renderDeskDefectItems();
 }
 function batchAddDeskDefectPhotos(input) {
@@ -1137,34 +1125,39 @@ function batchAddDeskDefectPhotos(input) {
   const remaining = 6 - _deskDefectItems.length;
   if (!files.length || remaining <= 0) { input.value=''; return; }
   const toProcess = files.slice(0, remaining);
-  const firstNewIdx = _deskDefectItems.length;
   let done = 0;
   toProcess.forEach(file => {
-    compressImage(file, 200*1024).then(dataUrl => {
-      _deskDefectItems.push({ photo: dataUrl, category:'', reasons:[], note:'' });
+    compressImage(file, 200*1024).then(src => {
+      _deskDefectItems.push({ photos: [{ src, procAction:'', procReply:'', procStaffName:'' }], qty: 0, category:'', reasons:[], note:'' });
       done++;
-      if (done === toProcess.length) { _activeDeskDefectIdx = firstNewIdx; renderDeskDefectItems(); }
+      if (done === toProcess.length) renderDeskDefectItems();
     });
   });
   input.value = '';
 }
-function deskRemoveDefectItem(i) {
-  _deskDefectItems.splice(i,1);
-  if(_activeDeskDefectIdx>=_deskDefectItems.length) _activeDeskDefectIdx=Math.max(0,_deskDefectItems.length-1);
-  renderDeskDefectItems();
-}
-function deskSetDefectCategory(i, cat) { _deskDefectItems[i].category=cat; renderDeskDefectItems(); }
-function deskToggleSubReason(i, r) { const item=_deskDefectItems[i]; if(!item.reasons)item.reasons=[]; const idx=item.reasons.indexOf(r); if(idx>=0)item.reasons.splice(idx,1); else item.reasons.push(r); renderDeskDefectItems(); }
-function deskSetDefectPhoto(i, input) {
-  const file = input.files[0]; if (!file) return;
-  compressImage(file, 200*1024).then(dataUrl => { _deskDefectItems[i].photo=dataUrl; renderDeskDefectItems(); });
-}
-function deskViewDefectPhoto(i) {
+function deskAddDefectEntryPhotos(i, input) {
+  const files = Array.from(input.files);
+  if (!files.length) return;
   const item = _deskDefectItems[i];
-  if (!item?.photo) return;
-  const w = window.open();
-  w.document.write(`<img src="${item.photo}" style="max-width:100%;height:auto" />`);
+  if (!item) return;
+  let done = 0;
+  files.forEach(file => {
+    compressImage(file, 200*1024).then(src => {
+      item.photos.push({ src, procAction:'', procReply:'', procStaffName:'' });
+      done++;
+      if (done === files.length) renderDeskDefectItems();
+    });
+  });
+  input.value = '';
 }
+function deskRemoveDefectEntryPhoto(i, pi) { _deskDefectItems[i]?.photos.splice(pi,1); renderDeskDefectItems(); }
+function deskViewDefectEntryPhoto(i, pi) {
+  const src = _deskDefectItems[i]?.photos[pi]?.src;
+  if (src) { const w=window.open(); w.document.write(`<img src="${src}" style="max-width:100%;height:auto" />`); }
+}
+function deskRemoveDefectItem(i) { _deskDefectItems.splice(i,1); renderDeskDefectItems(); }
+function deskSetDefectCategory(i, cat) { _deskDefectItems[i].category=cat; _deskDefectItems[i].reasons=[]; renderDeskDefectItems(); }
+function deskToggleSubReason(i, r) { const item=_deskDefectItems[i]; if(!item.reasons)item.reasons=[]; const idx=item.reasons.indexOf(r); if(idx>=0)item.reasons.splice(idx,1); else item.reasons.push(r); renderDeskDefectItems(); }
 
 // onBadQtyInput 已移除：不良品數量改由 defect items qty 加總自動計算
 
@@ -1183,9 +1176,9 @@ function saveReceiving() {
   p.received      = true;
   p.goodQty       = good;
   p.badQty        = bad;
-  p.defectItems   = _deskDefectItems.map(item=>({ ...item, procAction:'', procReply:'', procStaffName:'' }));
+  p.defectItems   = _deskDefectItems.map(item=>({ ...item }));
   p.defectReasons = _deskDefectItems.map(item=>getDefectDisplay(item)).filter(r=>r&&r!=='—');
-  p.photos        = _deskDefectItems.map(item=>item.photo).filter(Boolean);
+  p.photos        = _deskDefectItems.flatMap(item=>(item.photos||[]).map(ph=>ph.src||ph)).filter(Boolean);
   p.defectNote    = _deskDefectItems.map(item=>item.note).filter(Boolean).join('；');
   p.defectClass   = '其他異常';
   p.defectStaff   = user?.name || '';
@@ -1223,16 +1216,21 @@ function openReviewModal(arrivalDate, itemNo) {
   _reviewStartTime = nowHHMM();
   _deskReviewPhotoIdx = 0;
 
-  // 確保 p.defectItems 已初始化（從驗收資料預填，每張照片各自獨立）
+  // 確保 p.defectItems 已初始化（含新舊格式兼容）
   if (!(p.defectItems?.length)) {
     const photos  = p.photos || [];
     const reasons = p.defectReasons || [];
-    p.defectItems = photos.map((ph, i) => ({
-      photo: ph, category: p.defectClass||'', reasons: [...reasons],
-      note: i === 0 ? (p.defectNote||'') : ''
-    }));
-    if (!p.defectItems.length && p.badQty > 0)
-      p.defectItems = [{ photo:'', category: p.defectClass||'', reasons:[...reasons], note: p.defectNote||'' }];
+    if (photos.length) {
+      p.defectItems = [{ photos: photos.map(ph=>({src:ph,procAction:'',procReply:'',procStaffName:''})), qty:p.badQty||0, category:p.defectClass||'', reasons:[...reasons], note:p.defectNote||'' }];
+    } else if (p.badQty > 0) {
+      p.defectItems = [{ photos:[], qty:p.badQty||0, category:p.defectClass||'', reasons:[...reasons], note:p.defectNote||'' }];
+    }
+  } else {
+    // 舊格式自動升級
+    p.defectItems = p.defectItems.map(item => item.photos ? item : {
+      photos: item.photo ? [{src:item.photo,procAction:item.procAction||'',procReply:item.procReply||'',procStaffName:item.procStaffName||''}] : [],
+      qty: parseInt(item.qty)||0, category:item.category||'', reasons:item.reasons||[], note:item.note||''
+    });
   }
 
   document.getElementById('rv-itemCode').textContent = p.itemNo;
@@ -1257,69 +1255,47 @@ function renderReviewPhotoPanel(p) {
 
   const items = p.defectItems || [];
   if (!items.length) { row.innerHTML='<p class="text-xs text-gray-400 py-2">無異常明細</p>'; return; }
-  _deskReviewPhotoIdx = Math.min(_deskReviewPhotoIdx, items.length-1);
-  const cur = items[_deskReviewPhotoIdx];
-  const i   = _deskReviewPhotoIdx;
+  const NUMS = ['一','二','三','四','五','六'];
+  const allPhotos = items.flatMap(it=>(it.photos||[]).map(ph=>ph.src||ph)).filter(Boolean);
 
-  // 縮圖列
-  const thumbs = items.map((it, idx) => {
-    const active = idx === _deskReviewPhotoIdx;
-    const t = it.photo
-      ? `<img src="${it.photo}" class="w-full h-full object-cover" />`
-      : `<div class="w-full h-full flex items-center justify-center text-gray-400 text-xs">無圖</div>`;
-    const hasQty = parseInt(it.qty) > 0;
-    return `<div onclick="_deskReviewPhotoIdx=${idx};renderReviewPhotoPanel();"
-      class="flex-shrink-0 cursor-pointer overflow-hidden rounded-lg transition-all relative"
-      style="width:52px;height:52px;border:2.5px solid ${active?'#2563eb':hasQty?'#86efac':'#e5e7eb'};
-        background:${active?'#dbeafe':hasQty?'#f0fdf4':'#f9fafb'};
-        box-shadow:${active?'0 2px 8px rgba(37,99,235,.25)':'none'}">${t}
-      ${hasQty?`<div style="position:absolute;bottom:1px;right:1px;background:#059669;color:#fff;border-radius:3px;font-size:9px;font-weight:700;padding:0 2px;line-height:13px">${it.qty}</div>`:''}
-    </div>`;
-  }).join('');
+  row.innerHTML = items.map((item, i) => {
+    const photos = item.photos || [];
 
-  // 大分類按鈕（預填 + 可修改）
-  const catBtns = DEFECT_CATEGORIES().map(c =>
-    `<button type="button" onclick="deskRvSetCategory(${i},'${c}')"
-      class="text-xs px-3 py-1.5 rounded-full border transition-colors ${cur.category===c
-        ?'bg-blue-100 border-blue-400 text-blue-600 font-semibold'
-        :'bg-white border-gray-200 text-gray-500 hover:border-blue-300'}">${c}</button>`
-  ).join('');
+    const photoThumbs = photos.map((ph, pi) => {
+      const src = ph.src || ph;
+      const globalIdx = items.slice(0,i).reduce((s,it)=>s+(it.photos||[]).length,0) + pi;
+      return `<img src="${src}" onclick="openPhotoModal([${allPhotos.map(s=>`'${s}'`).join(',')}],'${p.name}',${globalIdx})"
+        style="width:52px;height:52px;border-radius:8px;object-fit:cover;cursor:pointer;border:1.5px solid #fde68a" />`;
+    }).join('');
 
-  // 原因勾選（預填 + 可修改）
-  const reasonsForRv = cur?.category ? DEFECT_REASONS(cur.category) : DEFECT_REASONS();
-  const subReasons = `<div class="grid gap-1.5 mt-2" style="grid-template-columns:repeat(3,1fr)">
-    ${reasonsForRv.map(r=>{
-      const s=(cur.reasons||[]).includes(r);
-      return `<button type="button" onclick="deskRvToggleReason(${i},'${r}')"
-        style="padding:7px 4px;border-radius:6px;border:1.5px solid ${s?'#2563eb':'#e5e7eb'};
-          background:${s?'#dbeafe':'#f8fafc'};color:${s?'#1d4ed8':'#6b7280'};
-          font-size:12px;font-weight:${s?'700':'400'};cursor:pointer;line-height:1.4;
-          text-align:center;word-break:break-all">${r}</button>`;
-    }).join('')}
-  </div>`;
+    const catBtns = DEFECT_CATEGORIES().map(c =>
+      `<button type="button" onclick="deskRvSetCategory(${i},'${c}')"
+        style="padding:5px 10px;border-radius:16px;border:1.5px solid ${item.category===c?'#f59e0b':'#e5e7eb'};
+          background:${item.category===c?'#fef3c7':'#f8fafc'};color:${item.category===c?'#92400e':'#6b7280'};
+          font-size:11px;font-weight:${item.category===c?'700':'500'};cursor:pointer;white-space:nowrap">${c}</button>`
+    ).join('');
 
-  // 照片預覽
-  const photoEl = cur.photo
-    ? `<img src="${cur.photo}" onclick="openPhotoModal([${items.filter(x=>x.photo).map(x=>'\''+x.photo+'\'').join(',')}],'${p.name}',${_deskReviewPhotoIdx})"
-        class="h-14 rounded-lg object-cover cursor-pointer flex-shrink-0" />`
-    : '';
+    const reasonsForRv = item.category ? DEFECT_REASONS(item.category) : [];
+    const reasonChips = item.category
+      ? `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px">
+           ${reasonsForRv.map(r=>{const s=(item.reasons||[]).includes(r);return `<button type="button" onclick="deskRvToggleReason(${i},'${r}')" style="padding:6px 3px;border-radius:8px;border:1.5px solid ${s?'#2563eb':'#e5e7eb'};background:${s?'#dbeafe':'#f8fafc'};color:${s?'#1d4ed8':'#6b7280'};font-size:11px;font-weight:${s?'700':'400'};cursor:pointer;line-height:1.3;text-align:center;word-break:break-all">${r}</button>`;}).join('')}
+         </div>`
+      : `<div style="margin-top:6px;padding:8px;background:#f3f4f6;border-radius:8px;font-size:12px;color:#9ca3af;text-align:center">請先選擇大分類</div>`;
 
-  row.innerHTML = `
-    <div class="flex gap-2 items-center overflow-x-auto pb-1 mb-3">${thumbs}</div>
-    <div class="p-3 bg-blue-50 border border-blue-100 rounded-xl">
-      <div class="flex items-center justify-between mb-2">
-        <div class="flex items-center gap-2">
-          ${photoEl}
-          ${(parseInt(cur.qty)||0)>0?`<div class="flex-shrink-0 text-center min-w-[40px]"><div class="text-xs text-gray-400">數量</div><div class="font-black text-blue-600" style="font-size:20px;line-height:1">${cur.qty}</div></div>`:''}
-          <span class="text-xs text-gray-400">${i+1} / ${items.length}</span>
+    return `
+      <div style="background:#eff6ff;border-radius:12px;border:1.5px solid #bfdbfe;padding:12px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:13px;font-weight:800;color:#1d4ed8">異常${NUMS[i]||i+1}</span>
+          ${(parseInt(item.qty)||0)>0?`<span style="font-size:12px;font-weight:700;color:#2563eb">不良數量：${item.qty}</span>`:''}
         </div>
-      </div>
-      <div class="flex gap-1.5 flex-wrap mb-2">${catBtns}</div>
-      ${subReasons}
-      <input type="text" value="${cur.note||''}" placeholder="補充說明（選填）"
-        class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none mt-2"
-        oninput="deskRvSetNote(${i},this.value)" />
-    </div>`;
+        ${photos.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${photoThumbs}</div>`:'<div style="font-size:12px;color:#9ca3af;margin-bottom:8px">無照片</div>'}
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:4px">${catBtns}</div>
+        ${reasonChips}
+        <input type="text" value="${item.note||''}" placeholder="補充說明（選填）"
+          style="width:100%;border:1px solid #bfdbfe;border-radius:8px;padding:7px 10px;font-size:12px;outline:none;background:#fff;margin-top:8px;font-family:inherit;box-sizing:border-box"
+          oninput="deskRvSetNote(${i},this.value)" />
+      </div>`;
+  }).join('');
 }
 
 function deskRvSetCategory(idx, cat) {
@@ -1361,11 +1337,12 @@ function submitReview() {
   p.defectTime  = rvDefectTime;
   p.defectStaff = rvUser?.name || '';
   p.procContact = '';
-  // 彙整所有照片的最終原因
+  // 彙整所有異常明細的最終原因
   if (p.defectItems?.length) {
     p.defectReasons = p.defectItems.flatMap(it=>it.reasons||[]).filter(Boolean);
     p.defectClass   = p.defectItems[0]?.category || p.defectClass || '其他異常';
     p.defectNote    = p.defectItems.map(it=>it.note).filter(Boolean).join('；');
+    p.photos        = p.defectItems.flatMap(it=>(it.photos||[]).map(ph=>ph.src||ph)).filter(Boolean);
   }
   p.status = STATUS.PROCUREMENT;
   suppressDeskSyncRender(3000);
@@ -1391,21 +1368,24 @@ function openPurchaseModal(arrivalDate, itemNo) {
   if (!p) return;
   purchaseIdx = { arrivalDate, itemNo };
   _deskPurchasePhotoIdx = 0;
-  // 確保 defectItems 已初始化
+  // 確保 defectItems 已初始化（含新舊格式兼容）
   if (!(p.defectItems?.length)) {
     const photos  = p.photos || [];
     const reasons = p.defectReasons || [];
-    p.defectItems = photos.map((ph, i) => ({
-      photo: ph, category: p.defectClass||'', reasons: [...reasons],
-      note: i===0?(p.defectNote||''):'',
-      procAction: '', procReply: '', procStaffName: ''
-    }));
-    if (!p.defectItems.length && p.badQty > 0)
-      p.defectItems = [{ photo:'', category: p.defectClass||'', reasons:[...reasons],
-        note: p.defectNote||'', procAction:'', procReply:'', procStaffName:'' }];
+    if (photos.length) {
+      p.defectItems = [{ photos: photos.map(ph=>({src:ph,procAction:'',procReply:'',procStaffName:''})), qty:p.badQty||0, category:p.defectClass||'', reasons:[...reasons], note:p.defectNote||'' }];
+    } else if (p.badQty > 0) {
+      p.defectItems = [{ photos:[], qty:p.badQty||0, category:p.defectClass||'', reasons:[...reasons], note:p.defectNote||'' }];
+    }
   } else {
-    // 確保每筆都有 procAction/procReply 欄位
-    p.defectItems.forEach(it => { if (!it.procAction) it.procAction=''; if (!it.procReply) it.procReply=''; });
+    // 舊格式升級 + 確保每張照片都有 procAction/procReply
+    p.defectItems = p.defectItems.map(item => {
+      if (!item.photos) {
+        return { photos: item.photo?[{src:item.photo,procAction:item.procAction||'',procReply:item.procReply||'',procStaffName:item.procStaffName||''}]:[], qty:parseInt(item.qty)||0, category:item.category||'', reasons:item.reasons||[], note:item.note||'' };
+      }
+      item.photos = item.photos.map(ph => typeof ph==='string' ? {src:ph,procAction:'',procReply:'',procStaffName:''} : ph);
+      return item;
+    });
   }
   document.getElementById('pur-itemCode').textContent = p.itemNo;
   document.getElementById('pur-cat').textContent      = p.cat;
@@ -1426,85 +1406,69 @@ function renderPurchasePhotoPanel(p) {
 
   const items = p.defectItems || [];
   if (!items.length) { panel.innerHTML='<p class="text-xs text-gray-400 py-2">無異常明細</p>'; return; }
-  _deskPurchasePhotoIdx = Math.min(_deskPurchasePhotoIdx, items.length-1);
-  const cur = items[_deskPurchasePhotoIdx];
-  const i   = _deskPurchasePhotoIdx;
 
-  // 縮圖列
-  const thumbs = items.map((it, idx) => {
-    const active = idx === _deskPurchasePhotoIdx;
-    const done   = !!it.procAction;
-    const t = it.photo
-      ? `<img src="${it.photo}" class="w-full h-full object-cover" />`
-      : `<div class="w-full h-full flex items-center justify-center text-xs text-gray-400">無圖</div>`;
-    const hasQty = parseInt(it.qty) > 0;
-    return `<div onclick="_deskPurchasePhotoIdx=${idx};renderPurchasePhotoPanel();"
-      class="flex-shrink-0 cursor-pointer overflow-hidden rounded-lg transition-all relative"
-      style="width:52px;height:52px;border:2.5px solid ${active?'#2563eb':done?'#34d399':'#e5e7eb'};
-        background:${active?'#dbeafe':done?'#d1fae5':'#f9fafb'};
-        box-shadow:${active?'0 2px 8px rgba(37,99,235,.25)':'none'}">${t}
-      ${done?'<div style="position:absolute;bottom:1px;right:1px;width:14px;height:14px;background:#059669;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;border:1.5px solid #fff">✓</div>':''}
-      ${!done&&hasQty?`<div style="position:absolute;bottom:1px;right:1px;background:#2563eb;color:#fff;border-radius:3px;font-size:9px;font-weight:700;padding:0 2px;line-height:13px">${it.qty}</div>`:''}
-    </div>`;
-  }).join('');
+  const NUMS = ['一','二','三','四','五','六'];
+  const allPhotos = items.flatMap(it=>(it.photos||[]).map(ph=>ph.src||ph)).filter(Boolean);
+  const totalPhotos = items.reduce((s,it)=>s+(it.photos||[]).length,0);
+  const repliedPhotos = items.reduce((s,it)=>s+(it.photos||[]).filter(ph=>ph.procAction).length,0);
 
-  // 狀態統計
-  const replied = items.filter(it=>it.procAction).length;
-  const statHtml = items.length > 1
-    ? `<div class="text-xs text-gray-400 mb-2">已回覆 ${replied} / ${items.length} 張</div>` : '';
+  const statHtml = totalPhotos > 0
+    ? `<div class="text-xs text-gray-400 mb-3">已回覆 ${repliedPhotos} / ${totalPhotos} 張照片</div>` : '';
 
-  // 異常原因（唯讀）
-  const reasonsHtml = (cur.reasons||[]).length
-    ? `<div class="flex flex-wrap gap-1 mb-2">${cur.reasons.map(r=>`<span class="text-xs px-2 py-0.5 bg-red-100 text-red-600 rounded">${r}</span>`).join('')}</div>`
-    : '';
+  panel.innerHTML = statHtml + items.map((item, i) => {
+    const photos = item.photos || [];
+    const reasonsHtml = (item.reasons||[]).length
+      ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${(item.reasons||[]).map(r=>`<span style="font-size:11px;padding:2px 8px;background:#fee2e2;color:#dc2626;border-radius:10px">${r}</span>`).join('')}</div>` : '';
 
-  // 照片預覽
-  const photoEl = cur.photo
-    ? `<img src="${cur.photo}" onclick="openPhotoModal([${items.filter(x=>x.photo).map(x=>'\''+x.photo+'\'').join(',')}],'${p.name}',${_deskPurchasePhotoIdx})"
-        class="h-14 rounded-lg object-cover cursor-pointer flex-shrink-0" />` : '';
+    const photosHtml = photos.map((ph, pi) => {
+      const src = ph.src || ph;
+      const globalIdx = items.slice(0,i).reduce((s,it)=>s+(it.photos||[]).length,0) + pi;
+      const actionOptions = PROC_ACTIONS_DESKTOP.map(v=>`<option value="${v}" ${ph.procAction===v?'selected':''}>${v}</option>`).join('');
+      return `
+        <div style="border:1px solid ${ph.procAction?'#86efac':'#e5e7eb'};border-radius:10px;padding:10px;margin-bottom:8px;background:${ph.procAction?'#f0fdf4':'#fff'}">
+          <div style="display:flex;align-items:flex-start;gap:10px">
+            <img src="${src}" onclick="openPhotoModal([${allPhotos.map(s=>`'${s}'`).join(',')}],'${p.name}',${globalIdx})"
+              style="width:60px;height:60px;border-radius:8px;object-fit:cover;cursor:pointer;flex-shrink:0" />
+            <div style="flex:1;min-width:0">
+              <div style="font-size:11px;color:#9ca3af;margin-bottom:6px">照片 ${pi+1}</div>
+              <select onchange="deskPurSetAction(${i},${pi},this.value)"
+                style="width:100%;border:1px solid ${ph.procAction?'#34d399':'#d1d5db'};border-radius:8px;padding:6px 8px;font-size:12px;outline:none;background:#fff;margin-bottom:6px">
+                <option value="">請選擇處理方式 *</option>
+                ${actionOptions}
+              </select>
+              <textarea rows="2" placeholder="回覆說明..." oninput="deskPurSetReply(${i},${pi},this.value)"
+                style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:6px 8px;font-size:11px;outline:none;resize:none;font-family:inherit;box-sizing:border-box">${ph.procReply||''}</textarea>
+              ${ph.procAction?`<div style="font-size:11px;color:#059669;font-weight:600;margin-top:4px">✓ ${ph.procAction}</div>`:''}
+            </div>
+          </div>
+        </div>`;
+    }).join('') || '<div style="font-size:12px;color:#9ca3af;padding:8px 0">無照片</div>';
 
-  // 回覆輸入
-  const actionOptions = PROC_ACTIONS_DESKTOP.map(v=>`<option value="${v}" ${cur.procAction===v?'selected':''}>${v}</option>`).join('');
-
-  panel.innerHTML = `
-    ${statHtml}
-    <div class="flex gap-2 items-center overflow-x-auto pb-1 mb-3">${thumbs}</div>
-    <div class="p-3 bg-blue-50 border border-blue-100 rounded-xl">
-      <div class="flex items-center gap-2 mb-2">
-        ${photoEl}
-        ${(parseInt(cur.qty)||0)>0?`<div class="flex-shrink-0 text-center min-w-[40px]"><div class="text-xs text-gray-400">數量</div><div class="font-black text-blue-600" style="font-size:20px;line-height:1">${cur.qty}</div></div>`:''}
-        <div class="flex-1 min-w-0">
-          <div class="text-xs text-gray-400 mb-1">${i+1} / ${items.length}${cur.category?' · '+cur.category:''}</div>
-          ${reasonsHtml}
-          ${cur.note?`<div class="text-xs text-gray-500">${cur.note}</div>`:''}
+    return `
+      <div style="background:#eff6ff;border-radius:12px;border:1.5px solid #bfdbfe;padding:12px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:13px;font-weight:800;color:#1d4ed8">異常${NUMS[i]||i+1}</span>
+          ${(parseInt(item.qty)||0)>0?`<span style="font-size:12px;font-weight:700;color:#2563eb">不良數量：${item.qty}</span>`:''}
         </div>
-      </div>
-      <div class="mb-2">
-        <label class="block text-xs font-medium text-gray-600 mb-1">處理方式 <span class="text-red-500">*</span></label>
-        <select onchange="deskPurSetAction(${i},this.value)"
-          class="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
-          <option value="">請選擇處理方式</option>
-          ${actionOptions}
-        </select>
-      </div>
-      <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">回覆說明</label>
-        <textarea rows="2" placeholder="詳細說明..." oninput="deskPurSetReply(${i},this.value)"
-          class="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none resize-none">${cur.procReply||''}</textarea>
-      </div>
-      ${cur.procAction?`<div class="mt-2 text-xs text-green-600 font-medium">✓ 已選擇：${cur.procAction}</div>`:''}
-    </div>`;
+        ${item.category?`<div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:4px">${item.category}</div>`:''}
+        ${reasonsHtml}
+        ${item.note?`<div style="font-size:12px;color:#6b7280;margin-bottom:8px">${item.note}</div>`:''}
+        ${photosHtml}
+      </div>`;
+  }).join('');
 }
 
-function deskPurSetAction(idx, val) {
+function deskPurSetAction(entryIdx, photoIdx, val) {
   const { arrivalDate, itemNo } = purchaseIdx;
   const p = getDateProducts(arrivalDate).find(x=>x.itemNo===itemNo);
-  if (p?.defectItems?.[idx]) { p.defectItems[idx].procAction=val; renderPurchasePhotoPanel(p); }
+  const ph = p?.defectItems?.[entryIdx]?.photos?.[photoIdx];
+  if (ph) { ph.procAction=val; renderPurchasePhotoPanel(p); }
 }
-function deskPurSetReply(idx, val) {
+function deskPurSetReply(entryIdx, photoIdx, val) {
   const { arrivalDate, itemNo } = purchaseIdx;
   const p = getDateProducts(arrivalDate).find(x=>x.itemNo===itemNo);
-  if (p?.defectItems?.[idx]) p.defectItems[idx].procReply=val;
+  const ph = p?.defectItems?.[entryIdx]?.photos?.[photoIdx];
+  if (ph) ph.procReply=val;
 }
 function closePurchaseModal() { document.getElementById('purchaseModal').classList.add('hidden'); purchaseIdx = null; }
 
@@ -1515,23 +1479,24 @@ function submitPurchaseReply() {
   const p = getDateProducts(arrivalDate).find(x => x.itemNo === itemNo);
   const purUser = getCurrentUser();
   const items   = p.defectItems || [];
-  // 至少一張需有回覆才能送出
-  const repliedItems = items.filter(it=>it.procAction);
-  if (repliedItems.length === 0) {
+  const allPhotos = items.flatMap(it=>it.photos||[]);
+  // 至少一張照片需有回覆才能送出
+  const repliedPhotos = allPhotos.filter(ph=>ph.procAction);
+  if (repliedPhotos.length === 0) {
     errDiv.textContent='請至少為一張照片選擇處理方式'; errDiv.classList.remove('hidden'); return;
   }
-  // 儲存各照片回覆（已填的更新人員，未填的保留原樣）
+  // 儲存各照片回覆（已填的更新人員）
   const nowTs = new Date().toLocaleString('zh-TW');
-  items.forEach(it=>{ if(it.procAction) { if(!it.procStaffName) it.procStaffName=purUser?.name||''; if(!it.procReplyTime) it.procReplyTime=nowTs; } });
+  allPhotos.forEach(ph=>{ if(ph.procAction) { if(!ph.procStaffName) ph.procStaffName=purUser?.name||''; if(!ph.procReplyTime) ph.procReplyTime=nowTs; } });
   p.defectItems      = items;
-  p.procAction       = items.map(it=>it.procAction).filter(Boolean).join('、') || '—';
-  p.procReply        = items.map(it=>it.procReply).filter(Boolean).join('；');
+  p.procAction       = allPhotos.map(ph=>ph.procAction).filter(Boolean).join('、') || '—';
+  p.procReply        = allPhotos.map(ph=>ph.procReply).filter(Boolean).join('；');
   p.procReplyTime    = new Date().toLocaleString('zh-TW');
   p.procStaffId      = purUser?.userId || '';
   p.procStaffName    = purUser?.name   || '';
   p.procReplyUnread  = true;  // 有回覆後設未讀（讓異常回覆頁角標出現）
-  // 全部回覆完才轉已處理，否則仍維持待採購
-  const allReplied = items.length > 0 && items.every(it=>it.procAction);
+  // 全部照片回覆完才轉已處理，否則仍維持待採購
+  const allReplied = allPhotos.length > 0 && allPhotos.every(ph=>ph.procAction);
   p.status = allReplied ? STATUS.RESOLVED : STATUS.PROCUREMENT;
   // 每次回覆都更新連動時間結束（取最後一筆採購回覆時間）
   const nowT = nowHHMM();
