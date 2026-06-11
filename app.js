@@ -1210,30 +1210,55 @@ function openReplyDetail(arrivalDate, itemNo) {
   const body = document.getElementById('replyDetailBody');
   if (!body) return;
 
-  const content = items.length
-    ? items.map((item, i) => `
-        <div style="border:1.5px solid #e5e7eb;border-radius:12px;overflow:hidden;margin-bottom:10px">
-          <div style="display:flex;gap:10px;padding:12px;align-items:flex-start">
-            ${item.photo ? `<img src="${item.photo}" style="width:60px;height:60px;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:zoom-in"
-              onclick="openLightbox('${item.photo}')" />` : ''}
-            ${(parseInt(item.qty)||0)>0?`<div style="flex-shrink:0;text-align:center;min-width:40px"><div style="font-size:10px;color:#9ca3af">數量</div><div style="font-size:18px;font-weight:900;color:#2563eb;line-height:1">${item.qty}</div></div>`:''}
-            <div style="flex:1;min-width:0">
-              <div style="font-size:11px;color:#9ca3af;margin-bottom:4px">照片 ${i+1} / ${items.length}${item.category?' · '+item.category:''}</div>
-              <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:4px">
-                ${(item.reasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')||'—'}
-              </div>
-              ${item.note?`<div style="font-size:11px;color:#6b7280">${item.note}</div>`:''}
+  const ENTRY_LABELS = ['異常一','異常二','異常三','異常四','異常五'];
+  const migratedItems = items.map(item => {
+    if (item.photos) return item;
+    return {
+      photos: item.photo ? [{src:item.photo, procAction:item.procAction||'', procReply:item.procReply||'', procStaffName:item.procStaffName||'', procReplyTime:item.procReplyTime||''}] : [],
+      qty: item.qty, category: item.category||'', reasons: item.reasons||(item.reason?[item.reason]:[]), note: item.note||'',
+      procAction: item.procAction||'', procReply: item.procReply||'', procReplyTime: item.procReplyTime||''
+    };
+  });
+
+  const content = migratedItems.length
+    ? migratedItems.map((item, i) => {
+        const photos = item.photos || [];
+        const label = ENTRY_LABELS[i] || `異常${i+1}`;
+        const photosHtml = photos.length
+          ? photos.map((ph, pi) => `
+              <div style="margin-bottom:8px">
+                <div style="font-size:10px;color:#9ca3af;margin-bottom:4px">照片 ${pi+1}</div>
+                <div style="display:flex;gap:10px;align-items:stretch">
+                  <img src="${ph.src}" onclick="openLightbox('${ph.src}')"
+                    style="width:80px;min-height:80px;height:100%;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:zoom-in" />
+                  <div style="flex:1;min-width:0;background:${ph.procAction?'#d1fae5':'#f3f4f6'};border-radius:8px;padding:8px 10px">
+                    ${ph.procAction
+                      ? `<div style="font-size:12px;font-weight:700;color:#065f46">✓ ${ph.procAction}</div>
+                         ${ph.procReply?`<div style="font-size:11px;color:#047857;margin-top:2px">${ph.procReply}</div>`:''}
+                         <div style="font-size:10px;color:#9ca3af;margin-top:3px">${ph.procReplyTime||''}</div>`
+                      : `<div style="font-size:12px;color:#9ca3af">尚未回覆</div>`}
+                  </div>
+                </div>
+              </div>`).join('')
+          : `<div style="background:${item.procAction?'#d1fae5':'#f3f4f6'};border-radius:8px;padding:8px 10px">
+               ${item.procAction
+                 ? `<div style="font-size:12px;font-weight:700;color:#065f46">✓ ${item.procAction}</div>
+                    ${item.procReply?`<div style="font-size:11px;color:#047857;margin-top:2px">${item.procReply}</div>`:''}
+                    <div style="font-size:10px;color:#9ca3af;margin-top:3px">${item.procReplyTime||''}</div>`
+                 : `<div style="font-size:12px;color:#9ca3af">尚未回覆</div>`}
+             </div>`;
+        return `
+          <div style="border:1.5px solid #e5e7eb;border-radius:12px;padding:12px;margin-bottom:10px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <span style="font-size:13px;font-weight:700;color:#1d4ed8">${label}</span>
+              ${(parseInt(item.qty)||0)>0?`<span style="font-size:11px;color:#6b7280">數量 <b>${item.qty}</b></span>`:''}
+              ${item.category?`<span style="font-size:11px;color:#6b7280">· ${item.category}</span>`:''}
             </div>
-          </div>
-          <div style="padding:10px 12px;background:${item.procAction?'#d1fae5':'#f3f4f6'};border-top:1px solid #e5e7eb">
-            ${item.procAction
-              ? `<div style="font-size:13px;font-weight:700;color:#065f46">✓ ${item.procAction}</div>
-                 ${item.procReply?`<div style="font-size:12px;color:#047857;margin-top:2px">${item.procReply}</div>`:''}
-                 <div style="font-size:11px;color:#9ca3af;margin-top:3px">回覆時間：${item.procReplyTime||'—'}</div>`
-              : `<div style="font-size:12px;color:#9ca3af">尚未回覆</div>`}
-          </div>
-        </div>`)
-      .join('')
+            ${(item.reasons||[]).length?`<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px">${(item.reasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')}</div>`:''}
+            ${item.note?`<div style="font-size:11px;color:#6b7280;margin-bottom:8px">${item.note}</div>`:''}
+            ${photosHtml}
+          </div>`;
+      }).join('')
     : `<div style="padding:10px;background:#d1fae5;border-radius:10px;font-size:13px;color:#065f46">
         <b>採購回覆：</b>${p.procAction||'—'}${p.procReply?'<br>'+p.procReply:''}
        </div>`;
