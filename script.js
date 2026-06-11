@@ -755,9 +755,9 @@ function renderWarehouseTable() {
       <td class="px-4 py-3 font-mono text-xs">${p.itemNo}</td>
       <td class="px-4 py-3 font-mono text-xs">${p.barcode}</td>
       <td class="px-4 py-3 font-medium">${p.name}</td>
-      <td class="px-4 py-3 text-right">${p.qty}</td>
-      <td class="px-4 py-3 text-right text-green-600 font-medium">${p.goodQty}</td>
-      <td class="px-4 py-3 text-right ${p.badQty>0?'text-red-500 font-medium':'text-gray-400'}">${p.badQty}</td>
+      <td class="px-4 py-3 text-center">${p.qty}</td>
+      <td class="px-4 py-3 text-center text-green-600 font-medium">${p.goodQty}</td>
+      <td class="px-4 py-3 text-center ${p.badQty>0?'text-red-500 font-medium':'text-gray-400'}">${p.badQty}</td>
       <td class="px-4 py-3 text-center">
         ${p.badQty > 0
           ? (hasReply
