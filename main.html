@@ -63,7 +63,7 @@
       </button>
       <button onclick="switchTab('report')" id="tab-report" data-role="specialist"
         class="tab-btn hidden px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
-        異常回覆
+        異常紀錄
         <span id="badge-report" class="ml-1.5 bg-blue-500 text-white text-xs rounded-full px-1.5 py-0.5 hidden">0</span>
       </button>
       <button onclick="switchTab('warehouse')" id="tab-warehouse" data-role="field"
@@ -266,11 +266,11 @@
     </div>
   </div>
 
-  <!-- ===== 4. 異常回覆 (物流專員) ===== -->
+  <!-- ===== 4. 異常紀錄 (物流專員) ===== -->
   <div id="page-report" class="p-6 hidden">
     <div class="flex items-center justify-between mb-5">
-      <div><h2 class="text-lg font-semibold text-gray-800">異常回覆</h2>
-        <p class="text-xs text-gray-500 mt-0.5">對齊商品異常回覆商流格式</p></div>
+      <div><h2 class="text-lg font-semibold text-gray-800">異常紀錄</h2>
+        <p class="text-xs text-gray-500 mt-0.5">對齊商品異常紀錄商流格式</p></div>
       <button onclick="exportReport()" class="bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>匯出異常報表
       </button>
@@ -464,7 +464,7 @@
               <input type="checkbox" value="review" class="rm-tab accent-purple-500" /> 異常檢核
             </label>
             <label class="flex items-center gap-2 text-sm cursor-pointer">
-              <input type="checkbox" value="report" class="rm-tab accent-purple-500" /> 異常回覆
+              <input type="checkbox" value="report" class="rm-tab accent-purple-500" /> 異常紀錄
             </label>
             <label class="flex items-center gap-2 text-sm cursor-pointer">
               <input type="checkbox" value="purchase" class="rm-tab accent-purple-500" /> 待回覆清單

@@ -40,7 +40,7 @@ const STATUS = {
 // ── 帳號管理 ─────────────────────────────────────────
 const TAB_LABELS = {
   receiving:'當日驗收作業', warehouse:'入庫清單',
-  review:'異常檢核', report:'異常回覆',
+  review:'異常檢核', report:'異常紀錄',
   purchase:'待回覆清單'
 };
 
