@@ -1545,7 +1545,8 @@ function renderReviewPhotoPanel(p) {
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${tabs}</div>
     <div style="background:#fffbeb;border-radius:12px;border:1.5px solid #fde68a;padding:12px">
       ${(parseInt(item.qty)||0)>0?`<div style="font-size:12px;font-weight:700;color:#d97706;margin-bottom:6px">異常數量：${item.qty}</div>`:''}
-      ${photos.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${photoThumbs}</div>`:'<div style="font-size:12px;color:#9ca3af;margin-bottom:8px">無照片</div>'}
+      ${photos.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${photoThumbs}</div>`:'<div style="font-size:12px;color:#9ca3af;margin-bottom:10px">無照片</div>'}
+      <div style="border-top:1.5px solid #fde68a;margin-bottom:8px"></div>
       <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:4px">${catBtns}</div>
       ${reasonChips}
       <input type="text" value="${item.note||''}" placeholder="補充說明（選填）"
