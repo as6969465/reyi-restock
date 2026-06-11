@@ -823,7 +823,7 @@ function openReceiveSheet(date, idx) {
           style="font-size:20px;font-weight:700;text-align:center" ${isResolved?'readonly':''} />
       </div>
       <div>
-        <label class="field-label">不良品數量</label>
+        <label class="field-label">異常數量</label>
         <div id="rs-bad-display" style="font-size:20px;font-weight:700;text-align:center;color:#dc2626;background:#f9fafb;border:1.5px solid #e5e7eb;border-radius:12px;padding:10px 0;line-height:1.3">
           ${p.received?p.badQty:0}
         </div>
@@ -1897,7 +1897,7 @@ function exportWarehouseList() {
   if(from)list=list.filter(p=>!p.arrivalDate||p.arrivalDate>=from);
   if(to)  list=list.filter(p=>!p.arrivalDate||p.arrivalDate<=to);
   if(!list.length){alert('尚無資料可匯出');return;}
-  const rows=[['到貨日','品號','條碼','品名','規格','採購數量','良品數量','不良品數量','異常原因','照片數','驗收時間']];
+  const rows=[['到貨日','品號','條碼','品名','規格','採購數量','良品數量','異常數量','異常原因','照片數','驗收時間']];
   list.forEach(p=>rows.push([p.arrivalDate,p.itemNo,p.barcode,p.name,p.spec,p.qty,p.goodQty,p.badQty,(p.defectReasons||[]).join('、'),p.photos.length,p.time]));
   downloadCsv(rows,'入庫清單.csv');
 }

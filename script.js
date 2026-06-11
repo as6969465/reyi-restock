@@ -1988,7 +1988,7 @@ function exportWarehouseList() {
   // TODO: IT 工程師請在此串接後端 API 邏輯
   const list = getFilteredAllProducts().filter(p=>p.status!==STATUS.PENDING);
   if (!list.length) { alert('尚無資料可匯出'); return; }
-  const rows=[['到貨日','品號','條碼','品名','規格','採購數量','良品數量','不良品數量','異常原因','照片數','驗收時間']];
+  const rows=[['到貨日','品號','條碼','品名','規格','採購數量','良品數量','異常數量','異常原因','照片數','驗收時間']];
   list.forEach(p=>rows.push([p.arrivalDate,p.itemNo,p.barcode,p.name,p.spec,p.qty,p.goodQty,p.badQty,(p.defectReasons||[]).join('、'),p.photos.length,p.time]));
   downloadCsv(rows,'入庫清單.csv');
 }
