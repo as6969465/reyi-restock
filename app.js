@@ -564,6 +564,9 @@ function updateStats() {
 
 // ── 驗收 Sheet - 異常明細 ────────────────────────────────
 let _defectItems = []; // [{photos:[{src,procAction,procReply,procStaffName}], qty, category, reasons[], note}]
+let _activeDefectTab = 0;
+
+function switchDefectTab(i) { _activeDefectTab = i; renderDefectItems(false); }
 
 function renderDefectItems(readonly) {
   const container = document.getElementById('rs-defect-items');
@@ -578,92 +581,102 @@ function renderDefectItems(readonly) {
   const bdEl = document.getElementById('rs-bad-display');
   if (bdEl) bdEl.textContent = totalEntered || 0;
 
+  if (_activeDefectTab >= _defectItems.length) _activeDefectTab = _defectItems.length - 1;
+  const i = _activeDefectTab;
+  const item = _defectItems[i];
+
   const camSvg = '<svg style="width:18px;height:18px;color:#fca5a5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>';
   const NUMS = ['一','二','三','四','五','六'];
 
-  container.innerHTML = _defectItems.map((item, i) => {
-    const photos = item.photos || [];
-
-    // Photo strip
-    const photoThumbs = photos.map((ph, pi) => `
-      <div style="position:relative;flex-shrink:0">
-        <img src="${ph.src}" onclick="viewDefectEntryPhoto(${i},${pi})"
-          style="width:56px;height:56px;border-radius:8px;object-fit:cover;cursor:pointer;display:block;border:1.5px solid #fde68a" />
-        ${!readonly ? `<button onclick="removeDefectEntryPhoto(${i},${pi})" style="position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:#ef4444;color:#fff;border:none;border-radius:50%;font-size:10px;cursor:pointer;line-height:1;padding:0">×</button>` : ''}
-        ${ph.procAction && readonly ? `<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(5,150,105,.85);border-radius:0 0 6px 6px;font-size:8px;color:#fff;text-align:center;padding:1px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ph.procAction}</div>` : ''}
-      </div>`).join('');
-
-    const addPhotoBtn = !readonly ? `
-      <label style="width:56px;height:56px;border:2px dashed #fca5a5;border-radius:8px;background:#fff5f5;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:2px;flex-shrink:0">
-        ${camSvg}
-        <span style="font-size:9px;color:#fca5a5">新增</span>
-        <input type="file" accept="image/*" multiple class="hidden" onchange="addDefectEntryPhotos(${i},this)" />
-      </label>` : '';
-
-    // Qty
-    const qtyEl = !readonly
-      ? `<input type="number" min="0" value="${item.qty||''}" placeholder="0"
-           style="width:72px;border:1.5px solid ${(parseInt(item.qty)||0)>0?'#2563eb':'#fecaca'};border-radius:10px;padding:8px 4px;font-size:18px;font-weight:800;text-align:center;outline:none;color:#2563eb;background:#f0f7ff"
-           oninput="_defectItems[${i}].qty=parseInt(this.value)||0;updateDefectQtyStats()" />`
-      : `<div style="font-size:22px;font-weight:900;color:#2563eb;min-width:40px;text-align:center">${item.qty||0}</div>`;
-
-    // Category buttons
-    const catBtns = DEFECT_CATEGORIES().map(c => {
-      const active = item.category === c;
-      return `<button onclick="${readonly?'':`setDefectCategory(${i},'${c}')`}"
-        style="padding:5px 10px;border-radius:16px;border:1.5px solid ${active?'#f59e0b':'#e5e7eb'};
-          background:${active?'#fef3c7':'#f8fafc'};color:${active?'#92400e':'#6b7280'};
-          font-size:11px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap;flex-shrink:0">${c}</button>`;
-    }).join('');
-
-    // Reason chips
-    const reasonsForCat = item.category ? DEFECT_REASONS(item.category) : [];
-    const reasonChips = !readonly
-      ? (item.category
-          ? `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px">
-               ${reasonsForCat.map(r => {
-                 const sel = (item.reasons||[]).includes(r);
-                 return `<button type="button" onclick="toggleDefectSubReason(${i},'${r}')"
-                   style="padding:6px 3px;border-radius:8px;border:1.5px solid ${sel?'#2563eb':'#e5e7eb'};
-                     background:${sel?'#dbeafe':'#f8fafc'};color:${sel?'#1d4ed8':'#6b7280'};
-                     font-size:11px;font-weight:${sel?'700':'400'};cursor:pointer;line-height:1.3;text-align:center;word-break:break-all">${r}</button>`;
-               }).join('')}
-             </div>`
-          : `<div style="margin-top:6px;padding:8px;background:#f3f4f6;border-radius:8px;font-size:11px;color:#9ca3af;text-align:center">請先選擇大分類</div>`)
-      : ((item.reasons||[]).length ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:6px">${(item.reasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')}</div>` : '');
-
-    const noteEl = !readonly
-      ? `<input placeholder="補充說明（選填）" value="${item.note||''}"
-           style="width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:7px 10px;font-size:12px;outline:none;background:#fff;margin-top:8px;font-family:inherit"
-           oninput="_defectItems[${i}].note=this.value" />`
-      : (item.note ? `<div style="font-size:12px;color:#6b7280;margin-top:4px">${item.note}</div>` : '');
-
-    return `
-      <div style="background:#fef9f9;border-radius:14px;border:1.5px solid #fecaca;padding:12px;margin-bottom:10px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <span style="font-size:13px;font-weight:800;color:#dc2626">異常${NUMS[i]||i+1}</span>
-          ${!readonly ? `<button onclick="removeDefectItem(${i})" style="background:none;border:none;color:#fca5a5;cursor:pointer;font-size:12px;padding:2px 4px">✕ 刪除</button>` : ''}
-        </div>
-        <!-- Photos -->
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
-          ${photoThumbs}${addPhotoBtn}
-        </div>
-        <!-- Qty + Category -->
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
-          <div style="flex-shrink:0">
-            <div style="font-size:10px;color:#9ca3af;margin-bottom:3px;text-align:center">異常數量</div>
-            ${qtyEl}
-          </div>
-          <div style="flex:1;overflow-x:auto">
-            <div style="display:flex;gap:5px;padding-bottom:2px">
-              ${catBtns}
-            </div>
-          </div>
-        </div>
-        ${reasonChips}${noteEl}
-      </div>`;
+  // Tab bar
+  const tabs = _defectItems.map((it, idx) => {
+    const active = idx === i;
+    const hasQty = (parseInt(it.qty)||0) > 0;
+    return `<button onclick="${readonly ? `switchDefectTabRO(${idx})` : `switchDefectTab(${idx})`}"
+      style="padding:6px 14px;border-radius:20px;border:1.5px solid ${active?'#dc2626':'#e5e7eb'};
+        background:${active?'#dc2626':'#fff'};color:${active?'#fff':'#6b7280'};
+        font-size:12px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap;flex-shrink:0">
+      異常${NUMS[idx]||idx+1}${hasQty&&!active?` (${it.qty})`:''}
+    </button>`;
   }).join('');
+
+  const photos = item.photos || [];
+
+  // Photo strip
+  const photoThumbs = photos.map((ph, pi) => `
+    <div style="position:relative;flex-shrink:0">
+      <img src="${ph.src}" onclick="viewDefectEntryPhoto(${i},${pi})"
+        style="width:56px;height:56px;border-radius:8px;object-fit:cover;cursor:pointer;display:block;border:1.5px solid #fde68a" />
+      ${!readonly ? `<button onclick="removeDefectEntryPhoto(${i},${pi})" style="position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:#ef4444;color:#fff;border:none;border-radius:50%;font-size:10px;cursor:pointer;line-height:1;padding:0">×</button>` : ''}
+      ${ph.procAction && readonly ? `<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(5,150,105,.85);border-radius:0 0 6px 6px;font-size:8px;color:#fff;text-align:center;padding:1px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ph.procAction}</div>` : ''}
+    </div>`).join('');
+
+  const addPhotoBtn = !readonly ? `
+    <label style="width:56px;height:56px;border:2px dashed #fca5a5;border-radius:8px;background:#fff5f5;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:2px;flex-shrink:0">
+      ${camSvg}
+      <span style="font-size:9px;color:#fca5a5">新增</span>
+      <input type="file" accept="image/*" multiple class="hidden" onchange="addDefectEntryPhotos(${i},this)" />
+    </label>` : '';
+
+  const qtyEl = !readonly
+    ? `<input type="number" min="0" value="${item.qty||''}" placeholder="0"
+         style="width:72px;border:1.5px solid ${(parseInt(item.qty)||0)>0?'#2563eb':'#fecaca'};border-radius:10px;padding:8px 4px;font-size:18px;font-weight:800;text-align:center;outline:none;color:#2563eb;background:#f0f7ff"
+         oninput="_defectItems[${i}].qty=parseInt(this.value)||0;updateDefectQtyStats()" />`
+    : `<div style="font-size:22px;font-weight:900;color:#2563eb;min-width:40px;text-align:center">${item.qty||0}</div>`;
+
+  const catBtns = DEFECT_CATEGORIES().map(c => {
+    const active = item.category === c;
+    return `<button onclick="${readonly?'':`setDefectCategory(${i},'${c}')`}"
+      style="padding:5px 10px;border-radius:16px;border:1.5px solid ${active?'#f59e0b':'#e5e7eb'};
+        background:${active?'#fef3c7':'#f8fafc'};color:${active?'#92400e':'#6b7280'};
+        font-size:11px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap;flex-shrink:0">${c}</button>`;
+  }).join('');
+
+  const reasonsForCat = item.category ? DEFECT_REASONS(item.category) : [];
+  const reasonChips = !readonly
+    ? (item.category
+        ? `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px">
+             ${reasonsForCat.map(r => {
+               const sel = (item.reasons||[]).includes(r);
+               return `<button type="button" onclick="toggleDefectSubReason(${i},'${r}')"
+                 style="padding:6px 3px;border-radius:8px;border:1.5px solid ${sel?'#2563eb':'#e5e7eb'};
+                   background:${sel?'#dbeafe':'#f8fafc'};color:${sel?'#1d4ed8':'#6b7280'};
+                   font-size:11px;font-weight:${sel?'700':'400'};cursor:pointer;line-height:1.3;text-align:center;word-break:break-all">${r}</button>`;
+             }).join('')}
+           </div>`
+        : `<div style="margin-top:6px;padding:8px;background:#f3f4f6;border-radius:8px;font-size:11px;color:#9ca3af;text-align:center">請先選擇大分類</div>`)
+    : ((item.reasons||[]).length ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:6px">${(item.reasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')}</div>` : '');
+
+  const noteEl = !readonly
+    ? `<input placeholder="補充說明（選填）" value="${item.note||''}"
+         style="width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:7px 10px;font-size:12px;outline:none;background:#fff;margin-top:8px;font-family:inherit"
+         oninput="_defectItems[${i}].note=this.value" />`
+    : (item.note ? `<div style="font-size:12px;color:#6b7280;margin-top:4px">${item.note}</div>` : '');
+
+  container.innerHTML = `
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${tabs}</div>
+    <div style="background:#fef9f9;border-radius:14px;border:1.5px solid #fecaca;padding:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:800;color:#dc2626">異常${NUMS[i]||i+1}</span>
+        ${!readonly ? `<button onclick="removeDefectItem(${i})" style="background:none;border:none;color:#fca5a5;cursor:pointer;font-size:12px;padding:2px 4px">✕ 刪除</button>` : ''}
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
+        ${photoThumbs}${addPhotoBtn}
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
+        <div style="flex-shrink:0">
+          <div style="font-size:10px;color:#9ca3af;margin-bottom:3px;text-align:center">異常數量</div>
+          ${qtyEl}
+        </div>
+        <div style="flex:1;overflow-x:auto">
+          <div style="display:flex;gap:5px;padding-bottom:2px">${catBtns}</div>
+        </div>
+      </div>
+      ${reasonChips}${noteEl}
+    </div>`;
 }
+
+function switchDefectTabRO(i) { _activeDefectTab = i; renderDefectItems(true); }
 
 function updateDefectQtyStats() {
   const totalEntered = _defectItems.reduce((s,it)=>(s+(parseInt(it.qty)||0)),0);
@@ -675,6 +688,7 @@ function updateDefectQtyStats() {
 function addDefectItem() {
   if (_defectItems.length >= 6) { alert('最多 6 筆異常'); return; }
   _defectItems.push({ photos: [], qty: 0, category: '', reasons: [], note: '' });
+  _activeDefectTab = _defectItems.length - 1;
   renderDefectItems(false);
 }
 
@@ -746,7 +760,11 @@ function batchAddDefectPhotos(input) {
   input.value = '';
 }
 
-function removeDefectItem(i) { _defectItems.splice(i, 1); renderDefectItems(false); }
+function removeDefectItem(i) {
+  _defectItems.splice(i, 1);
+  if (_activeDefectTab >= _defectItems.length) _activeDefectTab = Math.max(0, _defectItems.length - 1);
+  renderDefectItems(false);
+}
 
 function setDefectCategory(i, cat) {
   _defectItems[i].category = cat;
@@ -823,6 +841,7 @@ function openReceiveSheet(date, idx) {
   } else {
     _defectItems = [];
   }
+  _activeDefectTab = 0;
 
   const isResolved = p.status === STATUS.RESOLVED;
   document.getElementById('receiveSheetTitle').textContent =

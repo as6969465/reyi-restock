@@ -1101,7 +1101,10 @@ function desktopSetBizAttr(date, idx, name, el) {
   });
 }
 
-// ── 桌機版異常明細（堆疊卡片模式，與 App 版一致）──────
+// ── 桌機版異常明細（頁籤切換模式）──────────────────────
+let _deskActiveDefectTab = 0;
+function switchDeskDefectTab(i) { _deskActiveDefectTab = i; renderDeskDefectItems(); }
+
 function renderDeskDefectItems() {
   const container = document.getElementById('desktopDefectItems');
   if (!container) return;
@@ -1114,77 +1117,85 @@ function renderDeskDefectItems() {
   const bdEl = document.getElementById('badQtyDisplay');
   if (bdEl) bdEl.textContent = totalEntered || 0;
 
+  if (_deskActiveDefectTab >= _deskDefectItems.length) _deskActiveDefectTab = _deskDefectItems.length - 1;
+  const i = _deskActiveDefectTab;
+  const item = _deskDefectItems[i];
+
   const camSvg = `<svg style="width:16px;height:16px;color:#fca5a5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>`;
   const NUMS = ['一','二','三','四','五','六'];
 
-  container.innerHTML = _deskDefectItems.map((item, i) => {
-    const photos = item.photos || [];
-
-    const photoThumbs = photos.map((ph, pi) => `
-      <div style="position:relative;flex-shrink:0">
-        <img src="${ph.src}" onclick="deskViewDefectEntryPhoto(${i},${pi})"
-          style="width:56px;height:56px;border-radius:8px;object-fit:cover;cursor:pointer;display:block;border:1.5px solid #fde68a" />
-        <button onclick="deskRemoveDefectEntryPhoto(${i},${pi})" style="position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:#ef4444;color:#fff;border:none;border-radius:50%;font-size:10px;cursor:pointer;line-height:1;padding:0">×</button>
-      </div>`).join('');
-
-    const addPhotoBtn = `
-      <label style="width:56px;height:56px;border:2px dashed #fca5a5;border-radius:8px;background:#fff5f5;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:2px;flex-shrink:0">
-        ${camSvg}
-        <span style="font-size:9px;color:#fca5a5">新增</span>
-        <input type="file" accept="image/*" multiple class="hidden" onchange="deskAddDefectEntryPhotos(${i},this)" />
-      </label>`;
-
-    const qtyEl = `<input type="number" min="0" value="${item.qty||''}" placeholder="0"
-      style="width:72px;border:1.5px solid ${(parseInt(item.qty)||0)>0?'#2563eb':'#fecaca'};border-radius:10px;padding:8px 4px;font-size:18px;font-weight:800;text-align:center;outline:none;color:#2563eb;background:#f0f7ff"
-      oninput="_deskDefectItems[${i}].qty=parseInt(this.value)||0;updateDeskDefectQtyStats()" />`;
-
-    const catBtns = DEFECT_CATEGORIES().map(c => {
-      const active = item.category === c;
-      return `<button type="button" onclick="deskSetDefectCategory(${i},'${c}')"
-        style="padding:5px 10px;border-radius:16px;border:1.5px solid ${active?'#f59e0b':'#e5e7eb'};
-          background:${active?'#fef3c7':'#f8fafc'};color:${active?'#92400e':'#6b7280'};
-          font-size:11px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap;flex-shrink:0">${c}</button>`;
-    }).join('');
-
-    const reasonsForCat = item.category ? DEFECT_REASONS(item.category) : [];
-    const reasonChips = item.category
-      ? `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px">
-           ${reasonsForCat.map(r => {
-             const sel = (item.reasons||[]).includes(r);
-             return `<button type="button" onclick="deskToggleSubReason(${i},'${r}')"
-               style="padding:6px 3px;border-radius:8px;border:1.5px solid ${sel?'#2563eb':'#e5e7eb'};
-                 background:${sel?'#dbeafe':'#f8fafc'};color:${sel?'#1d4ed8':'#6b7280'};
-                 font-size:11px;font-weight:${sel?'700':'400'};cursor:pointer;line-height:1.3;text-align:center;word-break:break-all">${r}</button>`;
-           }).join('')}
-         </div>`
-      : `<div style="margin-top:6px;padding:8px;background:#f3f4f6;border-radius:8px;font-size:12px;color:#9ca3af;text-align:center">請先選擇大分類</div>`;
-
-    return `
-      <div style="background:#fef9f9;border-radius:12px;border:1.5px solid #fecaca;padding:12px;margin-bottom:10px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <span style="font-size:13px;font-weight:800;color:#dc2626">異常${NUMS[i]||i+1}</span>
-          <button onclick="deskRemoveDefectItem(${i})" style="background:none;border:none;color:#fca5a5;cursor:pointer;font-size:12px;padding:2px 6px">✕ 刪除</button>
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
-          ${photoThumbs}${addPhotoBtn}
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
-          <div style="flex-shrink:0">
-            <div style="font-size:10px;color:#9ca3af;margin-bottom:3px;text-align:center">異常數量</div>
-            ${qtyEl}
-          </div>
-          <div style="flex:1;overflow-x:auto">
-            <div style="display:flex;gap:5px;padding-bottom:2px;flex-wrap:wrap">
-              ${catBtns}
-            </div>
-          </div>
-        </div>
-        ${reasonChips}
-        <input type="text" value="${item.note||''}" placeholder="補充說明（選填）"
-          style="width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:7px 10px;font-size:12px;outline:none;background:#fff;margin-top:8px;font-family:inherit;box-sizing:border-box"
-          oninput="_deskDefectItems[${i}].note=this.value" />
-      </div>`;
+  const tabs = _deskDefectItems.map((it, idx) => {
+    const active = idx === i;
+    const hasQty = (parseInt(it.qty)||0) > 0;
+    return `<button type="button" onclick="switchDeskDefectTab(${idx})"
+      class="${active ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-500 border-gray-200 hover:border-red-300'} text-xs px-3 py-1.5 rounded-full border font-medium transition-colors whitespace-nowrap">
+      異常${NUMS[idx]||idx+1}${hasQty&&!active?` (${it.qty})`:''}
+    </button>`;
   }).join('');
+
+  const photos = item.photos || [];
+  const photoThumbs = photos.map((ph, pi) => `
+    <div style="position:relative;flex-shrink:0">
+      <img src="${ph.src}" onclick="deskViewDefectEntryPhoto(${i},${pi})"
+        style="width:56px;height:56px;border-radius:8px;object-fit:cover;cursor:pointer;display:block;border:1.5px solid #fde68a" />
+      <button onclick="deskRemoveDefectEntryPhoto(${i},${pi})" style="position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:#ef4444;color:#fff;border:none;border-radius:50%;font-size:10px;cursor:pointer;line-height:1;padding:0">×</button>
+    </div>`).join('');
+
+  const addPhotoBtn = `
+    <label style="width:56px;height:56px;border:2px dashed #fca5a5;border-radius:8px;background:#fff5f5;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:2px;flex-shrink:0">
+      ${camSvg}<span style="font-size:9px;color:#fca5a5">新增</span>
+      <input type="file" accept="image/*" multiple class="hidden" onchange="deskAddDefectEntryPhotos(${i},this)" />
+    </label>`;
+
+  const qtyEl = `<input type="number" min="0" value="${item.qty||''}" placeholder="0"
+    style="width:72px;border:1.5px solid ${(parseInt(item.qty)||0)>0?'#2563eb':'#fecaca'};border-radius:10px;padding:8px 4px;font-size:18px;font-weight:800;text-align:center;outline:none;color:#2563eb;background:#f0f7ff"
+    oninput="_deskDefectItems[${i}].qty=parseInt(this.value)||0;updateDeskDefectQtyStats()" />`;
+
+  const catBtns = DEFECT_CATEGORIES().map(c => {
+    const active = item.category === c;
+    return `<button type="button" onclick="deskSetDefectCategory(${i},'${c}')"
+      style="padding:5px 10px;border-radius:16px;border:1.5px solid ${active?'#f59e0b':'#e5e7eb'};
+        background:${active?'#fef3c7':'#f8fafc'};color:${active?'#92400e':'#6b7280'};
+        font-size:11px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap;flex-shrink:0">${c}</button>`;
+  }).join('');
+
+  const reasonsForCat = item.category ? DEFECT_REASONS(item.category) : [];
+  const reasonChips = item.category
+    ? `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px">
+         ${reasonsForCat.map(r => {
+           const sel = (item.reasons||[]).includes(r);
+           return `<button type="button" onclick="deskToggleSubReason(${i},'${r}')"
+             style="padding:6px 3px;border-radius:8px;border:1.5px solid ${sel?'#2563eb':'#e5e7eb'};
+               background:${sel?'#dbeafe':'#f8fafc'};color:${sel?'#1d4ed8':'#6b7280'};
+               font-size:11px;font-weight:${sel?'700':'400'};cursor:pointer;line-height:1.3;text-align:center;word-break:break-all">${r}</button>`;
+         }).join('')}
+       </div>`
+    : `<div style="margin-top:6px;padding:8px;background:#f3f4f6;border-radius:8px;font-size:12px;color:#9ca3af;text-align:center">請先選擇大分類</div>`;
+
+  container.innerHTML = `
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${tabs}</div>
+    <div style="background:#fef9f9;border-radius:12px;border:1.5px solid #fecaca;padding:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:800;color:#dc2626">異常${NUMS[i]||i+1}</span>
+        <button onclick="deskRemoveDefectItem(${i})" style="background:none;border:none;color:#fca5a5;cursor:pointer;font-size:12px;padding:2px 6px">✕ 刪除</button>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
+        ${photoThumbs}${addPhotoBtn}
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
+        <div style="flex-shrink:0">
+          <div style="font-size:10px;color:#9ca3af;margin-bottom:3px;text-align:center">異常數量</div>
+          ${qtyEl}
+        </div>
+        <div style="flex:1;overflow-x:auto">
+          <div style="display:flex;gap:5px;padding-bottom:2px;flex-wrap:wrap">${catBtns}</div>
+        </div>
+      </div>
+      ${reasonChips}
+      <input type="text" value="${item.note||''}" placeholder="補充說明（選填）"
+        style="width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:7px 10px;font-size:12px;outline:none;background:#fff;margin-top:8px;font-family:inherit;box-sizing:border-box"
+        oninput="_deskDefectItems[${i}].note=this.value" />
+    </div>`;
 }
 
 function updateDeskDefectQtyStats() {
@@ -1197,6 +1208,7 @@ function updateDeskDefectQtyStats() {
 function desktopAddDefectItem() {
   if (_deskDefectItems.length >= 6) { alert('最多 6 筆異常'); return; }
   _deskDefectItems.push({ photos: [], qty: 0, category: '', reasons: [], note: '' });
+  _deskActiveDefectTab = _deskDefectItems.length - 1;
   renderDeskDefectItems();
 }
 function batchAddDeskDefectPhotos(input) {
@@ -1234,7 +1246,11 @@ function deskViewDefectEntryPhoto(i, pi) {
   const src = _deskDefectItems[i]?.photos[pi]?.src;
   if (src) { const w=window.open(); w.document.write(`<img src="${src}" style="max-width:100%;height:auto" />`); }
 }
-function deskRemoveDefectItem(i) { _deskDefectItems.splice(i,1); renderDeskDefectItems(); }
+function deskRemoveDefectItem(i) {
+  _deskDefectItems.splice(i,1);
+  if (_deskActiveDefectTab >= _deskDefectItems.length) _deskActiveDefectTab = Math.max(0, _deskDefectItems.length - 1);
+  renderDeskDefectItems();
+}
 function deskSetDefectCategory(i, cat) { _deskDefectItems[i].category=cat; _deskDefectItems[i].reasons=[]; renderDeskDefectItems(); }
 function deskToggleSubReason(i, r) { const item=_deskDefectItems[i]; if(!item.reasons)item.reasons=[]; const idx=item.reasons.indexOf(r); if(idx>=0)item.reasons.splice(idx,1); else item.reasons.push(r); renderDeskDefectItems(); }
 
@@ -1319,10 +1335,14 @@ function openReviewModal(arrivalDate, itemNo) {
   document.getElementById('rv-qty').textContent      = p.qty;
   document.getElementById('rv-badQty').textContent   = p.badQty;
   document.getElementById('rv-defectTime').value = p.defectTime || `${_reviewStartTime}～`;
+  _deskActiveReviewTab = 0;
   renderReviewPhotoPanel(p);
   document.getElementById('reviewModalError').classList.add('hidden');
   document.getElementById('reviewModal').classList.remove('hidden');
 }
+
+let _deskActiveReviewTab = 0;
+function switchDeskReviewTab(i) { _deskActiveReviewTab = i; renderReviewPhotoPanel(null); }
 
 function renderReviewPhotoPanel(p) {
   if (!p) {
@@ -1338,44 +1358,54 @@ function renderReviewPhotoPanel(p) {
   const NUMS = ['一','二','三','四','五','六'];
   const allPhotos = items.flatMap(it=>(it.photos||[]).map(ph=>ph.src||ph)).filter(Boolean);
 
-  row.innerHTML = items.map((item, i) => {
-    const photos = item.photos || [];
+  if (_deskActiveReviewTab >= items.length) _deskActiveReviewTab = items.length - 1;
+  const i = _deskActiveReviewTab;
+  const item = items[i];
 
-    const photoThumbs = photos.map((ph, pi) => {
-      const src = ph.src || ph;
-      const globalIdx = items.slice(0,i).reduce((s,it)=>s+(it.photos||[]).length,0) + pi;
-      return `<img src="${src}" onclick="openPhotoModal([${allPhotos.map(s=>`'${s}'`).join(',')}],'${p.name}',${globalIdx})"
-        style="width:52px;height:52px;border-radius:8px;object-fit:cover;cursor:pointer;border:1.5px solid #fde68a" />`;
-    }).join('');
-
-    const catBtns = DEFECT_CATEGORIES().map(c =>
-      `<button type="button" onclick="deskRvSetCategory(${i},'${c}')"
-        style="padding:5px 10px;border-radius:16px;border:1.5px solid ${item.category===c?'#f59e0b':'#e5e7eb'};
-          background:${item.category===c?'#fef3c7':'#f8fafc'};color:${item.category===c?'#92400e':'#6b7280'};
-          font-size:11px;font-weight:${item.category===c?'700':'500'};cursor:pointer;white-space:nowrap">${c}</button>`
-    ).join('');
-
-    const reasonsForRv = item.category ? DEFECT_REASONS(item.category) : [];
-    const reasonChips = item.category
-      ? `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px">
-           ${reasonsForRv.map(r=>{const s=(item.reasons||[]).includes(r);return `<button type="button" onclick="deskRvToggleReason(${i},'${r}')" style="padding:6px 3px;border-radius:8px;border:1.5px solid ${s?'#2563eb':'#e5e7eb'};background:${s?'#dbeafe':'#f8fafc'};color:${s?'#1d4ed8':'#6b7280'};font-size:11px;font-weight:${s?'700':'400'};cursor:pointer;line-height:1.3;text-align:center;word-break:break-all">${r}</button>`;}).join('')}
-         </div>`
-      : `<div style="margin-top:6px;padding:8px;background:#f3f4f6;border-radius:8px;font-size:12px;color:#9ca3af;text-align:center">請先選擇大分類</div>`;
-
-    return `
-      <div style="background:#eff6ff;border-radius:12px;border:1.5px solid #bfdbfe;padding:12px;margin-bottom:10px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <span style="font-size:13px;font-weight:800;color:#1d4ed8">異常${NUMS[i]||i+1}</span>
-          ${(parseInt(item.qty)||0)>0?`<span style="font-size:12px;font-weight:700;color:#2563eb">異常數量：${item.qty}</span>`:''}
-        </div>
-        ${photos.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${photoThumbs}</div>`:'<div style="font-size:12px;color:#9ca3af;margin-bottom:8px">無照片</div>'}
-        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:4px">${catBtns}</div>
-        ${reasonChips}
-        <input type="text" value="${item.note||''}" placeholder="補充說明（選填）"
-          style="width:100%;border:1px solid #bfdbfe;border-radius:8px;padding:7px 10px;font-size:12px;outline:none;background:#fff;margin-top:8px;font-family:inherit;box-sizing:border-box"
-          oninput="deskRvSetNote(${i},this.value)" />
-      </div>`;
+  const tabs = items.map((it, idx) => {
+    const active = idx === i;
+    return `<button type="button" onclick="switchDeskReviewTab(${idx})"
+      class="${active ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-500 border-gray-200 hover:border-blue-300'} text-xs px-3 py-1.5 rounded-full border font-medium transition-colors whitespace-nowrap">
+      異常${NUMS[idx]||idx+1}${(parseInt(it.qty)||0)>0&&!active?` (${it.qty})`:''}
+    </button>`;
   }).join('');
+
+  const photos = item.photos || [];
+  const photoThumbs = photos.map((ph, pi) => {
+    const src = ph.src || ph;
+    const globalIdx = items.slice(0,i).reduce((s,it)=>s+(it.photos||[]).length,0) + pi;
+    return `<img src="${src}" onclick="openPhotoModal([${allPhotos.map(s=>`'${s}'`).join(',')}],'${p.name}',${globalIdx})"
+      style="width:52px;height:52px;border-radius:8px;object-fit:cover;cursor:pointer;border:1.5px solid #fde68a" />`;
+  }).join('');
+
+  const catBtns = DEFECT_CATEGORIES().map(c =>
+    `<button type="button" onclick="deskRvSetCategory(${i},'${c}')"
+      style="padding:5px 10px;border-radius:16px;border:1.5px solid ${item.category===c?'#f59e0b':'#e5e7eb'};
+        background:${item.category===c?'#fef3c7':'#f8fafc'};color:${item.category===c?'#92400e':'#6b7280'};
+        font-size:11px;font-weight:${item.category===c?'700':'500'};cursor:pointer;white-space:nowrap">${c}</button>`
+  ).join('');
+
+  const reasonsForRv = item.category ? DEFECT_REASONS(item.category) : [];
+  const reasonChips = item.category
+    ? `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px">
+         ${reasonsForRv.map(r=>{const s=(item.reasons||[]).includes(r);return `<button type="button" onclick="deskRvToggleReason(${i},'${r}')" style="padding:6px 3px;border-radius:8px;border:1.5px solid ${s?'#2563eb':'#e5e7eb'};background:${s?'#dbeafe':'#f8fafc'};color:${s?'#1d4ed8':'#6b7280'};font-size:11px;font-weight:${s?'700':'400'};cursor:pointer;line-height:1.3;text-align:center;word-break:break-all">${r}</button>`;}).join('')}
+       </div>`
+    : `<div style="margin-top:6px;padding:8px;background:#f3f4f6;border-radius:8px;font-size:12px;color:#9ca3af;text-align:center">請先選擇大分類</div>`;
+
+  row.innerHTML = `
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${tabs}</div>
+    <div style="background:#eff6ff;border-radius:12px;border:1.5px solid #bfdbfe;padding:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:800;color:#1d4ed8">異常${NUMS[i]||i+1}</span>
+        ${(parseInt(item.qty)||0)>0?`<span style="font-size:12px;font-weight:700;color:#2563eb">異常數量：${item.qty}</span>`:''}
+      </div>
+      ${photos.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${photoThumbs}</div>`:'<div style="font-size:12px;color:#9ca3af;margin-bottom:8px">無照片</div>'}
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:4px">${catBtns}</div>
+      ${reasonChips}
+      <input type="text" value="${item.note||''}" placeholder="補充說明（選填）"
+        style="width:100%;border:1px solid #bfdbfe;border-radius:8px;padding:7px 10px;font-size:12px;outline:none;background:#fff;margin-top:8px;font-family:inherit;box-sizing:border-box"
+        oninput="deskRvSetNote(${i},this.value)" />
+    </div>`;
 }
 
 function deskRvSetCategory(idx, cat) {
@@ -1470,10 +1500,14 @@ function openPurchaseModal(arrivalDate, itemNo) {
   document.getElementById('pur-itemCode').textContent = p.itemNo;
   document.getElementById('pur-cat').textContent      = p.cat;
   document.getElementById('pur-name').textContent     = p.name;
+  _deskActivePurchaseTab = 0;
   document.getElementById('purchaseModalError').classList.add('hidden');
   renderPurchasePhotoPanel(p);
   document.getElementById('purchaseModal').classList.remove('hidden');
 }
+
+let _deskActivePurchaseTab = 0;
+function switchDeskPurchaseTab(i) { _deskActivePurchaseTab = i; renderPurchasePhotoPanel(null); }
 
 function renderPurchasePhotoPanel(p) {
   if (!p) {
@@ -1489,75 +1523,86 @@ function renderPurchasePhotoPanel(p) {
 
   const NUMS = ['一','二','三','四','五','六'];
   const allPhotos = items.flatMap(it=>(it.photos||[]).map(ph=>ph.src||ph)).filter(Boolean);
-  // 統計：有照片的按張數，無照片的明細算 1 個回覆槽
   const totalSlots = items.reduce((s,it)=>s+((it.photos||[]).length||1),0);
   const repliedSlots = items.reduce((s,it)=>{
     if ((it.photos||[]).length) return s+(it.photos||[]).filter(ph=>ph.procAction).length;
     return s+(it.procAction?1:0);
   },0);
 
+  if (_deskActivePurchaseTab >= items.length) _deskActivePurchaseTab = items.length - 1;
+  const i = _deskActivePurchaseTab;
+  const item = items[i];
+
+  const tabs = items.map((it, idx) => {
+    const active = idx === i;
+    const replied = (it.photos||[]).length ? (it.photos||[]).every(ph=>ph.procAction) : !!it.procAction;
+    return `<button type="button" onclick="switchDeskPurchaseTab(${idx})"
+      class="${active ? 'bg-blue-600 text-white border-blue-600' : replied ? 'bg-green-50 text-green-700 border-green-300' : 'bg-white text-gray-500 border-gray-200 hover:border-blue-300'} text-xs px-3 py-1.5 rounded-full border font-medium transition-colors whitespace-nowrap">
+      ${replied&&!active?'✓ ':''}異常${NUMS[idx]||idx+1}
+    </button>`;
+  }).join('');
+
   const statHtml = totalSlots > 1
     ? `<div class="text-xs text-gray-400 mb-3">已回覆 ${repliedSlots} / ${totalSlots} 筆</div>` : '';
 
-  panel.innerHTML = statHtml + items.map((item, i) => {
-    const photos = item.photos || [];
-    const reasonsHtml = (item.reasons||[]).length
-      ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${(item.reasons||[]).map(r=>`<span style="font-size:11px;padding:2px 8px;background:#fee2e2;color:#dc2626;border-radius:10px">${r}</span>`).join('')}</div>` : '';
+  const photos = item.photos || [];
+  const reasonsHtml = (item.reasons||[]).length
+    ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${(item.reasons||[]).map(r=>`<span style="font-size:11px;padding:2px 8px;background:#fee2e2;color:#dc2626;border-radius:10px">${r}</span>`).join('')}</div>` : '';
 
-    let photosHtml;
-    if (photos.length) {
-      photosHtml = photos.map((ph, pi) => {
-        const src = ph.src || ph;
-        const globalIdx = items.slice(0,i).reduce((s,it)=>s+(it.photos||[]).length,0) + pi;
-        const actionOptions = PROC_ACTIONS_DESKTOP.map(v=>`<option value="${v}" ${ph.procAction===v?'selected':''}>${v}</option>`).join('');
-        return `
-          <div style="border:1px solid ${ph.procAction?'#86efac':'#e5e7eb'};border-radius:10px;padding:12px;margin-bottom:8px;background:${ph.procAction?'#f0fdf4':'#fff'}">
-            <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">照片 ${pi+1}</div>
-            <div style="display:flex;gap:12px;align-items:stretch">
-              <img src="${src}" onclick="openPhotoModal([${allPhotos.map(s=>`'${s}'`).join(',')}],'${p.name}',${globalIdx})"
-                style="width:110px;min-height:110px;height:100%;border-radius:10px;object-fit:cover;flex-shrink:0;cursor:pointer" />
-              <div style="flex:1;min-width:0">
-                <select onchange="deskPurSetAction(${i},${pi},this.value)"
-                  style="width:100%;border:1px solid ${ph.procAction?'#34d399':'#d1d5db'};border-radius:8px;padding:6px 8px;font-size:12px;outline:none;background:#fff;margin-bottom:6px">
-                  <option value="">請選擇處理方式 *</option>
-                  ${actionOptions}
-                </select>
-                <textarea rows="2" placeholder="回覆說明..." oninput="deskPurSetReply(${i},${pi},this.value)"
-                  style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:6px 8px;font-size:11px;outline:none;resize:none;font-family:inherit;box-sizing:border-box">${ph.procReply||''}</textarea>
-                ${ph.procAction?`<div style="font-size:11px;color:#059669;font-weight:600;margin-top:4px">✓ ${ph.procAction}</div>`:''}
-              </div>
+  let photosHtml;
+  if (photos.length) {
+    photosHtml = photos.map((ph, pi) => {
+      const src = ph.src || ph;
+      const globalIdx = items.slice(0,i).reduce((s,it)=>s+(it.photos||[]).length,0) + pi;
+      const actionOptions = PROC_ACTIONS_DESKTOP.map(v=>`<option value="${v}" ${ph.procAction===v?'selected':''}>${v}</option>`).join('');
+      return `
+        <div style="border:1px solid ${ph.procAction?'#86efac':'#e5e7eb'};border-radius:10px;padding:12px;margin-bottom:8px;background:${ph.procAction?'#f0fdf4':'#fff'}">
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">照片 ${pi+1}</div>
+          <div style="display:flex;gap:12px;align-items:stretch">
+            <img src="${src}" onclick="openPhotoModal([${allPhotos.map(s=>`'${s}'`).join(',')}],'${p.name}',${globalIdx})"
+              style="width:110px;min-height:110px;height:100%;border-radius:10px;object-fit:cover;flex-shrink:0;cursor:pointer" />
+            <div style="flex:1;min-width:0">
+              <select onchange="deskPurSetAction(${i},${pi},this.value)"
+                style="width:100%;border:1px solid ${ph.procAction?'#34d399':'#d1d5db'};border-radius:8px;padding:6px 8px;font-size:12px;outline:none;background:#fff;margin-bottom:6px">
+                <option value="">請選擇處理方式 *</option>
+                ${actionOptions}
+              </select>
+              <textarea rows="2" placeholder="回覆說明..." oninput="deskPurSetReply(${i},${pi},this.value)"
+                style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:6px 8px;font-size:11px;outline:none;resize:none;font-family:inherit;box-sizing:border-box">${ph.procReply||''}</textarea>
+              ${ph.procAction?`<div style="font-size:11px;color:#059669;font-weight:600;margin-top:4px">✓ ${ph.procAction}</div>`:''}
             </div>
-          </div>`;
-      }).join('');
-    } else {
-      // 無照片 → 顯示 entry 層級的回覆輸入
-      const actionOptions = PROC_ACTIONS_DESKTOP.map(v=>`<option value="${v}" ${item.procAction===v?'selected':''}>${v}</option>`).join('');
-      photosHtml = `
-        <div style="border:1px solid ${item.procAction?'#86efac':'#e5e7eb'};border-radius:10px;padding:10px;background:${item.procAction?'#f0fdf4':'#fff'}">
-          <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">無照片</div>
-          <select onchange="deskPurSetEntryAction(${i},this.value)"
-            style="width:100%;border:1px solid ${item.procAction?'#34d399':'#d1d5db'};border-radius:8px;padding:6px 8px;font-size:12px;outline:none;background:#fff;margin-bottom:6px">
-            <option value="">請選擇處理方式 *</option>
-            ${actionOptions}
-          </select>
-          <textarea rows="2" placeholder="回覆說明..." oninput="deskPurSetEntryReply(${i},this.value)"
-            style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:6px 8px;font-size:11px;outline:none;resize:none;font-family:inherit;box-sizing:border-box">${item.procReply||''}</textarea>
-          ${item.procAction?`<div style="font-size:11px;color:#059669;font-weight:600;margin-top:4px">✓ ${item.procAction}</div>`:''}
+          </div>
         </div>`;
-    }
-
-    return `
-      <div style="background:#eff6ff;border-radius:12px;border:1.5px solid #bfdbfe;padding:12px;margin-bottom:12px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <span style="font-size:13px;font-weight:800;color:#1d4ed8">異常${NUMS[i]||i+1}</span>
-          ${(parseInt(item.qty)||0)>0?`<span style="font-size:12px;font-weight:700;color:#2563eb">異常數量：${item.qty}</span>`:''}
-        </div>
-        ${item.category?`<div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:4px">${item.category}</div>`:''}
-        ${reasonsHtml}
-        ${item.note?`<div style="font-size:12px;color:#6b7280;margin-bottom:8px">${item.note}</div>`:''}
-        ${photosHtml}
+    }).join('');
+  } else {
+    const actionOptions = PROC_ACTIONS_DESKTOP.map(v=>`<option value="${v}" ${item.procAction===v?'selected':''}>${v}</option>`).join('');
+    photosHtml = `
+      <div style="border:1px solid ${item.procAction?'#86efac':'#e5e7eb'};border-radius:10px;padding:10px;background:${item.procAction?'#f0fdf4':'#fff'}">
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">無照片</div>
+        <select onchange="deskPurSetEntryAction(${i},this.value)"
+          style="width:100%;border:1px solid ${item.procAction?'#34d399':'#d1d5db'};border-radius:8px;padding:6px 8px;font-size:12px;outline:none;background:#fff;margin-bottom:6px">
+          <option value="">請選擇處理方式 *</option>
+          ${actionOptions}
+        </select>
+        <textarea rows="2" placeholder="回覆說明..." oninput="deskPurSetEntryReply(${i},this.value)"
+          style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:6px 8px;font-size:11px;outline:none;resize:none;font-family:inherit;box-sizing:border-box">${item.procReply||''}</textarea>
+        ${item.procAction?`<div style="font-size:11px;color:#059669;font-weight:600;margin-top:4px">✓ ${item.procAction}</div>`:''}
       </div>`;
-  }).join('');
+  }
+
+  panel.innerHTML = `
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${tabs}</div>
+    ${statHtml}
+    <div style="background:#eff6ff;border-radius:12px;border:1.5px solid #bfdbfe;padding:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:800;color:#1d4ed8">異常${NUMS[i]||i+1}</span>
+        ${(parseInt(item.qty)||0)>0?`<span style="font-size:12px;font-weight:700;color:#2563eb">異常數量：${item.qty}</span>`:''}
+      </div>
+      ${item.category?`<div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:4px">${item.category}</div>`:''}
+      ${reasonsHtml}
+      ${item.note?`<div style="font-size:12px;color:#6b7280;margin-bottom:8px">${item.note}</div>`:''}
+      ${photosHtml}
+    </div>`;
 }
 
 function deskPurSetAction(entryIdx, photoIdx, val) {
