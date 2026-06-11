@@ -1322,9 +1322,9 @@ function openPurchaseSheet(arrivalDate, itemNo) {
             return `
               <div style="border:1px solid ${ph.procAction?'#86efac':'#e5e7eb'};border-radius:10px;padding:12px;margin-bottom:8px;background:${ph.procAction?'#f0fdf4':'#fff'}">
                 <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">照片 ${pi+1}</div>
-                <div style="display:flex;gap:12px;align-items:flex-start">
+                <div style="display:flex;gap:12px;align-items:stretch">
                   <img src="${src}" onclick="openLightbox('${src}')"
-                    style="width:90px;height:90px;border-radius:10px;object-fit:cover;flex-shrink:0;cursor:zoom-in" />
+                    style="width:90px;min-height:90px;height:100%;border-radius:10px;object-fit:cover;flex-shrink:0;cursor:zoom-in" />
                   <div style="flex:1;min-width:0">
                     ${ph.procAction
                       ? `<div style="font-size:12px;font-weight:700;color:#065f46">✓ ${ph.procAction}</div>
