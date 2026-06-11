@@ -1320,23 +1320,21 @@ function openPurchaseSheet(arrivalDate, itemNo) {
             const src = ph.src || ph;
             const globalIdx = items.slice(0,i).reduce((s,it)=>s+(it.photos||[]).length,0)+pi;
             return `
-              <div style="border:1px solid ${ph.procAction?'#86efac':'#e5e7eb'};border-radius:10px;padding:10px;margin-bottom:8px;background:${ph.procAction?'#f0fdf4':'#fff'}">
-                <div style="display:flex;gap:10px;align-items:flex-start">
+              <div style="border:1px solid ${ph.procAction?'#86efac':'#e5e7eb'};border-radius:10px;padding:12px;margin-bottom:8px;background:${ph.procAction?'#f0fdf4':'#fff'}">
+                <div style="font-size:11px;color:#9ca3af;margin-bottom:8px;text-align:center">照片 ${pi+1}</div>
+                <div style="display:flex;justify-content:center;margin-bottom:10px">
                   <img src="${src}" onclick="openLightbox('${src}')"
-                    style="width:52px;height:52px;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:zoom-in" />
-                  <div style="flex:1;min-width:0">
-                    <div style="font-size:11px;color:#9ca3af;margin-bottom:6px">照片 ${pi+1}</div>
-                    ${ph.procAction
-                      ? `<div style="font-size:12px;font-weight:700;color:#065f46">✓ ${ph.procAction}</div>
-                         ${ph.procReply?`<div style="font-size:11px;color:#047857;margin-top:2px">${ph.procReply}</div>`:''}`
-                      : `<select id="pur-action-${i}-${pi}" class="input" style="appearance:auto;font-size:13px;padding:8px 10px;margin-bottom:6px">
-                           <option value="">請選擇處理方式</option>
-                           ${PROC_ACTIONS.map(v=>`<option>${v}</option>`).join('')}
-                         </select>
-                         <textarea id="pur-reply-${i}-${pi}" class="input" rows="2" style="resize:none;font-size:13px"
-                           placeholder="回覆說明（選填）"></textarea>`}
-                  </div>
+                    style="width:100px;height:100px;border-radius:10px;object-fit:cover;cursor:zoom-in" />
                 </div>
+                ${ph.procAction
+                  ? `<div style="font-size:12px;font-weight:700;color:#065f46;text-align:center">✓ ${ph.procAction}</div>
+                     ${ph.procReply?`<div style="font-size:11px;color:#047857;margin-top:2px;text-align:center">${ph.procReply}</div>`:''}`
+                  : `<select id="pur-action-${i}-${pi}" class="input" style="appearance:auto;font-size:13px;padding:8px 10px;margin-bottom:6px">
+                       <option value="">請選擇處理方式</option>
+                       ${PROC_ACTIONS.map(v=>`<option>${v}</option>`).join('')}
+                     </select>
+                     <textarea id="pur-reply-${i}-${pi}" class="input" rows="2" style="resize:none;font-size:13px"
+                       placeholder="回覆說明（選填）"></textarea>`}
               </div>`;
           }).join('');
         } else {
