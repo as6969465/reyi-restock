@@ -132,23 +132,23 @@
       </div>
     </div>
     <div class="grid grid-cols-5 gap-4 mb-5">
-      <div class="bg-white rounded-xl border border-gray-200 p-4 flex flex-col justify-center">
+      <div id="stat-card-total" onclick="filterDeskReceivingByStat('total')" class="bg-white rounded-xl border border-gray-200 p-4 flex flex-col justify-center cursor-pointer select-none transition-all hover:shadow-md">
         <p class="text-xs text-gray-500 mb-1">今日進貨</p>
         <p id="stat-total" class="text-2xl font-bold text-gray-800">0</p>
       </div>
-      <div class="bg-green-50 rounded-xl border border-green-200 p-4 flex flex-col justify-center">
+      <div id="stat-card-arrived" onclick="filterDeskReceivingByStat('arrived')" class="bg-green-50 rounded-xl border border-green-200 p-4 flex flex-col justify-center cursor-pointer select-none transition-all hover:shadow-md">
         <p class="text-xs text-green-600 mb-1">已到貨</p>
         <p id="stat-arrived" class="text-2xl font-bold text-green-600">0</p>
       </div>
-      <div class="bg-amber-50 rounded-xl border border-amber-200 p-4 flex flex-col justify-center">
+      <div id="stat-card-pending" onclick="filterDeskReceivingByStat('pending')" class="bg-amber-50 rounded-xl border border-amber-200 p-4 flex flex-col justify-center cursor-pointer select-none transition-all hover:shadow-md">
         <p class="text-xs text-amber-600 mb-1">未到貨</p>
         <p id="stat-pending" class="text-2xl font-bold text-amber-500">0</p>
       </div>
-      <div class="bg-blue-50 rounded-xl border border-blue-200 p-4 flex flex-col justify-center">
+      <div id="stat-card-done" onclick="filterDeskReceivingByStat('done')" class="bg-blue-50 rounded-xl border border-blue-200 p-4 flex flex-col justify-center cursor-pointer select-none transition-all hover:shadow-md">
         <p class="text-xs text-blue-600 mb-1">已確認</p>
         <p id="stat-done" class="text-2xl font-bold text-blue-600">0</p>
       </div>
-      <div class="bg-white rounded-xl border border-gray-200 p-4 flex flex-col justify-center">
+      <div id="stat-card-abnormal" onclick="filterDeskReceivingByStat('abnormal')" class="bg-white rounded-xl border border-gray-200 p-4 flex flex-col justify-center cursor-pointer select-none transition-all hover:shadow-md">
         <p class="text-xs text-gray-500 mb-1">有異常</p>
         <p id="stat-abnormal" class="text-2xl font-bold text-red-500">0</p>
       </div>

@@ -546,14 +546,27 @@ function renderProductTable() {
   const date  = currentReceivingDate();
   const kw    = _deskReceivingKw.toLowerCase();
   const allProducts = getDateProducts(date);
-  const list  = allProducts
+  let list  = allProducts
     .map((p, origIdx) => ({ p, origIdx }))
     .filter(({ p }) => !kw || [p.po, p.itemNo, p.name, p.barcode]
       .some(v => (v||'').toLowerCase().includes(kw)));
+  if (_deskReceivingStatFilter) {
+    list = list.filter(({ p, origIdx }) => {
+      const isArrived = p.status === STATUS.PENDING && _deskArrivedSet.has(_deskArrivedKey(date, origIdx));
+      if (_deskReceivingStatFilter === 'arrived')  return isArrived;
+      if (_deskReceivingStatFilter === 'pending')  return p.status === STATUS.PENDING && !isArrived;
+      if (_deskReceivingStatFilter === 'done')     return p.status !== STATUS.PENDING;
+      if (_deskReceivingStatFilter === 'abnormal') return [STATUS.ABNORMAL_PENDING, STATUS.PROCUREMENT, STATUS.RESOLVED].includes(p.status);
+      return true;
+    });
+  }
   if (!list.length) {
+    const statLabels = {arrived:'已到貨', pending:'未到貨', done:'已確認', abnormal:'有異常'};
     const msg = kw
       ? `找不到符合「${kw}」的商品`
-      : (date ? `${date} 尚無進貨資料，請匯入 Excel` : '請選擇日期並匯入 Excel');
+      : _deskReceivingStatFilter && _deskReceivingStatFilter !== 'total'
+        ? `目前無「${statLabels[_deskReceivingStatFilter]||''}」項目`
+        : (date ? `${date} 尚無進貨資料，請匯入 Excel` : '請選擇日期並匯入 Excel');
     tbody.innerHTML = `<tr><td colspan="12" class="px-4 py-16 text-center text-gray-400">
       <div class="flex flex-col items-center gap-2">
         <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -731,6 +744,13 @@ async function deleteSelected() {
   renderProductTable(); updateStats();
 }
 
+let _deskReceivingStatFilter = null;
+function filterDeskReceivingByStat(s) {
+  _deskReceivingStatFilter = _deskReceivingStatFilter === s ? null : s;
+  updateStats();
+  renderProductTable();
+}
+
 function updateStats() {
   const date = currentReceivingDate();
   const list = getDateProducts(date);
@@ -742,6 +762,20 @@ function updateStats() {
   sv('stat-done',     list.filter(p => p.status !== STATUS.PENDING).length);
   sv('stat-pending',  notArrived);
   sv('stat-abnormal', list.filter(p => [STATUS.ABNORMAL_PENDING, STATUS.PROCUREMENT, STATUS.RESOLVED].includes(p.status)).length);
+  // 高亮篩選卡片
+  const CARDS = [
+    ['stat-card-total',   'total',    '#6b7280'],
+    ['stat-card-arrived', 'arrived',  '#16a34a'],
+    ['stat-card-pending', 'pending',  '#d97706'],
+    ['stat-card-done',    'done',     '#2563eb'],
+    ['stat-card-abnormal','abnormal', '#ef4444'],
+  ];
+  CARDS.forEach(([id, key, clr]) => {
+    const el = document.getElementById(id); if (!el) return;
+    const active = _deskReceivingStatFilter === key;
+    el.style.outline   = active ? `2.5px solid ${clr}` : '';
+    el.style.background = active ? '#fff' : '';
+  });
 }
 
 // ── 2. 入庫清單 ───────────────────────────────────────
