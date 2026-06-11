@@ -1558,7 +1558,12 @@ function renderReviewPhotoPanel(p) {
 function deskRvSetCategory(idx, cat) {
   const { arrivalDate, itemNo } = reviewIdx;
   const p = getDateProducts(arrivalDate).find(x=>x.itemNo===itemNo);
-  if (p?.defectItems?.[idx]) { p.defectItems[idx].category=cat; renderReviewPhotoPanel(p); }
+  if (p?.defectItems?.[idx]) {
+    const item = p.defectItems[idx];
+    if (item.category === cat) { item.category = ''; item.reasons = []; }
+    else { item.category = cat; item.reasons = []; }
+    renderReviewPhotoPanel(p);
+  }
 }
 function deskRvToggleReason(idx, r) {
   const { arrivalDate, itemNo } = reviewIdx;

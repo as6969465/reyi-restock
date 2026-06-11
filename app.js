@@ -1218,7 +1218,12 @@ function renderReviewSheetBody(p) {
 // 專員修改各異常明細的分類/原因/說明（直接修改 p.defectItems）
 function rvSetCategory(idx, cat) {
   const p = getAllProducts().find(x=>x.arrivalDate===reviewIdx.arrivalDate&&x.itemNo===reviewIdx.itemNo);
-  if (p?.defectItems?.[idx]) { p.defectItems[idx].category=cat; p.defectItems[idx].reasons=[]; renderReviewSheetBody(p); }
+  if (p?.defectItems?.[idx]) {
+    const item = p.defectItems[idx];
+    if (item.category === cat) { item.category = ''; item.reasons = []; }
+    else { item.category = cat; item.reasons = []; }
+    renderReviewSheetBody(p);
+  }
 }
 function rvToggleReason(idx, r) {
   const p = getAllProducts().find(x=>x.arrivalDate===reviewIdx.arrivalDate&&x.itemNo===reviewIdx.itemNo);
