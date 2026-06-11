@@ -1208,14 +1208,14 @@ function renderDeskDefectItems() {
   const i = _deskActiveDefectTab;
   const item = _deskDefectItems[i];
 
-  const camSvg = `<svg style="width:16px;height:16px;color:#fca5a5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>`;
+  const camSvg = `<svg style="width:16px;height:16px;color:#93c5fd" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>`;
   const NUMS = ['一','二','三','四','五','六'];
 
   const tabs = _deskDefectItems.map((it, idx) => {
     const active = idx === i;
     const hasQty = (parseInt(it.qty)||0) > 0;
     return `<button type="button" onclick="switchDeskDefectTab(${idx})"
-      class="${active ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-500 border-gray-200 hover:border-red-300'} text-xs px-3 py-1.5 rounded-full border font-medium transition-colors whitespace-nowrap">
+      class="${active ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-500 border-gray-200 hover:border-blue-300'} text-xs px-3 py-1.5 rounded-full border font-medium transition-colors whitespace-nowrap">
       異常${NUMS[idx]||idx+1}${hasQty&&!active?` (${it.qty})`:''}
     </button>`;
   }).join('');
@@ -1224,13 +1224,13 @@ function renderDeskDefectItems() {
   const photoThumbs = photos.map((ph, pi) => `
     <div style="position:relative;flex-shrink:0">
       <img src="${ph.src}" onclick="deskViewDefectEntryPhoto(${i},${pi})"
-        style="width:56px;height:56px;border-radius:8px;object-fit:cover;cursor:pointer;display:block;border:1.5px solid #fde68a" />
+        style="width:56px;height:56px;border-radius:8px;object-fit:cover;cursor:pointer;display:block;border:1.5px solid #93c5fd" />
       <button onclick="deskRemoveDefectEntryPhoto(${i},${pi})" style="position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:#ef4444;color:#fff;border:none;border-radius:50%;font-size:10px;cursor:pointer;line-height:1;padding:0">×</button>
     </div>`).join('');
 
   const addPhotoBtn = `
-    <label style="width:56px;height:56px;border:2px dashed #fca5a5;border-radius:8px;background:#fff5f5;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:2px;flex-shrink:0">
-      ${camSvg}<span style="font-size:9px;color:#fca5a5">新增</span>
+    <label style="width:56px;height:56px;border:2px dashed #93c5fd;border-radius:8px;background:#eff6ff;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:2px;flex-shrink:0">
+      ${camSvg}<span style="font-size:9px;color:#93c5fd">新增</span>
       <input type="file" accept="image/*" multiple class="hidden" onchange="deskAddDefectEntryPhotos(${i},this)" />
     </label>`;
 
@@ -1241,8 +1241,8 @@ function renderDeskDefectItems() {
   const catBtns = DEFECT_CATEGORIES().map(c => {
     const active = item.category === c;
     return `<button type="button" onclick="deskSetDefectCategory(${i},'${c}')"
-      style="padding:5px 10px;border-radius:16px;border:1.5px solid ${active?'#f59e0b':'#e5e7eb'};
-        background:${active?'#fef3c7':'#f8fafc'};color:${active?'#92400e':'#6b7280'};
+      style="padding:5px 10px;border-radius:16px;border:1.5px solid ${active?'#2563eb':'#e5e7eb'};
+        background:${active?'#dbeafe':'#f8fafc'};color:${active?'#1d4ed8':'#6b7280'};
         font-size:11px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap;flex-shrink:0">${c}</button>`;
   }).join('');
 
@@ -1261,10 +1261,10 @@ function renderDeskDefectItems() {
 
   container.innerHTML = `
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${tabs}</div>
-    <div style="background:#fef9f9;border-radius:12px;border:1.5px solid #fecaca;padding:12px">
+    <div style="background:#eff6ff;border-radius:12px;border:1.5px solid #bfdbfe;padding:12px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <span style="font-size:13px;font-weight:800;color:#dc2626">異常${NUMS[i]||i+1}</span>
-        <button onclick="deskRemoveDefectItem(${i})" style="background:none;border:none;color:#fca5a5;cursor:pointer;font-size:12px;padding:2px 6px">✕ 刪除</button>
+        <span style="font-size:13px;font-weight:800;color:#1d4ed8">異常${NUMS[i]||i+1}</span>
+        <button onclick="deskRemoveDefectItem(${i})" style="background:none;border:none;color:#93c5fd;cursor:pointer;font-size:12px;padding:2px 6px">✕ 刪除</button>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
         ${photoThumbs}${addPhotoBtn}
@@ -1452,7 +1452,7 @@ function renderReviewPhotoPanel(p) {
   const tabs = items.map((it, idx) => {
     const active = idx === i;
     return `<button type="button" onclick="switchDeskReviewTab(${idx})"
-      class="${active ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-500 border-gray-200 hover:border-blue-300'} text-xs px-3 py-1.5 rounded-full border font-medium transition-colors whitespace-nowrap">
+      class="${active ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-gray-500 border-gray-200 hover:border-amber-300'} text-xs px-3 py-1.5 rounded-full border font-medium transition-colors whitespace-nowrap">
       異常${NUMS[idx]||idx+1}${(parseInt(it.qty)||0)>0&&!active?` (${it.qty})`:''}
     </button>`;
   }).join('');
@@ -1475,22 +1475,22 @@ function renderReviewPhotoPanel(p) {
   const reasonsForRv = item.category ? DEFECT_REASONS(item.category) : [];
   const reasonChips = item.category
     ? `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px">
-         ${reasonsForRv.map(r=>{const s=(item.reasons||[]).includes(r);return `<button type="button" onclick="deskRvToggleReason(${i},'${r}')" style="padding:6px 3px;border-radius:8px;border:1.5px solid ${s?'#2563eb':'#e5e7eb'};background:${s?'#dbeafe':'#f8fafc'};color:${s?'#1d4ed8':'#6b7280'};font-size:11px;font-weight:${s?'700':'400'};cursor:pointer;line-height:1.3;text-align:center;word-break:break-all">${r}</button>`;}).join('')}
+         ${reasonsForRv.map(r=>{const s=(item.reasons||[]).includes(r);return `<button type="button" onclick="deskRvToggleReason(${i},'${r}')" style="padding:6px 3px;border-radius:8px;border:1.5px solid ${s?'#f59e0b':'#e5e7eb'};background:${s?'#fef3c7':'#f8fafc'};color:${s?'#92400e':'#6b7280'};font-size:11px;font-weight:${s?'700':'400'};cursor:pointer;line-height:1.3;text-align:center;word-break:break-all">${r}</button>`;}).join('')}
        </div>`
     : `<div style="margin-top:6px;padding:8px;background:#f3f4f6;border-radius:8px;font-size:12px;color:#9ca3af;text-align:center">請先選擇大分類</div>`;
 
   row.innerHTML = `
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${tabs}</div>
-    <div style="background:#eff6ff;border-radius:12px;border:1.5px solid #bfdbfe;padding:12px">
+    <div style="background:#fffbeb;border-radius:12px;border:1.5px solid #fde68a;padding:12px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <span style="font-size:13px;font-weight:800;color:#1d4ed8">異常${NUMS[i]||i+1}</span>
-        ${(parseInt(item.qty)||0)>0?`<span style="font-size:12px;font-weight:700;color:#2563eb">異常數量：${item.qty}</span>`:''}
+        <span style="font-size:13px;font-weight:800;color:#92400e">異常${NUMS[i]||i+1}</span>
+        ${(parseInt(item.qty)||0)>0?`<span style="font-size:12px;font-weight:700;color:#d97706">異常數量：${item.qty}</span>`:''}
       </div>
       ${photos.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${photoThumbs}</div>`:'<div style="font-size:12px;color:#9ca3af;margin-bottom:8px">無照片</div>'}
       <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:4px">${catBtns}</div>
       ${reasonChips}
       <input type="text" value="${item.note||''}" placeholder="補充說明（選填）"
-        style="width:100%;border:1px solid #bfdbfe;border-radius:8px;padding:7px 10px;font-size:12px;outline:none;background:#fff;margin-top:8px;font-family:inherit;box-sizing:border-box"
+        style="width:100%;border:1px solid #fde68a;border-radius:8px;padding:7px 10px;font-size:12px;outline:none;background:#fff;margin-top:8px;font-family:inherit;box-sizing:border-box"
         oninput="deskRvSetNote(${i},this.value)" />
     </div>`;
 }
@@ -1504,10 +1504,11 @@ function deskRvToggleReason(idx, r) {
   const { arrivalDate, itemNo } = reviewIdx;
   const p = getDateProducts(arrivalDate).find(x=>x.itemNo===itemNo);
   if (!p?.defectItems?.[idx]) return;
-  const reasons = p.defectItems[idx].reasons||[];
-  const i = reasons.indexOf(r);
-  if (i>=0) reasons.splice(i,1); else reasons.push(r);
+  const reasons = p.defectItems[idx].reasons || [];
+  const pos = reasons.indexOf(r);
+  if (pos >= 0) reasons.splice(pos, 1); else reasons.push(r);
   p.defectItems[idx].reasons = reasons;
+  renderReviewPhotoPanel(p);
 }
 function deskRvSetNote(idx, val) {
   const { arrivalDate, itemNo } = reviewIdx;
@@ -1624,7 +1625,7 @@ function renderPurchasePhotoPanel(p) {
     const active = idx === i;
     const replied = (it.photos||[]).length ? (it.photos||[]).every(ph=>ph.procAction) : !!it.procAction;
     return `<button type="button" onclick="switchDeskPurchaseTab(${idx})"
-      class="${active ? 'bg-blue-600 text-white border-blue-600' : replied ? 'bg-green-50 text-green-700 border-green-300' : 'bg-white text-gray-500 border-gray-200 hover:border-blue-300'} text-xs px-3 py-1.5 rounded-full border font-medium transition-colors whitespace-nowrap">
+      class="${active ? 'bg-red-600 text-white border-red-600' : replied ? 'bg-green-50 text-green-700 border-green-300' : 'bg-white text-gray-500 border-gray-200 hover:border-red-300'} text-xs px-3 py-1.5 rounded-full border font-medium transition-colors whitespace-nowrap">
       ${replied&&!active?'✓ ':''}異常${NUMS[idx]||idx+1}
     </button>`;
   }).join('');
@@ -1680,10 +1681,10 @@ function renderPurchasePhotoPanel(p) {
   panel.innerHTML = `
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${tabs}</div>
     ${statHtml}
-    <div style="background:#eff6ff;border-radius:12px;border:1.5px solid #bfdbfe;padding:12px">
+    <div style="background:#fff1f2;border-radius:12px;border:1.5px solid #fecaca;padding:12px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <span style="font-size:13px;font-weight:800;color:#1d4ed8">異常${NUMS[i]||i+1}</span>
-        ${(parseInt(item.qty)||0)>0?`<span style="font-size:12px;font-weight:700;color:#2563eb">異常數量：${item.qty}</span>`:''}
+        <span style="font-size:13px;font-weight:800;color:#dc2626">異常${NUMS[i]||i+1}</span>
+        ${(parseInt(item.qty)||0)>0?`<span style="font-size:12px;font-weight:700;color:#dc2626">異常數量：${item.qty}</span>`:''}
       </div>
       ${item.category?`<div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:4px">${item.category}</div>`:''}
       ${reasonsHtml}

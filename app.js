@@ -775,8 +775,7 @@ function toggleDefectSubReason(i, r) {
   const item = _defectItems[i];
   if (!item.reasons) item.reasons = [];
   const idx = item.reasons.indexOf(r);
-  if (idx >= 0) item.reasons.splice(idx, 1);
-  else item.reasons.push(r);
+  if (idx >= 0) item.reasons.splice(idx, 1); else item.reasons.push(r);
   renderDefectItems(false);
 }
 
@@ -883,11 +882,11 @@ function openReceiveSheet(date, idx) {
       </div>
       <div style="flex:1;min-width:0">
         <label class="field-label">異常數量</label>
-        <div id="rs-bad-display" style="font-size:17px;font-weight:700;text-align:center;color:#dc2626;background:#f9fafb;border:1.5px solid #e5e7eb;border-radius:12px;padding:10px 8px;line-height:1.2">
+        <div id="rs-bad-display" style="font-size:17px;font-weight:700;text-align:center;color:#2563eb;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:12px;padding:10px 8px;line-height:1.2">
           ${p.received?p.badQty:0}
         </div>
       </div>
-      ${!isResolved ? `<div style="flex-shrink:0"><label class="field-label" style="visibility:hidden">btn</label><button onclick="addDefectItem()" class="btn btn-sm btn-danger" style="cursor:pointer;white-space:nowrap;padding:10px 14px;font-size:13px">＋ 新增異常</button></div>` : ''}
+      ${!isResolved ? `<div style="flex-shrink:0"><label class="field-label" style="visibility:hidden">btn</label><button onclick="addDefectItem()" class="btn btn-sm" style="cursor:pointer;white-space:nowrap;padding:10px 14px;font-size:13px;background:#dbeafe;color:#1d4ed8;border:none">＋ 新增異常</button></div>` : ''}
     </div>
 
     <!-- 異常明細區 -->
@@ -1100,81 +1099,87 @@ function openReviewSheet(arrivalDate, itemNo) {
 let _activeReviewTab = 0;
 function switchReviewTab(i) { _activeReviewTab = i; renderReviewSheetBody(null); }
 
-function renderReviewSheetBody(p) {
-  if (!p) { p = getAllProducts().find(x=>x.arrivalDate===reviewIdx.arrivalDate&&x.itemNo===reviewIdx.itemNo); }
-  if (!p) return;
-  const body = document.getElementById('reviewSheetBody');
-  const timeVal = document.getElementById('rv-time')?.value || p.defectTime || _reviewStartTime+'～';
-
+function _reviewEntriesHtml(p) {
   const items = p.defectItems || [];
   const NUMS = ['一','二','三','四','五','六'];
-
-  let entriesHtml;
-  if (items.length) {
-    if (_activeReviewTab >= items.length) _activeReviewTab = items.length - 1;
-    const i = _activeReviewTab;
-    const item = items[i];
-
-    const tabs = items.map((it, idx) => {
-      const active = idx === i;
-      return `<button onclick="switchReviewTab(${idx})"
-        style="padding:6px 14px;border-radius:20px;border:1.5px solid ${active?'#f59e0b':'#e5e7eb'};
-          background:${active?'#f59e0b':'#fff'};color:${active?'#fff':'#6b7280'};
-          font-size:12px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap;flex-shrink:0">
-        異常${NUMS[idx]||idx+1}${(parseInt(it.qty)||0)>0&&!active?` (${it.qty})`:''}
-      </button>`;
-    }).join('');
-
-    const photos = item.photos || [];
-    const photoThumbs = photos.map(ph => `
-      <img src="${ph.src}" onclick="openLightbox('${ph.src}')"
-        style="width:52px;height:52px;border-radius:8px;object-fit:cover;cursor:zoom-in;display:block;border:1.5px solid #fde68a;flex-shrink:0" />`).join('');
-
-    const catBtns = DEFECT_CATEGORIES().map(c => {
-      const active = item.category === c;
-      return `<button onclick="rvSetCategory(${i},'${c}')"
-        style="padding:5px 10px;border-radius:16px;border:1.5px solid ${active?'#f59e0b':'#e5e7eb'};
-          background:${active?'#fef3c7':'#f8fafc'};color:${active?'#92400e':'#6b7280'};
-          font-size:11px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap;flex-shrink:0">${c}</button>`;
-    }).join('');
-
-    const reasonsForCat = item.category ? DEFECT_REASONS(item.category) : DEFECT_REASONS();
-    const reasonChips = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px">
-      ${reasonsForCat.map(r => {
-        const sel = (item.reasons||[]).includes(r);
-        return `<button type="button" onclick="rvToggleReason(${i},'${r}')"
-          style="padding:6px 3px;border-radius:8px;border:1.5px solid ${sel?'#f59e0b':'#e5e7eb'};
-            background:${sel?'#fef3c7':'#f8fafc'};color:${sel?'#92400e':'#6b7280'};
-            font-size:11px;font-weight:${sel?'700':'400'};cursor:pointer;line-height:1.3;text-align:center;word-break:break-all">${r}</button>`;
-      }).join('')}
-    </div>`;
-
-    entriesHtml = `
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${tabs}</div>
-      <div style="background:#fffbeb;border-radius:14px;border:1.5px solid #fde68a;padding:12px;margin-bottom:10px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <span style="font-size:13px;font-weight:800;color:#92400e">異常${NUMS[i]||i+1}</span>
-          ${(parseInt(item.qty)||0)>0 ? `<span style="font-size:12px;font-weight:700;color:#d97706">異常 ${item.qty} 件</span>` : ''}
-        </div>
-        ${photos.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center">${photoThumbs}</div>` : ''}
-        <div style="overflow-x:auto;margin-bottom:4px">
-          <div style="display:flex;gap:5px;padding-bottom:2px">${catBtns}</div>
-        </div>
-        ${reasonChips}
-        <input value="${item.note||''}" placeholder="補充說明（選填）"
-          style="width:100%;margin-top:8px;border:1px solid #e5e7eb;border-radius:8px;padding:7px 10px;font-size:12px;outline:none;background:#fff;font-family:inherit"
-          oninput="rvSetNote(${i},this.value)" />
-      </div>`;
-  } else {
-    entriesHtml = `
+  if (!items.length) {
+    return `
       <div style="background:#fffbeb;border-radius:12px;padding:12px;margin-bottom:10px">
         <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:6px">現場記錄</div>
         <div style="display:flex;flex-wrap:wrap;gap:3px">${(p.defectReasons||[]).map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')||'無'}</div>
       </div>`;
   }
+  if (_activeReviewTab >= items.length) _activeReviewTab = items.length - 1;
+  const i = _activeReviewTab;
+  const item = items[i];
 
+  const tabs = items.map((it, idx) => {
+    const active = idx === i;
+    return `<button onclick="switchReviewTab(${idx})"
+      style="padding:6px 14px;border-radius:20px;border:1.5px solid ${active?'#f59e0b':'#e5e7eb'};
+        background:${active?'#f59e0b':'#fff'};color:${active?'#fff':'#6b7280'};
+        font-size:12px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap;flex-shrink:0">
+      異常${NUMS[idx]||idx+1}${(parseInt(it.qty)||0)>0&&!active?` (${it.qty})`:''}
+    </button>`;
+  }).join('');
+
+  const photos = item.photos || [];
+  const photoThumbs = photos.map(ph => `
+    <img src="${ph.src}" onclick="openLightbox('${ph.src}')"
+      style="width:52px;height:52px;border-radius:8px;object-fit:cover;cursor:zoom-in;display:block;border:1.5px solid #fde68a;flex-shrink:0" />`).join('');
+
+  const catBtns = DEFECT_CATEGORIES().map(c => {
+    const active = item.category === c;
+    return `<button onclick="rvSetCategory(${i},'${c}')"
+      style="padding:5px 10px;border-radius:16px;border:1.5px solid ${active?'#f59e0b':'#e5e7eb'};
+        background:${active?'#fef3c7':'#f8fafc'};color:${active?'#92400e':'#6b7280'};
+        font-size:11px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap;flex-shrink:0">${c}</button>`;
+  }).join('');
+
+  const reasonsForCat = item.category ? DEFECT_REASONS(item.category) : [];
+  const reasonSection = item.category
+    ? `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px">
+        ${reasonsForCat.map(r => {
+          const sel = (item.reasons||[]).includes(r);
+          const rEsc = r.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+          return `<button type="button" onclick="rvToggleReason(${i},'${rEsc}')"
+            style="padding:6px 3px;border-radius:8px;border:1.5px solid ${sel?'#f59e0b':'#e5e7eb'};
+              background:${sel?'#fef3c7':'#f8fafc'};color:${sel?'#92400e':'#6b7280'};
+              font-size:11px;font-weight:${sel?'700':'400'};cursor:pointer;line-height:1.3;text-align:center;word-break:break-all">${r}</button>`;
+        }).join('')}
+      </div>`
+    : `<div style="margin-top:6px;padding:8px;background:#f3f4f6;border-radius:8px;font-size:11px;color:#9ca3af;text-align:center">請先選擇大分類</div>`;
+
+  return `
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${tabs}</div>
+    <div style="background:#fffbeb;border-radius:14px;border:1.5px solid #fde68a;padding:12px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:800;color:#92400e">異常${NUMS[i]||i+1}</span>
+        ${(parseInt(item.qty)||0)>0 ? `<span style="font-size:12px;font-weight:700;color:#d97706">異常 ${item.qty} 件</span>` : ''}
+      </div>
+      ${photos.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center">${photoThumbs}</div>` : ''}
+      <div style="overflow-x:auto;margin-bottom:4px">
+        <div style="display:flex;gap:5px;padding-bottom:2px">${catBtns}</div>
+      </div>
+      ${reasonSection}
+      <input value="${(item.note||'').replace(/"/g,'&quot;')}" placeholder="補充說明（選填）"
+        style="width:100%;margin-top:8px;border:1px solid #e5e7eb;border-radius:8px;padding:7px 10px;font-size:12px;outline:none;background:#fff;font-family:inherit"
+        oninput="rvSetNote(${i},this.value)" />
+    </div>`;
+}
+
+function renderReviewSheetBody(p) {
+  if (!p) { p = getAllProducts().find(x=>x.arrivalDate===reviewIdx.arrivalDate&&x.itemNo===reviewIdx.itemNo); }
+  if (!p) return;
+  const body = document.getElementById('reviewSheetBody');
+
+  // 若靜態框架已建立，只更新明細區塊
+  const wrap = document.getElementById('rv-entries-wrap');
+  if (wrap) { wrap.innerHTML = _reviewEntriesHtml(p); return; }
+
+  const timeVal = p.defectTime || _reviewStartTime + '～';
   body.innerHTML = `
-    ${entriesHtml}
+    <div id="rv-entries-wrap">${_reviewEntriesHtml(p)}</div>
     <div style="margin-bottom:10px">
       <label class="field-label">連動時間</label>
       <input id="rv-time" class="input" value="${timeVal}" placeholder="09:00～09:30" />
@@ -1197,7 +1202,7 @@ function rvToggleReason(idx, r) {
   if (!p.defectItems[idx].reasons) p.defectItems[idx].reasons = [];
   const reasons = p.defectItems[idx].reasons;
   const i = reasons.indexOf(r);
-  if (i>=0) reasons.splice(i,1); else reasons.push(r);
+  if (i >= 0) reasons.splice(i, 1); else reasons.push(r);
   renderReviewSheetBody(p);
 }
 function rvSetNote(idx, val) {
@@ -1626,15 +1631,13 @@ function _renderPurchaseSheetItems() {
   if (container) { container.innerHTML = itemsHtml; return; }
 
   body.innerHTML = `
-    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px">
-      ${p.name} — 異常明細回覆
-    </div>
+    <div style="font-size:14px;font-weight:800;color:#dc2626;margin-bottom:4px">${p.name}</div>
     <div style="font-size:12px;color:#9ca3af;margin-bottom:12px">物流專員：${resolveUserName(p.defectStaffId,p.defectStaff)}</div>
     <div id="purchaseSheetItemsWrap">${itemsHtml}</div>
     <div id="pur-error" style="display:none;padding:12px;background:#fee2e2;border-radius:12px;font-size:13px;color:#991b1b;margin-bottom:12px"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
       <button onclick="closeAllSheets()" class="btn" style="background:#f3f4f6;color:#374151;border:none">取消</button>
-      <button onclick="submitPurchaseReply()" class="btn btn-primary">確認全部回覆</button>
+      <button onclick="submitPurchaseReply()" class="btn" style="background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;box-shadow:0 4px 12px rgba(220,38,38,.35);border:none">確認全部回覆</button>
     </div>`;
 }
 
