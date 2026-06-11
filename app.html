@@ -114,10 +114,10 @@
         </div>
       </div>
     </div>
-    <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
-      <div class="stat-card"><div class="val" id="rev-stat-pending" style="color:#dc2626">0</div><div class="lbl">待檢核</div></div>
-      <div class="stat-card"><div class="val" id="rev-stat-proc" style="color:#d97706">0</div><div class="lbl">待採購</div></div>
-      <div class="stat-card"><div class="val" id="rev-stat-done" style="color:#059669">0</div><div class="lbl">已處理</div></div>
+    <div class="stat-grid" style="grid-template-columns:repeat(3,1fr);overflow:visible;padding:12px 12px 6px">
+      <div class="stat-card" id="rev-card-pending" onclick="filterReviewByStatus('abnormal_pending')" style="cursor:pointer;transition:outline .12s,background .12s"><div class="val" id="rev-stat-pending" style="color:#dc2626">0</div><div class="lbl">待檢核</div></div>
+      <div class="stat-card" id="rev-card-proc" onclick="filterReviewByStatus('procurement')" style="cursor:pointer;transition:outline .12s,background .12s"><div class="val" id="rev-stat-proc" style="color:#d97706">0</div><div class="lbl">待採購</div></div>
+      <div class="stat-card" id="rev-card-done" onclick="filterReviewByStatus('resolved')" style="cursor:pointer;transition:outline .12s,background .12s"><div class="val" id="rev-stat-done" style="color:#059669">0</div><div class="lbl">已處理</div></div>
     </div>
     <div id="reviewListContainer" class="card-list" style="flex:1"></div>
   </div>

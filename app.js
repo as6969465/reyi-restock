@@ -1039,6 +1039,12 @@ function renderWarehouseCards() {
 // ══════════════════════════════════════════════════════
 // ── 3. 異常檢核 ────────────────────────────────────────
 // ══════════════════════════════════════════════════════
+let _reviewStatusFilter = null;
+function filterReviewByStatus(s) {
+  _reviewStatusFilter = _reviewStatusFilter === s ? null : s;
+  renderReviewCards();
+}
+
 function renderReviewCards() {
   const container = document.getElementById('reviewListContainer');
   if (!container) return;
@@ -1050,10 +1056,18 @@ function renderReviewCards() {
   const done    = list.filter(p=>p.status===STATUS.RESOLVED).length;
   const s = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
   s('rev-stat-pending',pending); s('rev-stat-proc',proc); s('rev-stat-done',done);
+  // 更新篩選卡片高亮
+  [['rev-card-pending','abnormal_pending','#dc2626'],['rev-card-proc','procurement','#d97706'],['rev-card-done','resolved','#059669']].forEach(([id,st,clr])=>{
+    const el=document.getElementById(id); if(!el) return;
+    const active = _reviewStatusFilter===st;
+    el.style.outline = active ? `2.5px solid ${clr}` : '';
+    el.style.background = active ? '#fff' : '';
+  });
   updateBadges();
-  if (!list.length) { container.innerHTML='<div class="empty-state"><p>尚無異常資料</p></div>'; return; }
+  const filtered = _reviewStatusFilter ? list.filter(p=>p.status===_reviewStatusFilter) : list;
+  if (!filtered.length) { container.innerHTML='<div class="empty-state"><p>尚無符合資料</p></div>'; return; }
   const stBadge = {'abnormal_pending':'<span class="badge badge-abnormal">待檢核</span>','procurement':'<span class="badge badge-proc">待採購</span>','resolved':'<span class="badge badge-resolved">已處理</span>'};
-  container.innerHTML = list.map(p => `
+  container.innerHTML = filtered.map(p => `
     <div class="product-card slide-up" data-status="${p.status}"
       onclick="${p.status!==STATUS.RESOLVED?`openReviewSheet('${p.arrivalDate}','${p.itemNo}')`:``}">
       <div class="product-card-inner">
@@ -1524,6 +1538,21 @@ function _setPurPhotoAction(i, pi, val) { const p=_getPurProduct(); if(p&&p.defe
 function _setPurPhotoReply(i, pi, val)  { const p=_getPurProduct(); if(p&&p.defectItems[i]&&p.defectItems[i].photos[pi]) p.defectItems[i].photos[pi]._draftReply=val; }
 function _setPurEntryAction(i, val) { const p=_getPurProduct(); if(p&&p.defectItems[i]) p.defectItems[i]._draftAction=val; }
 function _setPurEntryReply(i, val)  { const p=_getPurProduct(); if(p&&p.defectItems[i]) p.defectItems[i]._draftReply=val; }
+function _applyBatchPur(itemIdx) {
+  const p = _getPurProduct();
+  const item = p?.defectItems?.[itemIdx];
+  if (!item) return;
+  const action = document.getElementById(`pur-batch-action-${itemIdx}`)?.value || '';
+  const reply  = document.getElementById(`pur-batch-reply-${itemIdx}`)?.value  || '';
+  if (!action) { showToast('請先選擇處理方式', 'error'); return; }
+  let applied = 0;
+  (item.photos || []).forEach((ph, pi) => {
+    const chk = document.getElementById(`pur-chk-${itemIdx}-${pi}`);
+    if (chk?.checked && !ph.procAction) { ph._draftAction = action; ph._draftReply = reply; applied++; }
+  });
+  if (!applied) { showToast('請先勾選要套用的照片', 'error'); return; }
+  _renderPurchaseSheetItems();
+}
 
 function _renderPurchaseSheetItems() {
   const p = _getPurProduct();
@@ -1563,13 +1592,32 @@ function _renderPurchaseSheetItems() {
       ${reasonsHtml?`<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px">${reasonsHtml}</div>`:''}
       ${item.note?`<div style="font-size:12px;color:#6b7280;margin-bottom:8px">${item.note}</div>`:''}`;
 
+    // 批次套用區塊（多張照片且尚有未回覆時顯示）
+    const unreplied = photos.filter(ph=>!ph.procAction);
+    const batchHtml = photos.length > 1 && unreplied.length > 0 ? `
+      <div style="border:1.5px dashed #fca5a5;border-radius:10px;padding:10px;margin-bottom:10px;background:#fff7f7">
+        <div style="font-size:11px;font-weight:700;color:#dc2626;margin-bottom:6px">📋 套用至勾選照片</div>
+        <select id="pur-batch-action-${i}" class="input" style="appearance:auto;font-size:13px;padding:7px 10px;margin-bottom:6px">
+          <option value="">請選擇處理方式</option>
+          ${PROC_ACTIONS.map(v=>`<option>${v}</option>`).join('')}
+        </select>
+        <textarea id="pur-batch-reply-${i}" class="input" rows="2" style="resize:none;font-size:13px;margin-bottom:8px" placeholder="回覆說明（選填）"></textarea>
+        <button onclick="_applyBatchPur(${i})"
+          style="width:100%;padding:8px;border-radius:10px;border:none;background:#dc2626;color:#fff;font-size:13px;font-weight:700;cursor:pointer">
+          套用至勾選照片
+        </button>
+      </div>` : '';
+
     let repliesHtml;
     if (photos.length) {
-      repliesHtml = photos.map((ph, pi) => {
+      repliesHtml = batchHtml + photos.map((ph, pi) => {
         const src = ph.src || ph;
         return `
           <div style="border:1px solid ${ph.procAction?'#86efac':'#e5e7eb'};border-radius:10px;padding:12px;margin-bottom:8px;background:${ph.procAction?'#f0fdf4':'#fff'}">
-            <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">照片 ${pi+1}</div>
+            <div style="display:flex;align-items:center;gap:5px;margin-bottom:8px">
+              ${!ph.procAction?`<input type="checkbox" id="pur-chk-${i}-${pi}" style="width:13px;height:13px;flex-shrink:0;cursor:pointer;accent-color:#dc2626" />`:''}
+              <span style="font-size:11px;color:#9ca3af">照片 ${pi+1}</span>
+            </div>
             <div style="display:flex;gap:12px;align-items:stretch">
               <img src="${src}" onclick="openLightbox('${src}')"
                 style="width:110px;min-height:110px;height:100%;border-radius:10px;object-fit:cover;flex-shrink:0;cursor:zoom-in" />
