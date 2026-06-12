@@ -741,7 +741,7 @@ async function deleteSelected() {
   if (master) master.checked = false;
   // 重載確保同步
   await reloadFromFirestore(date);
-  renderProductTable(); updateStats();
+  renderProductTable(); updateStats(); syncDeleteBtn();
 }
 
 let _deskReceivingStatFilter = null;
