@@ -286,12 +286,12 @@ function closeAllSheets() {
   document.querySelectorAll('.sheet.open').forEach(s=>s.classList.remove('open'));
 }
 
-// ── 已到貨標記（Set of "date_origIdx"，不存 Firestore，頁面刷新後重置）──
-const _arrivedSet = new Set();
-function _arrivedKey(date, origIdx) { return `${date}__${origIdx}`; }
+// ── 已到貨標記（同步至 Firestore，多人即時共享）──
 function toggleArrived(date, origIdx) {
-  const key = _arrivedKey(date, origIdx);
-  if (_arrivedSet.has(key)) _arrivedSet.delete(key); else _arrivedSet.add(key);
+  const p = getDateProducts(date)[origIdx];
+  if (!p || p.status !== STATUS.PENDING) return;
+  p.isArrived = !p.isArrived;
+  if (p.id) ProductAPI.setArrived(p.id, p.isArrived).catch(e => console.warn('setArrived:', e.message));
   renderProductCards(); updateStats();
 }
 
@@ -432,7 +432,8 @@ function normalizeProducts(items) {
     procStaffName:p.proc_staff_name||p.procStaffName||'', procStaffId:p.proc_staff_id||p.procStaffId||'',
     operatorName:p.operator_name||p.operatorName||'',
     photos:p.photos||[], defectItems:p.defect_items||p.defectItems||[], procReplyUnread:!!(p.proc_reply_unread||p.procReplyUnread), time:p.recv_time||p.time||'',
-    bizAttr:p.biz_attr||p.bizAttr||''
+    bizAttr:p.biz_attr||p.bizAttr||'',
+    isArrived:!!(p.is_arrived||p.isArrived)
   }));
 }
 
@@ -466,7 +467,7 @@ function renderProductCards() {
   const list = allProducts
     .map((p, origIdx) => ({ p, origIdx }))
     .filter(({ p, origIdx }) => {
-      const isArrived = _arrivedSet.has(_arrivedKey(date, origIdx));
+      const isArrived = !!p.isArrived;
       if (!sf || sf === 'total') return true;
       if (sf === 'arrived')  return isArrived;
       if (sf === 'pending')  return p.status === STATUS.PENDING && !isArrived;
@@ -493,7 +494,7 @@ function renderProductCards() {
     return;
   }
   container.innerHTML = list.map(({ p, origIdx }, i) => {
-    const arrived = _arrivedSet.has(_arrivedKey(date, origIdx));
+    const arrived = !!p.isArrived;
     const cardBorder = arrived ? '2px solid #16a34a' : '1px solid #e5e7eb';
     const cardBg     = arrived ? '#f0fdf4' : '#fff';
     return `
@@ -563,8 +564,8 @@ function updateStats() {
   const list = getDateProducts(date);
   const done     = list.filter(p=>p.status!==STATUS.PENDING).length;
   const abnormal = list.filter(p=>[STATUS.ABNORMAL,STATUS.PROCUREMENT,STATUS.RESOLVED].includes(p.status)).length;
-  const arrived    = list.filter((p,i)=>_arrivedSet.has(_arrivedKey(date,i))).length;
-  const notArrived = list.filter((p,i)=>p.status===STATUS.PENDING && !_arrivedSet.has(_arrivedKey(date,i))).length;
+  const arrived    = list.filter(p=>p.status===STATUS.PENDING && !!p.isArrived).length;
+  const notArrived = list.filter(p=>p.status===STATUS.PENDING && !p.isArrived).length;
   // 更新統計卡片（重繪）
   const grid = document.getElementById('statGrid');
   if (!grid) return;
@@ -1001,7 +1002,7 @@ async function saveReceiving() {
   p.defectStaff=user?.name||''; p.defectStaffId=user?.userId||''; p.time=nowStr(); p.operatorName=user?.name||'';
   // bizAttr 已在 rs_setBizAttr 即時更新，無需再次設定
   p.status = bad>0 ? STATUS.ABNORMAL : STATUS.RECEIVED;
-  _arrivedSet.delete(_arrivedKey(date, idx)); // 確認完成後移除已到貨標記
+  p.isArrived = false; // 確認完成後清除已到貨標記
   suppressSyncRender(3000);
   closeAllSheets();
   // 延遲 150ms 再重繪，讓使用者當前手勢完整執行後再替換 DOM

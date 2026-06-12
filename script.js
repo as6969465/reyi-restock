@@ -78,11 +78,11 @@ let currentRole    = 'field';
 let _deskCurrentTab = 'receiving';
 let _deskRealtimeUnsub = null;
 // ── 已到貨標記（桌電版）─────────────────────────────
-const _deskArrivedSet = new Set();
-function _deskArrivedKey(date, origIdx) { return `${date}__${origIdx}`; }
 function toggleDeskArrived(date, origIdx) {
-  const key = _deskArrivedKey(date, origIdx);
-  if (_deskArrivedSet.has(key)) _deskArrivedSet.delete(key); else _deskArrivedSet.add(key);
+  const p = getDateProducts(date)[origIdx];
+  if (!p || p.status !== STATUS.PENDING) return;
+  p.isArrived = !p.isArrived;
+  if (p.id) ProductAPI.setArrived(p.id, p.isArrived).catch(e => console.warn('setArrived:', e.message));
   renderProductTable(); updateStats();
 }
 
@@ -340,6 +340,7 @@ function normalizeProducts(items) {
     defectItems:    p.defect_items || p.defectItems || [],
     procReplyUnread: !!(p.proc_reply_unread || p.procReplyUnread),
     bizAttr:        p.biz_attr || p.bizAttr || '',
+    isArrived:      !!(p.is_arrived || p.isArrived),
     time:           p.recv_time || ''
   }));
 }
@@ -552,7 +553,7 @@ function renderProductTable() {
       .some(v => (v||'').toLowerCase().includes(kw)));
   if (_deskReceivingStatFilter) {
     list = list.filter(({ p, origIdx }) => {
-      const isArrived = p.status === STATUS.PENDING && _deskArrivedSet.has(_deskArrivedKey(date, origIdx));
+      const isArrived = p.status === STATUS.PENDING && !!p.isArrived;
       if (_deskReceivingStatFilter === 'arrived')  return isArrived;
       if (_deskReceivingStatFilter === 'pending')  return p.status === STATUS.PENDING && !isArrived;
       if (_deskReceivingStatFilter === 'done')     return p.status !== STATUS.PENDING;
@@ -575,7 +576,7 @@ function renderProductTable() {
     return;
   }
   tbody.innerHTML = list.map(({ p, origIdx }) => {
-    const arrived = p.status === STATUS.PENDING && _deskArrivedSet.has(_deskArrivedKey(date, origIdx));
+    const arrived = p.status === STATUS.PENDING && !!p.isArrived;
     const rowCls  = p.status !== STATUS.PENDING
       ? 'received-row border-b border-gray-100'
       : arrived
@@ -754,8 +755,8 @@ function filterDeskReceivingByStat(s) {
 function updateStats() {
   const date = currentReceivingDate();
   const list = getDateProducts(date);
-  const arrived    = list.filter((p,i) => _deskArrivedSet.has(_deskArrivedKey(date, i))).length;
-  const notArrived = list.filter((p,i) => p.status === STATUS.PENDING && !_deskArrivedSet.has(_deskArrivedKey(date, i))).length;
+  const arrived    = list.filter(p => p.status === STATUS.PENDING && !!p.isArrived).length;
+  const notArrived = list.filter(p => p.status === STATUS.PENDING && !p.isArrived).length;
   const sv = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
   sv('stat-total',    list.length);
   sv('stat-arrived',  arrived);
@@ -1431,7 +1432,7 @@ function saveReceiving() {
   p.operatorId    = user?.userId || '';
   p.operatorName  = user?.name  || '';
   p.status        = bad > 0 ? STATUS.ABNORMAL_PENDING : STATUS.RECEIVED;
-  _deskArrivedSet.delete(_deskArrivedKey(date, currentIdx.idx)); // 確認完成後移除已到貨標記
+  p.isArrived = false; // 確認完成後清除已到貨標記
   suppressDeskSyncRender(3000);
   // 呼叫後端 API 後重載 Firestore 資料（確保多台同步）
   const receiveDate = date;
