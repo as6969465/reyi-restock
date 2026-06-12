@@ -683,18 +683,17 @@ async function saveManualAdd() {
     time:        ''
   });
 
-  // 儲存到 Firestore
+  // 儲存到 Firestore，取回 id 更新本機記錄
   try {
-    await ProductAPI.create({
+    const result = await ProductAPI.create({
       arrivalDate: date, seq, po: document.getElementById('ma-po').value.trim(),
       cat: document.getElementById('ma-cat').value.trim(),
       barcode: document.getElementById('ma-barcode').value.trim(),
       itemNo: document.getElementById('ma-itemNo').value.trim(),
       name, spec: document.getElementById('ma-spec').value.trim(), qty
     });
+    if (result?.id) list[list.length - 1].id = result.id;
   } catch(e) { console.warn('Firestore create failed:', e.message); }
-  // 重載確保同步
-  await reloadFromFirestore(date);
   closeManualAddModal();
   renderProductTable();
   updateStats();
@@ -734,13 +733,14 @@ async function deleteSelected() {
   if (firestoreIds.length) {
     try {
       await ProductAPI.batchDelete(firestoreIds);
-    } catch(e) { console.warn('Firestore delete failed:', e.message); }
+    } catch(e) {
+      console.warn('Firestore delete failed:', e.message);
+      await reloadFromFirestore(date); // rollback: reload if delete failed
+    }
   }
   saveProductsData();
   const master = document.getElementById('checkAll');
   if (master) master.checked = false;
-  // 重載確保同步
-  await reloadFromFirestore(date);
   renderProductTable(); updateStats(); syncDeleteBtn();
 }
 
@@ -1440,10 +1440,12 @@ function saveReceiving() {
       goodQty: good, badQty: bad, defectReasons: p.defectReasons,
       defectNote: p.defectNote, defectClass: p.defectClass, photos: p.photos,
       defectItems: p.defectItems, bizAttr: p.bizAttr || ''
-    }).then(async () => {
-      await reloadFromFirestore(receiveDate);
+    }).then(() => {
       renderProductTable(); updateStats(); updateBadges();
-    }).catch(e => console.warn('receive API:', e.message));
+    }).catch(e => {
+      console.warn('receive API:', e.message);
+      reloadFromFirestore(receiveDate).then(() => { renderProductTable(); updateStats(); updateBadges(); });
+    });
   } else {
     saveProductsData();
   }
@@ -1614,10 +1616,12 @@ function submitReview() {
       defectTime: p.defectTime, defectClass: p.defectClass,
       defectReasons: p.defectReasons, defectNote: p.defectNote,
       defectItems: p.defectItems
-    }).then(async () => {
-      await reloadFromFirestore(arrivalDate);
+    }).then(() => {
       renderReviewTable(); updateBadges();
-    }).catch(e => console.warn('review API:', e.message));
+    }).catch(e => {
+      console.warn('review API:', e.message);
+      reloadFromFirestore(arrivalDate).then(() => { renderReviewTable(); updateBadges(); });
+    });
   } else { saveProductsData(); }
   closeReviewModal();
 }
@@ -1868,11 +1872,13 @@ function submitPurchaseReply() {
   const replyArrivalDate = arrivalDate;
   if (p.id) {
     ProductAPI.reply(p.id, { procAction: p.procAction, procReply: p.procReply, defectItems: p.defectItems, defectTime: p.defectTime, status: p.status })
-      .then(async () => {
-        await reloadFromFirestore(replyArrivalDate);
+      .then(() => {
         renderPurchaseTable(); updateBadges();
       })
-      .catch(e => console.warn('reply API:', e.message));
+      .catch(e => {
+        console.warn('reply API:', e.message);
+        reloadFromFirestore(replyArrivalDate).then(() => { renderPurchaseTable(); updateBadges(); });
+      });
   } else { saveProductsData(); }
   closePurchaseModal();
 }

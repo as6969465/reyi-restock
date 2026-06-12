@@ -993,8 +993,8 @@ async function saveReceiving() {
   setTimeout(() => { renderProductCards(); updateStats(); }, 150);
   if (p.id) {
     ProductAPI.receive(p.id, {goodQty:good,badQty:bad,defectReasons:p.defectReasons,defectNote:p.defectNote,defectClass:p.defectClass,photos:p.photos,defectItems:p.defectItems,bizAttr:p.bizAttr||''})
-      .then(async()=>{ _pendingChanges = []; await reloadFromFirestore(date); renderProductCards(); updateStats(); updateBadges(); })
-      .catch(e=>console.warn('receive:',e.message));
+      .then(()=>{ _pendingChanges = []; renderProductCards(); updateStats(); updateBadges(); })
+      .catch(e=>{ console.warn('receive:',e.message); reloadFromFirestore(date).then(()=>{ renderProductCards(); updateStats(); updateBadges(); }); });
   } else { saveProductsData(); }
 }
 
@@ -1263,8 +1263,8 @@ async function submitReview() {
   suppressSyncRender(3000);
   if (p.id) {
     ProductAPI.review(p.id, {defectTime:p.defectTime,defectClass:p.defectClass,defectReasons:p.defectReasons,defectNote:p.defectNote})
-      .then(async()=>{ await reloadFromFirestore(arrivalDate); renderReviewCards(); updateBadges(); })
-      .catch(e=>console.warn('review:',e.message));
+      .then(()=>{ renderReviewCards(); updateBadges(); })
+      .catch(e=>{ console.warn('review:',e.message); reloadFromFirestore(arrivalDate).then(()=>{ renderReviewCards(); updateBadges(); }); });
   } else { saveProductsData(); }
   closeAllSheets();
 }
@@ -1777,8 +1777,8 @@ async function submitPurchaseReply() {
   suppressSyncRender(3000);
   if (p.id) {
     ProductAPI.reply(p.id, {procAction:p.procAction||'（各別回覆）', procReply:p.procReply||'', defectItems:p.defectItems, status:p.status, defectTime:p.defectTime})
-      .then(async()=>{ await reloadFromFirestore(arrivalDate); renderPurchaseCards(); updateBadges(); })
-      .catch(e=>console.warn('reply:',e.message));
+      .then(()=>{ renderPurchaseCards(); updateBadges(); })
+      .catch(e=>{ console.warn('reply:',e.message); reloadFromFirestore(arrivalDate).then(()=>{ renderPurchaseCards(); updateBadges(); }); });
   } else { saveProductsData(); }
   closeAllSheets();
 }
@@ -2153,9 +2153,9 @@ async function saveManualAdd() {
   if(qty<=0){errDiv.textContent='請輸入採購數量';errDiv.style.display='block';return;}
   const date=currentReceivingDate()||new Date().toLocaleDateString('sv-SE');
   try {
-    await ProductAPI.create({arrivalDate:date,po:document.getElementById('ma-po').value.trim(),cat:document.getElementById('ma-cat').value.trim(),barcode:document.getElementById('ma-barcode').value.trim(),itemNo:document.getElementById('ma-itemNo').value.trim(),name,qty});
+    const result = await ProductAPI.create({arrivalDate:date,po:document.getElementById('ma-po').value.trim(),cat:document.getElementById('ma-cat').value.trim(),barcode:document.getElementById('ma-barcode').value.trim(),itemNo:document.getElementById('ma-itemNo').value.trim(),name,qty});
+    if(result?.id){ const list=getDateProducts(date); list[list.length-1].id=result.id; }
   } catch(e){console.warn('create:',e.message);}
-  await reloadFromFirestore(date);
   closeAllSheets(); renderProductCards(); updateStats();
 }
 
@@ -2270,9 +2270,11 @@ async function deleteProductCard(date, idx) {
   const firestoreId=p?.id;
   list.splice(idx,1); productsByDate[date]=list;
   if(firestoreId){
-    try{await ProductAPI.delete(firestoreId);}catch(e){console.warn('delete:',e.message);}
+    try{await ProductAPI.delete(firestoreId);}catch(e){
+      console.warn('delete:',e.message);
+      await reloadFromFirestore(date); // rollback
+    }
   } else {saveProductsData();}
-  await reloadFromFirestore(date);
   renderProductCards(); updateStats();
 }
 
