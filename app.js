@@ -290,6 +290,7 @@ function closeAllSheets() {
 function toggleArrived(date, origIdx) {
   const p = getDateProducts(date)[origIdx];
   if (!p || p.status !== STATUS.PENDING) return;
+  if (p.isArrived && !confirm(`確定取消「${p.name}」的已到貨標記？`)) return;
   p.isArrived = !p.isArrived;
   if (p.id) ProductAPI.setArrived(p.id, p.isArrived).catch(e => console.warn('setArrived:', e.message));
   renderProductCards(); updateStats();
