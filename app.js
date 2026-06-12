@@ -515,7 +515,9 @@ function renderProductCards() {
         </div>
       </div>
       <!-- 操作列 -->
-      <div style="display:flex;border-top:1px solid ${arrived?'#bbf7d0':'#f3f4f6'};background:${arrived?'#dcfce7':'#f9fafb'}">
+      ${p.status !== STATUS.PENDING
+        ? `<div style="padding:8px 12px;border-top:1px solid #f3f4f6;background:#f9fafb;font-size:12px;color:#9ca3af;text-align:center">已完成確認，不可修改</div>`
+        : `<div style="display:flex;border-top:1px solid ${arrived?'#bbf7d0':'#f3f4f6'};background:${arrived?'#dcfce7':'#f9fafb'}">
         <button onclick="toggleArrived('${date}',${origIdx})"
           style="flex:1;padding:10px 0;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:600;
             color:${arrived?'#15803d':'#6b7280'};display:flex;align-items:center;justify-content:center;gap:5px">
@@ -529,7 +531,7 @@ function renderProductCards() {
           確認登錄
           <svg style="width:14px;height:14px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
         </button>` : ''}
-      </div>
+      </div>`}
     </div>`;
   }).join('');
 
