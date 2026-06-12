@@ -461,17 +461,29 @@ function renderProductCards() {
   const date = currentReceivingDate();
   const allProducts = getDateProducts(date);
   const kw = _receivingSearchKw.toLowerCase();
+  const sf = _appReceivingStatFilter;
+  const statLabels = { total:'今日進貨', arrived:'已到貨', pending:'未到貨', done:'已確認', abnormal:'有異常' };
   const list = allProducts
     .map((p, origIdx) => ({ p, origIdx }))
-    .filter(({ p }) => p.status === STATUS.PENDING)
+    .filter(({ p, origIdx }) => {
+      const isArrived = _arrivedSet.has(_arrivedKey(date, origIdx));
+      if (!sf || sf === 'total') return true;
+      if (sf === 'arrived')  return isArrived;
+      if (sf === 'pending')  return p.status === STATUS.PENDING && !isArrived;
+      if (sf === 'done')     return p.status !== STATUS.PENDING;
+      if (sf === 'abnormal') return [STATUS.ABNORMAL, STATUS.PROCUREMENT, STATUS.RESOLVED].includes(p.status);
+      return true;
+    })
     .filter(({ p }) => !kw || [p.po, p.itemNo, p.name, p.barcode]
       .some(v => (v||'').toLowerCase().includes(kw)))
     .sort((a, b) => (a.p.po||'').localeCompare(b.p.po||''));
   if (!list.length) {
     const msg = kw
-      ? `找不到符合「${kw}」的待確認商品`
-      : (date ? date + ' 尚無進貨資料' : '請選擇日期');
-    const hint = kw ? '請確認關鍵字或清除搜尋' : '點右下角 ↑ 匯入 Excel';
+      ? `找不到符合「${kw}」的商品`
+      : sf && sf !== 'total'
+        ? `目前無「${statLabels[sf]||''}」項目`
+        : (date ? date + ' 尚無進貨資料' : '請選擇日期');
+    const hint = kw ? '請確認關鍵字或清除搜尋' : sf ? '點擊儀表板圖示取消篩選' : '點右下角 ↑ 匯入 Excel';
     container.innerHTML = `<div class="empty-state">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
@@ -537,42 +549,43 @@ function renderProductCards() {
   }
 }
 
+let _appReceivingStatFilter = null;
+function filterAppReceivingByStat(s) {
+  _appReceivingStatFilter = _appReceivingStatFilter === s ? null : s;
+  updateStats();
+  renderProductCards();
+}
+
 function updateStats() {
   const date = currentReceivingDate();
   const list = getDateProducts(date);
   const done     = list.filter(p=>p.status!==STATUS.PENDING).length;
-  const pending  = list.filter(p=>p.status===STATUS.PENDING).length;
   const abnormal = list.filter(p=>[STATUS.ABNORMAL,STATUS.PROCUREMENT,STATUS.RESOLVED].includes(p.status)).length;
   const arrived    = list.filter((p,i)=>_arrivedSet.has(_arrivedKey(date,i))).length;
   const notArrived = list.filter((p,i)=>p.status===STATUS.PENDING && !_arrivedSet.has(_arrivedKey(date,i))).length;
-  // 更新數字
-  const sv = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
-  sv('stat-total',   list.length);
-  sv('stat-done',    done);
-  sv('stat-pending', pending);
-  sv('stat-abnormal',abnormal);
   // 更新統計卡片（重繪）
   const grid = document.getElementById('statGrid');
   if (!grid) return;
-  const IC = (path) => `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="${path}"/></svg>`;
+  const f = _appReceivingStatFilter;
+  const outline = (key, clr) => f === key ? `outline:2.5px solid ${clr};background:#fff;` : '';
   grid.innerHTML = `
-    <div class="stat-card stat-total">
+    <div class="stat-card stat-total" onclick="filterAppReceivingByStat('total')" style="cursor:pointer;transition:outline .12s;${outline('total','#6b7280')}">
       <div class="stat-card-val">${list.length}</div>
       <div class="stat-card-lbl">今日進貨</div>
     </div>
-    <div class="stat-card" style="background:#ecfdf5;color:#065f46">
+    <div class="stat-card" onclick="filterAppReceivingByStat('arrived')" style="cursor:pointer;transition:outline .12s;background:#ecfdf5;color:#065f46;${outline('arrived','#16a34a')}">
       <div class="stat-card-val" style="color:#059669">${arrived}</div>
       <div class="stat-card-lbl" style="color:#059669">已到貨</div>
     </div>
-    <div class="stat-card stat-pending">
+    <div class="stat-card stat-pending" onclick="filterAppReceivingByStat('pending')" style="cursor:pointer;transition:outline .12s;${outline('pending','#d97706')}">
       <div class="stat-card-val">${notArrived}</div>
       <div class="stat-card-lbl">未到貨</div>
     </div>
-    <div class="stat-card stat-done">
+    <div class="stat-card stat-done" onclick="filterAppReceivingByStat('done')" style="cursor:pointer;transition:outline .12s;${outline('done','#2563eb')}">
       <div class="stat-card-val">${done}</div>
       <div class="stat-card-lbl">已確認</div>
     </div>
-    <div class="stat-card stat-bad">
+    <div class="stat-card stat-bad" onclick="filterAppReceivingByStat('abnormal')" style="cursor:pointer;transition:outline .12s;${outline('abnormal','#ef4444')}">
       <div class="stat-card-val">${abnormal}</div>
       <div class="stat-card-lbl">有異常</div>
     </div>`;
