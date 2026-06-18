@@ -495,7 +495,7 @@ function renderProductCards() {
     return;
   }
   container.innerHTML = list.map(({ p, origIdx }, i) => {
-    const arrived = !!p.isArrived;
+    const arrived = p.status === STATUS.PENDING && !!p.isArrived;
     const cardBorder = arrived ? '2px solid #16a34a' : '1px solid #e5e7eb';
     const cardBg     = arrived ? '#f0fdf4' : '#fff';
     return `
