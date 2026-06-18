@@ -97,10 +97,10 @@ body { font-family: -apple-system,'Segoe UI',Arial,sans-serif;
 .badge { display:inline-flex; align-items:center; padding:4px 10px;
   border-radius:20px; font-size:11px; font-weight:700; white-space:nowrap; }
 .badge-pending  { background:var(--amber-lt);  color:var(--amber); }
-.badge-done     { background:var(--green-lt);  color:var(--green); }
+.badge-done     { background:var(--blue-lt);   color:var(--blue); }
 .badge-abnormal { background:var(--red-lt);    color:var(--red); }
-.badge-proc     { background:var(--blue-lt); color:var(--blue); }
-.badge-resolved { background:var(--green-lt);  color:var(--green); }
+.badge-proc     { background:var(--blue-lt);   color:var(--blue); }
+.badge-resolved { background:var(--gray-lt);   color:var(--gray); }
 .badge-manual   { background:#fef9c3;          color:#a16207; }
 
 /* ── 列表區 ── */

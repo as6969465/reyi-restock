@@ -1049,12 +1049,12 @@ function renderWarehouseCards() {
         <div style="font-size:12px;color:#9ca3af;margin-bottom:8px">${p.arrivalDate||'—'} · ${p.itemNo||'—'}</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <div style="display:flex;gap:20px">
-            <div><div style="font-size:10px;color:#9ca3af;margin-bottom:2px">良品</div><div style="font-size:18px;font-weight:800;color:#059669;line-height:1">${p.goodQty}</div></div>
+            <div><div style="font-size:10px;color:#9ca3af;margin-bottom:2px">良品</div><div style="font-size:18px;font-weight:800;color:#2563eb;line-height:1">${p.goodQty}</div></div>
             <div><div style="font-size:10px;color:#9ca3af;margin-bottom:2px">異常</div><div style="font-size:18px;font-weight:800;color:#dc2626;line-height:1">${p.badQty}</div></div>
           </div>
           ${p.badQty>0
             ? (hasReply
-                ? `<span style="color:#059669;font-size:13px;cursor:pointer;flex-shrink:0" onclick="openReplyDetail('${p.arrivalDate}','${p.itemNo}')">查看採購回覆 ›</span>`
+                ? `<span style="color:#2563eb;font-size:13px;cursor:pointer;flex-shrink:0" onclick="openReplyDetail('${p.arrivalDate}','${p.itemNo}')">查看採購回覆 ›</span>`
                 : `<span style="color:#d97706;font-size:12px;flex-shrink:0">待採購回覆</span>`)
             : ''}
         </div>
@@ -1084,7 +1084,7 @@ function renderReviewCards() {
   const s = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
   s('rev-stat-pending',pending); s('rev-stat-proc',proc); s('rev-stat-done',done);
   // 更新篩選卡片高亮
-  [['rev-card-pending','abnormal_pending','#dc2626'],['rev-card-proc','procurement','#d97706'],['rev-card-done','resolved','#059669']].forEach(([id,st,clr])=>{
+  [['rev-card-pending','abnormal_pending','#dc2626'],['rev-card-proc','procurement','#d97706'],['rev-card-done','resolved','#6b7280']].forEach(([id,st,clr])=>{
     const el=document.getElementById(id); if(!el) return;
     const active = _reviewStatusFilter===st;
     el.style.outline = active ? `2.5px solid ${clr}` : '';
@@ -1611,7 +1611,7 @@ function _renderPurchaseSheetItems() {
         : !!(it.procAction || (it._draftAction&&it._draftAction!==''));
       return `<button onclick="switchPurchaseTab(${idx})"
         style="padding:6px 14px;border-radius:20px;border:1.5px solid ${active?'#dc2626':'#e5e7eb'};
-          background:${active?'#dc2626':'#fff'};color:${active?'#fff':replied?'#059669':'#6b7280'};
+          background:${active?'#dc2626':'#fff'};color:${active?'#fff':replied?'#2563eb':'#6b7280'};
           font-size:12px;font-weight:${active?'700':'500'};cursor:pointer;white-space:nowrap;flex-shrink:0">
         ${replied&&!active?'✓ ':''}異常${NUMS[idx]||idx+1}
       </button>`;
