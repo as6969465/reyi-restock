@@ -470,7 +470,7 @@ function renderProductCards() {
     .filter(({ p, origIdx }) => {
       const isArrived = !!p.isArrived;
       if (!sf || sf === 'total') return true;
-      if (sf === 'arrived')  return isArrived;
+      if (sf === 'arrived')  return p.status === STATUS.PENDING && isArrived;
       if (sf === 'pending')  return p.status === STATUS.PENDING && !isArrived;
       if (sf === 'done')     return p.status !== STATUS.PENDING;
       if (sf === 'abnormal') return [STATUS.ABNORMAL, STATUS.PROCUREMENT, STATUS.RESOLVED].includes(p.status);
