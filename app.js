@@ -573,7 +573,7 @@ function updateStats() {
   const f = _appReceivingStatFilter;
   const outline = (key, clr) => f === key ? `outline:2.5px solid ${clr};background:#fff;` : '';
   grid.innerHTML = `
-    <div class="stat-card stat-total" onclick="filterAppReceivingByStat('total')" style="cursor:pointer;transition:outline .12s;${outline('total','#6b7280')}">
+    <div class="stat-card stat-total" onclick="filterAppReceivingByStat('total')" style="cursor:pointer;transition:outline .12s;background:#f3f4f6;${outline('total','#6b7280')}">
       <div class="stat-card-val">${list.length}</div>
       <div class="stat-card-lbl">今日進貨</div>
     </div>
