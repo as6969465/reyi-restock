@@ -342,6 +342,7 @@ function normalizeProducts(items) {
     procReplyUnread: !!(p.proc_reply_unread || p.procReplyUnread),
     bizAttr:        p.biz_attr || p.bizAttr || '',
     isArrived:      !!(p.is_arrived || p.isArrived),
+    sellingPrice:   p.selling_price || p.sellingPrice || 0,
     time:           p.recv_time || ''
   }));
 }
@@ -423,6 +424,7 @@ function importExcel(input) {
         spec:    headers.findIndex(h => h.includes('規格')),
         period:  headers.findIndex(h => h.includes('期數')),
         qty:     headers.findIndex(h => h.includes('採購數量')),
+        price:   headers.findIndex(h => h.includes('售價')),
         arrival: headers.findIndex(h => h.includes('到貨日'))
       };
       const parsed = [];
@@ -444,7 +446,7 @@ function importExcel(input) {
         parsed.push({
           seq, po: r[idx.po]||'', cat: r[idx.cat]||'', barcode: r[idx.barcode]||'',
           itemNo: r[idx.itemNo]||'', name: r[idx.name]||'', spec: r[idx.spec]||'',
-          period: r[idx.period]||'', qty: Number(r[idx.qty])||0, arrivalDate,
+          period: r[idx.period]||'', qty: Number(r[idx.qty])||0, sellingPrice: Number(r[idx.price])||0, arrivalDate,
           status: STATUS.PENDING,
           received: false, goodQty: 0, badQty: 0,
           defectTime:'', defectClass:'其他異常', defectReasons:[], defectNote:'', defectStaff:'',
@@ -602,6 +604,7 @@ function renderProductTable() {
       <td class="px-4 py-3 text-gray-500 text-xs w-24 max-w-[96px] truncate" title="${p.spec}">${p.spec}</td>
       <td class="px-4 py-3">${p.period}</td>
       <td class="px-4 py-3 text-right font-medium">${p.qty}</td>
+      <td class="px-4 py-3 text-right text-gray-600">${p.sellingPrice ? p.sellingPrice.toLocaleString() : '—'}</td>
       <td class="px-4 py-3 text-center">
         ${statusBadge(p.status)}
         ${p.isManual ? '<span class="badge ml-1" style="background:#fef3c7;color:#92400e">臨時</span>' : ''}
@@ -674,6 +677,7 @@ async function saveManualAdd() {
     spec:        document.getElementById('ma-spec').value.trim(),
     period:      '',
     qty,
+    sellingPrice: parseFloat(document.getElementById('ma-sellingPrice')?.value)||0,
     arrivalDate: date,
     isManual:    true,   // 臨時到貨標記
     status:      STATUS.PENDING,
@@ -692,7 +696,8 @@ async function saveManualAdd() {
       cat: document.getElementById('ma-cat').value.trim(),
       barcode: document.getElementById('ma-barcode').value.trim(),
       itemNo: document.getElementById('ma-itemNo').value.trim(),
-      name, spec: document.getElementById('ma-spec').value.trim(), qty
+      name, spec: document.getElementById('ma-spec').value.trim(), qty,
+      sellingPrice: parseFloat(document.getElementById('ma-sellingPrice')?.value)||0
     });
     if (result?.id) list[list.length - 1].id = result.id;
   } catch(e) { console.warn('Firestore create failed:', e.message); }

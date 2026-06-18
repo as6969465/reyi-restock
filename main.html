@@ -174,6 +174,7 @@
               <th class="text-left px-4 py-3 font-medium text-gray-600 w-24">規格</th>
               <th class="text-left px-4 py-3 font-medium text-gray-600">期數</th>
               <th class="text-right px-4 py-3 font-medium text-gray-600">採購數量</th>
+              <th class="text-right px-4 py-3 font-medium text-gray-600">售價</th>
               <th class="text-center px-4 py-3 font-medium text-gray-600">狀態</th>
               <th class="text-center px-4 py-3 font-medium text-gray-600">操作</th>
             </tr>
@@ -639,7 +640,7 @@
           <input id="ma-name" type="text" placeholder="請輸入商品名稱"
             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
         </div>
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-3 gap-3">
           <div>
             <label class="block text-xs font-medium text-gray-600 mb-1">規格</label>
             <input id="ma-spec" type="text" placeholder="選填"
@@ -648,6 +649,11 @@
           <div>
             <label class="block text-xs font-medium text-gray-600 mb-1">採購數量 <span class="text-red-500">*</span></label>
             <input id="ma-qty" type="number" min="1" placeholder="0"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">售價</label>
+            <input id="ma-sellingPrice" type="number" min="0" placeholder="選填"
               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
           </div>
         </div>

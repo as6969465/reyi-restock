@@ -286,7 +286,10 @@
         <div><label class="field-label">品號</label><input id="ma-itemNo" class="input" placeholder="選填" /></div>
         <div><label class="field-label">採購單號</label><input id="ma-po" class="input" placeholder="選填" /></div>
       </div>
-      <div style="margin-bottom:20px"><label class="field-label">條碼</label><input id="ma-barcode" class="input" placeholder="選填" /></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div><label class="field-label">條碼</label><input id="ma-barcode" class="input" placeholder="選填" /></div>
+        <div><label class="field-label">售價</label><input id="ma-sellingPrice" type="number" min="0" class="input" placeholder="選填" /></div>
+      </div>
       <div id="manualAddError" style="display:none;padding:12px;background:#fee2e2;border-radius:12px;font-size:13px;color:#991b1b;margin-bottom:12px"></div>
       <button onclick="saveManualAdd()" class="btn" style="width:100%;background:#f59e0b;color:#fff;border:none">新增臨時到貨</button>
     </div>

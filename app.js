@@ -434,7 +434,8 @@ function normalizeProducts(items) {
     operatorName:p.operator_name||p.operatorName||'',
     photos:p.photos||[], defectItems:p.defect_items||p.defectItems||[], procReplyUnread:!!(p.proc_reply_unread||p.procReplyUnread), time:p.recv_time||p.time||'',
     bizAttr:p.biz_attr||p.bizAttr||'',
-    isArrived:!!(p.is_arrived||p.isArrived)
+    isArrived:!!(p.is_arrived||p.isArrived),
+    sellingPrice:p.selling_price||p.sellingPrice||0
   }));
 }
 
@@ -514,6 +515,7 @@ function renderProductCards() {
         <div class="product-card-right" style="flex-shrink:0;text-align:right">
           ${statusBadgeHtml(p)}
           <div style="margin-top:4px"><div style="font-size:10px;color:#9ca3af">採購</div><div style="font-size:20px;font-weight:800;color:#111">${p.qty}</div></div>
+          ${p.sellingPrice ? `<div style="margin-top:2px"><div style="font-size:10px;color:#9ca3af">售價</div><div style="font-size:14px;font-weight:700;color:#374151">$${p.sellingPrice.toLocaleString()}</div></div>` : ''}
         </div>
       </div>
       <!-- 操作列 -->
@@ -2142,13 +2144,13 @@ function importExcel(input) {
       for(let i=0;i<rows.length;i++){const r=rows[i].map(String);if(r.includes('序')||r.some(c=>c.includes('採購單號'))){hRow=i;break;}}
       if(hRow<0){alert('找不到欄位標題，請確認為「報表-2-明細」分頁格式');return;}
       const h=rows[hRow].map(String);
-      const ix={seq:h.findIndex(x=>x==='序'),po:h.findIndex(x=>x.includes('採購單號')),cat:h.findIndex(x=>x.includes('大分類')),barcode:h.findIndex(x=>x.includes('條碼')),itemNo:h.findIndex(x=>x==='品號'),name:h.findIndex(x=>x==='品名'),spec:h.findIndex(x=>x.includes('規格')),period:h.findIndex(x=>x.includes('期數')),qty:h.findIndex(x=>x.includes('採購數量')),arrival:h.findIndex(x=>x.includes('到貨日'))};
+      const ix={seq:h.findIndex(x=>x==='序'),po:h.findIndex(x=>x.includes('採購單號')),cat:h.findIndex(x=>x.includes('大分類')),barcode:h.findIndex(x=>x.includes('條碼')),itemNo:h.findIndex(x=>x==='品號'),name:h.findIndex(x=>x==='品名'),spec:h.findIndex(x=>x.includes('規格')),period:h.findIndex(x=>x.includes('期數')),qty:h.findIndex(x=>x.includes('採購數量')),price:h.findIndex(x=>x.includes('售價')),arrival:h.findIndex(x=>x.includes('到貨日'))};
       const parsed=[];
       for(let i=hRow+1;i<rows.length;i++){
         const r=rows[i];if(!r[ix.seq]||String(r[ix.seq]).trim()==='')continue;
         const rawDate=r[ix.arrival];let ad='';
         if(rawDate){const d=new Date(rawDate);if(!isNaN(d))ad=d.toISOString().slice(0,10);else{const s=String(rawDate).replace(/\//g,'-');if(/^\d{4}-\d{2}-\d{2}$/.test(s))ad=s;else if(/^\d{7}$/.test(s)){const y=parseInt(s.slice(0,3))+1911;ad=`${y}-${s.slice(3,5)}-${s.slice(5,7)}`;}}}
-        parsed.push({seq:r[ix.seq],po:r[ix.po]||'',cat:r[ix.cat]||'',barcode:r[ix.barcode]||'',itemNo:r[ix.itemNo]||'',name:r[ix.name]||'',spec:r[ix.spec]||'',period:r[ix.period]||'',qty:Number(r[ix.qty])||0,arrivalDate:ad});
+        parsed.push({seq:r[ix.seq],po:r[ix.po]||'',cat:r[ix.cat]||'',barcode:r[ix.barcode]||'',itemNo:r[ix.itemNo]||'',name:r[ix.name]||'',spec:r[ix.spec]||'',period:r[ix.period]||'',qty:Number(r[ix.qty])||0,sellingPrice:Number(r[ix.price])||0,arrivalDate:ad});
       }
       const importDate=document.getElementById('receivingDate').value;
       try { await ProductAPI.importItems(parsed,importDate); } catch(apiErr){console.warn('import:',apiErr.message);}
@@ -2170,7 +2172,7 @@ async function saveManualAdd() {
   if(qty<=0){errDiv.textContent='請輸入採購數量';errDiv.style.display='block';return;}
   const date=currentReceivingDate()||new Date().toLocaleDateString('sv-SE');
   try {
-    const result = await ProductAPI.create({arrivalDate:date,po:document.getElementById('ma-po').value.trim(),cat:document.getElementById('ma-cat').value.trim(),barcode:document.getElementById('ma-barcode').value.trim(),itemNo:document.getElementById('ma-itemNo').value.trim(),name,qty});
+    const result = await ProductAPI.create({arrivalDate:date,po:document.getElementById('ma-po').value.trim(),cat:document.getElementById('ma-cat').value.trim(),barcode:document.getElementById('ma-barcode').value.trim(),itemNo:document.getElementById('ma-itemNo').value.trim(),name,qty,sellingPrice:parseFloat(document.getElementById('ma-sellingPrice')?.value)||0});
     if(result?.id){ const list=getDateProducts(date); list[list.length-1].id=result.id; }
   } catch(e){console.warn('create:',e.message);}
   closeAllSheets(); renderProductCards(); updateStats();
