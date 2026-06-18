@@ -507,7 +507,7 @@ function renderProductCards() {
         <div class="product-card-inner" style="flex:1;min-width:0">
           ${p.po ? `<div style="font-size:13px;font-weight:600;color:#4b5563;margin-bottom:2px">PO：${p.po}</div>` : ''}
           <div class="product-card-name">${p.name}</div>
-          <div class="product-card-sub">${p.itemNo||'—'} · ${p.cat||'—'}</div>
+          <div class="product-card-sub">${p.itemNo||'—'} · ${p.cat||'—'}${p.sellingPrice ? ` &nbsp;·&nbsp; 售價 $${p.sellingPrice.toLocaleString()}` : ''}</div>
         </div>
         ${p.barcode ? `<div style="flex-shrink:0;width:100px;display:flex;align-items:center">
           <canvas id="bc-r-${date}-${origIdx}" style="width:100px;height:36px;display:block"></canvas>
@@ -515,7 +515,6 @@ function renderProductCards() {
         <div class="product-card-right" style="flex-shrink:0;text-align:right">
           ${statusBadgeHtml(p)}
           <div style="margin-top:4px"><div style="font-size:10px;color:#9ca3af">採購</div><div style="font-size:20px;font-weight:800;color:#111">${p.qty}</div></div>
-          ${p.sellingPrice ? `<div style="margin-top:2px"><div style="font-size:10px;color:#9ca3af">售價</div><div style="font-size:14px;font-weight:700;color:#374151">$${p.sellingPrice.toLocaleString()}</div></div>` : ''}
         </div>
       </div>
       <!-- 操作列 -->
