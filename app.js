@@ -2,6 +2,23 @@
  * 日翊收發進貨平台 - App 核心邏輯（行動版）
  */
 
+// ── 通用確認 Dialog ───────────────────────────────────
+let _appConfirmCallback = null;
+function showAppConfirm({ icon='', title='', msg='', okColor='#2563eb', okLabel='確認' }, onOk) {
+  _appConfirmCallback = onOk;
+  const ov = document.getElementById('appConfirmOverlay');
+  document.getElementById('appConfirmIcon').textContent  = icon;
+  document.getElementById('appConfirmTitle').textContent = title;
+  document.getElementById('appConfirmMsg').innerHTML     = msg;
+  const btn = document.getElementById('appConfirmOkBtn');
+  btn.textContent  = okLabel;
+  btn.style.background = okColor;
+  btn.style.color      = '#fff';
+  ov.style.display = 'flex';
+}
+function appConfirmOk()     { const cb=_appConfirmCallback; _appConfirmCallback=null; document.getElementById('appConfirmOverlay').style.display='none'; if(cb) cb(); }
+function appConfirmCancel() { _appConfirmCallback=null; document.getElementById('appConfirmOverlay').style.display='none'; }
+
 // ── 常數 ─────────────────────────────────────────────
 // 大分類（三選一）
 // 分類與原因改為動態（由 Firestore defect_config 管理），以下 getter 取代固定常數
@@ -993,8 +1010,25 @@ async function saveReceiving() {
   if (bad>0 && _defectItems.some(item=>!item.category)) { errDiv.textContent='每筆異常明細都需選擇異常大分類'; errDiv.style.display='block'; return; }
   if (bad>0 && _defectItems.some(item=>!(item.reasons&&item.reasons.length>0))) { errDiv.textContent='每筆異常明細都需選擇至少一項異常原因'; errDiv.style.display='block'; return; }
 
-
+  // 防呆確認彈窗
   const { date, idx } = currentIdx;
+  const _pName = getDateProducts(date)[idx]?.name || '';
+  const _msgLines = [`<b>商品：</b>${_pName}`,`<b>到貨數量：</b>${good} 件`];
+  if (bad > 0) _msgLines.push(`<b>異常數量：</b>${bad} 件（${_defectItems.length} 筆明細）`);
+  else _msgLines.push('<b>異常數量：</b>無');
+  showAppConfirm({
+    icon: bad > 0 ? '⚠️' : '✅',
+    title: '確認送出？',
+    msg: _msgLines.join('<br>'),
+    okColor: bad > 0 ? '#dc2626' : '#16a34a',
+    okLabel: '確認送出'
+  }, _doSaveReceiving);
+  return;
+}
+async function _doSaveReceiving() {
+  const { date, idx } = currentIdx;
+  const good = parseInt(document.getElementById('rs-good')?.value) || 0;
+  const bad  = _defectItems.reduce((s,it)=>(s+(parseInt(it.qty)||0)),0);
   const p = getDateProducts(date)[idx];
   const user = getCurrentUser();
   p.received=true; p.goodQty=good; p.badQty=bad;
