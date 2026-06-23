@@ -1282,7 +1282,7 @@ async function submitReview() {
   p.status      = STATUS.PROCUREMENT;
   suppressSyncRender(3000);
   if (p.id) {
-    ProductAPI.review(p.id, {defectTime:p.defectTime,defectClass:p.defectClass,defectReasons:p.defectReasons,defectNote:p.defectNote})
+    ProductAPI.review(p.id, {defectTime:p.defectTime,defectClass:p.defectClass,defectReasons:p.defectReasons,defectNote:p.defectNote,defectItems:p.defectItems})
       .then(()=>{ renderReviewCards(); updateBadges(); })
       .catch(e=>{ console.warn('review:',e.message); reloadFromFirestore(arrivalDate).then(()=>{ renderReviewCards(); updateBadges(); }); });
   } else { saveProductsData(); }
