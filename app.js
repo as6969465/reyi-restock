@@ -435,6 +435,7 @@ function normalizeProducts(items) {
     photos:p.photos||[], defectItems:p.defect_items||p.defectItems||[], procReplyUnread:!!(p.proc_reply_unread||p.procReplyUnread), time:p.recv_time||p.time||'',
     bizAttr:p.biz_attr||p.bizAttr||'',
     isArrived:!!(p.is_arrived||p.isArrived),
+    arrivedTime:p.arrived_time||p.arrivedTime||'',
     sellingPrice:p.selling_price||p.sellingPrice||0
   }));
 }
@@ -519,13 +520,13 @@ function renderProductCards() {
       </div>
       <!-- 操作列 -->
       ${p.status !== STATUS.PENDING
-        ? `<div style="padding:8px 12px;border-top:1px solid #f3f4f6;background:#f9fafb;font-size:12px;color:#9ca3af;text-align:center">已完成確認，不可修改</div>`
+        ? `<div style="padding:8px 12px;border-top:1px solid #f3f4f6;background:#f9fafb;font-size:12px;color:#9ca3af;text-align:center">已完成確認，不可修改${p.time ? `<span style="margin-left:6px;font-size:11px">· ${p.time}</span>` : ''}</div>`
         : `<div style="display:flex;border-top:1px solid ${arrived?'#bbf7d0':'#f3f4f6'};background:${arrived?'#dcfce7':'#f9fafb'}">
         <button onclick="toggleArrived('${date}',${origIdx})"
           style="flex:1;padding:10px 0;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:600;
             color:${arrived?'#15803d':'#6b7280'};display:flex;align-items:center;justify-content:center;gap:5px">
           ${arrived
-            ? `<svg style="width:15px;height:15px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>已到貨（點擊取消）`
+            ? `<svg style="width:15px;height:15px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>已到貨（點擊取消）${p.arrivedTime ? `<span style="font-size:11px;font-weight:400;opacity:.7;margin-left:4px">${p.arrivedTime}</span>` : ''}`
             : `<svg style="width:15px;height:15px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="1.5"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h8"/></svg>標記已到貨`}
         </button>
         ${arrived ? `<button onclick="startReceiving('${date}',${origIdx})"

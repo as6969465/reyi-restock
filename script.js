@@ -342,6 +342,7 @@ function normalizeProducts(items) {
     procReplyUnread: !!(p.proc_reply_unread || p.procReplyUnread),
     bizAttr:        p.biz_attr || p.bizAttr || '',
     isArrived:      !!(p.is_arrived || p.isArrived),
+    arrivedTime:    p.arrived_time || p.arrivedTime || '',
     sellingPrice:   p.selling_price || p.sellingPrice || 0,
     time:           p.recv_time || ''
   }));
@@ -612,12 +613,15 @@ function renderProductTable() {
       <td class="px-4 py-3 text-center">
         ${p.status === STATUS.PENDING
           ? `<div class="flex items-center gap-1 justify-center">
+               <div class="flex flex-col items-center gap-0.5">
                <button onclick="toggleDeskArrived('${date}',${origIdx})"
                  class="${arrived
                    ? 'bg-green-100 border border-green-400 text-green-700 hover:bg-green-200'
                    : 'bg-gray-100 border border-gray-300 text-gray-600 hover:bg-gray-200'} text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors">
                  ${arrived ? '✓ 已到貨' : '已到貨'}
                </button>
+               ${arrived && p.arrivedTime ? `<span class="text-gray-400" style="font-size:10px">${p.arrivedTime}</span>` : ''}
+               </div>
                ${arrived ? `<button onclick="startDesktopReceiving('${date}',${origIdx})"
                  class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg">確認</button>` : ''}
              </div>`
@@ -822,7 +826,7 @@ function renderWarehouseTable() {
               : `<span class="text-amber-500 text-xs font-medium">待採購回覆</span>`)
           : '<span class="text-gray-400 text-xs">—</span>'}
       </td>
-      <td class="px-4 py-3 text-xs text-gray-500">${p.time}</td>
+      <td class="px-4 py-3 text-xs text-gray-500">${p.time||'—'}</td>
     </tr>`;
   }).join('');
 }
