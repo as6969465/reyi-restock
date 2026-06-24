@@ -284,6 +284,18 @@ function switchPage(name) {
   const nav  = document.getElementById(`nav-${name}`);
   if (page) page.classList.add('active');
   if (nav)  nav.classList.add('active');
+  // 非進貨頁籤：日期篩選預設當日
+  if (name !== 'receiving' && name !== 'admin') {
+    const today = new Date().toLocaleDateString('sv-SE');
+    const prefixes = { warehouse:'wh', review:'rv', report:'rp', purchase:'pur' };
+    const pfx = prefixes[name];
+    if (pfx) {
+      const fromEl = document.getElementById(`${pfx}-from`);
+      const toEl   = document.getElementById(`${pfx}-to`);
+      if (fromEl && !fromEl.value) fromEl.value = today;
+      if (toEl   && !toEl.value)   toEl.value   = today;
+    }
+  }
   // 渲染對應頁面（跨日期頁籤先確保資料全部載入）
   if (name==='receiving')  { renderProductCards(); updateStats(); }
   else if (name==='warehouse') ensureAllDatesLoaded(renderWarehouseCards);
