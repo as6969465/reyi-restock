@@ -484,7 +484,7 @@ function renderProductCards() {
   const allProducts = getDateProducts(date);
   const kw = _receivingSearchKw.toLowerCase();
   const sf = _appReceivingStatFilter;
-  const statLabels = { total:'今日進貨', arrived:'已到貨', pending:'未到貨', done:'已確認', abnormal:'有異常' };
+  const statLabels = { total:'今日進貨', arrived:'已到貨', pending:'未到貨', done:'已確認', abnormal:'有異常', manual:'臨時到貨' };
   const list = allProducts
     .map((p, origIdx) => ({ p, origIdx }))
     .filter(({ p, origIdx }) => {
@@ -494,6 +494,7 @@ function renderProductCards() {
       if (sf === 'pending')  return p.status === STATUS.PENDING && !isArrived;
       if (sf === 'done')     return p.status !== STATUS.PENDING;
       if (sf === 'abnormal') return [STATUS.ABNORMAL, STATUS.PROCUREMENT, STATUS.RESOLVED].includes(p.status);
+      if (sf === 'manual')   return !!p.isManual;
       return true;
     })
     .filter(({ p }) => !kw || [p.po, p.itemNo, p.name, p.barcode]
@@ -590,6 +591,7 @@ function updateStats() {
   // 更新統計卡片（重繪）
   const grid = document.getElementById('statGrid');
   if (!grid) return;
+  const manual = list.filter(p=>!!p.isManual).length;
   const f = _appReceivingStatFilter;
   const outline = (key, clr) => f === key ? `outline:2.5px solid ${clr};background:#fff;` : '';
   grid.innerHTML = `
@@ -612,6 +614,10 @@ function updateStats() {
     <div class="stat-card stat-bad" onclick="filterAppReceivingByStat('abnormal')" style="cursor:pointer;transition:outline .12s;${outline('abnormal','#ef4444')}">
       <div class="stat-card-val">${abnormal}</div>
       <div class="stat-card-lbl">有異常</div>
+    </div>
+    <div class="stat-card" onclick="filterAppReceivingByStat('manual')" style="cursor:pointer;transition:outline .12s;background:#f5f3ff;${outline('manual','#7c3aed')}">
+      <div class="stat-card-val" style="color:#7c3aed">${manual}</div>
+      <div class="stat-card-lbl" style="color:#7c3aed">臨時到貨</div>
     </div>`;
 }
 
