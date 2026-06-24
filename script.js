@@ -917,7 +917,7 @@ function setDeskReportSort(sort) {
 function renderDeskReportStats() {
   const container = document.getElementById('reportStatsContainer');
   if (!container) return;
-  const list = getFilteredAllProducts().filter(p => p.badQty > 0);
+  const list = getFilteredAllProducts().filter(p => p.badQty > 0 || (p.isManual && p.status !== STATUS.PENDING));
   if (!list.length) {
     container.innerHTML = '<div class="col-span-full text-center py-16 text-gray-400 text-sm">尚無異常記錄</div>';
     return;
@@ -970,7 +970,7 @@ function renderDeskReportStats() {
 
 function renderReportTable() {
   const tbody = document.getElementById('reportTableBody');
-  let list  = getFilteredAllProducts().filter(p => p.badQty > 0);
+  let list  = getFilteredAllProducts().filter(p => p.badQty > 0 || (p.isManual && p.status !== STATUS.PENDING));
   if (_deskReportKw) {
     const kw = _deskReportKw.toLowerCase();
     list = list.filter(p => (p.itemNo||'').toLowerCase().includes(kw) || (p.name||'').toLowerCase().includes(kw));
@@ -984,7 +984,7 @@ function renderReportTable() {
       <td class="px-4 py-3"><span class="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-xs">${p.defectClass||'其他異常'}</span></td>
       <td class="px-4 py-3 text-xs text-gray-500">${p.cat||'—'}</td>
       <td class="px-4 py-3 font-mono text-xs">${p.itemNo}</td>
-      <td class="px-4 py-3 font-medium text-sm max-w-[160px] truncate" title="${p.name}">${p.name}</td>
+      <td class="px-4 py-3 font-medium text-sm max-w-[160px]" title="${p.name}">${p.isManual?`<span class="inline-block bg-purple-100 text-purple-700 text-xs px-1.5 py-0.5 rounded-full mr-1">臨時</span>`:''}<span class="truncate">${p.name}</span></td>
       <td class="px-4 py-3 text-xs">${(p.defectReasons||[]).map(r=>`<span class="inline-block bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full mr-1 mb-0.5">${r}</span>`).join('')||'—'}</td>
       <td class="px-4 py-3 text-xs text-gray-600 max-w-[140px] truncate" title="${p.defectNote||''}">${p.defectNote||'—'}</td>
       <td class="px-4 py-3 text-center">
@@ -2396,7 +2396,7 @@ function showToast(msg, type = 'success', duration = 3000) {
 
 function exportReport() {
   // TODO: IT 工程師請在此串接後端 API 邏輯
-  const list = getFilteredAllProducts().filter(p=>p.badQty>0);
+  const list = getFilteredAllProducts().filter(p=>p.badQty>0||(p.isManual&&p.status!==STATUS.PENDING));
   if (!list.length) { alert('尚無異常記錄可匯出'); return; }
   const rows=[['日期','連動時間','異常分類','廠商','大分類','商品編號','商品名稱','異常原因','其他說明','物流專員','採購人員','採購處理方式','採購回覆說明','回覆時間']];
   list.forEach(p=>rows.push([p.arrivalDate,p.defectTime||'',p.defectClass||'其他異常',p.po||'',p.cat||'',p.itemNo,p.name,(p.defectReasons||[]).join('、'),p.defectNote||'',p.defectStaff||'',p.procStaffName||'',p.procAction||'',p.procReply||'',p.procReplyTime||'']));

@@ -1384,7 +1384,7 @@ function renderReportStats() {
   if (!container) return;
   const from = document.getElementById('rp-from')?.value;
   const to   = document.getElementById('rp-to')?.value;
-  let list = getAllProducts().filter(p => p.badQty > 0);
+  let list = getAllProducts().filter(p => p.badQty > 0 || (p.isManual && p.status !== STATUS.PENDING));
   if (from) list = list.filter(p => !p.arrivalDate || p.arrivalDate >= from);
   if (to)   list = list.filter(p => !p.arrivalDate || p.arrivalDate <= to);
 
@@ -1447,7 +1447,7 @@ function renderReportCards() {
   if (!container) return;
   const from = document.getElementById('rp-from')?.value;
   const to   = document.getElementById('rp-to')?.value;
-  let list = getAllProducts().filter(p=>p.badQty>0);
+  let list = getAllProducts().filter(p=>p.badQty>0||(p.isManual&&p.status!==STATUS.PENDING));
   if (from) list = list.filter(p=>!p.arrivalDate||p.arrivalDate>=from);
   if (to)   list = list.filter(p=>!p.arrivalDate||p.arrivalDate<=to);
   if (_reportSearchKw) {
@@ -1467,9 +1467,12 @@ function renderReportCards() {
       <div class="product-card-inner">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">
           <div style="font-size:15px;font-weight:700;color:#111;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</div>
+          <div style="display:flex;gap:4px;align-items:center;flex-shrink:0">
+          ${p.isManual?`<span class="badge badge-manual" style="font-size:10px">臨時</span>`:''}
           ${hasReply
-            ? `<span class="badge badge-resolved" style="font-size:10px;flex-shrink:0">已回覆${itemCount>0?' ('+itemCount+'張)':''}</span>`
-            : `<span class="badge badge-abnormal" style="font-size:10px;flex-shrink:0">待回覆</span>`}
+            ? `<span class="badge badge-resolved" style="font-size:10px">已回覆${itemCount>0?' ('+itemCount+'張)':''}</span>`
+            : `<span class="badge badge-abnormal" style="font-size:10px">待回覆</span>`}
+          </div>
         </div>
         <div style="font-size:12px;color:#9ca3af;margin-bottom:6px">${p.arrivalDate||'—'} · ${p.defectTime||'—'}</div>
         ${(p.defectReasons||[]).length>0 ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">${p.defectReasons.map(r=>`<span class="badge badge-abnormal" style="font-size:10px">${r}</span>`).join('')}</div>` : ''}
