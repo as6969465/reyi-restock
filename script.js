@@ -478,6 +478,20 @@ function importExcel(input) {
           photos:[], time:''
         });
       }
+      const importDate = document.getElementById('receivingDate').value;
+      const dates = [...new Set(parsed.map(p=>p.arrivalDate).filter(Boolean))].sort();
+      // 比對重複：採購單號 + 品號 兩者同時符合
+      const dupItems = parsed.filter(p => {
+        const key = p.arrivalDate || importDate || 'unknown';
+        const existing = productsByDate[key] || [];
+        return p.po && p.itemNo && existing.some(x => x.po === p.po && x.itemNo === p.itemNo);
+      });
+      if (dupItems.length > 0) {
+        const lines = dupItems.slice(0,5).map(p=>`・採購單 ${p.po} / 品號 ${p.itemNo}（${p.name}）`).join('\n');
+        const more  = dupItems.length > 5 ? `\n…等共 ${dupItems.length} 筆` : '';
+        const ok = confirm(`以下 ${dupItems.length} 筆商品已存在（採購單號 + 品號 重複），匯入時將略過：\n\n${lines}${more}\n\n確定繼續匯入？`);
+        if (!ok) { input.value=''; return; }
+      }
       parsed.forEach(p => {
         const key = p.arrivalDate || selectedDate || 'unknown';
         if (!productsByDate[key]) productsByDate[key] = [];
@@ -489,8 +503,6 @@ function importExcel(input) {
         const top = Object.entries(productsByDate).sort((a,b)=>b[1].length-a[1].length)[0]?.[0];
         if (top) dateInput.value = top;
       }
-      const dates = [...new Set(parsed.map(p=>p.arrivalDate).filter(Boolean))].sort();
-      const importDate = document.getElementById('receivingDate').value;
       try {
         const result = await ProductAPI.importItems(parsed, importDate);
         const inserted = result?.inserted || 0;

@@ -2209,9 +2209,29 @@ function importExcel(input) {
         parsed.push({seq:r[ix.seq],po:r[ix.po]||'',cat:r[ix.cat]||'',barcode:r[ix.barcode]||'',itemNo:r[ix.itemNo]||'',name:r[ix.name]||'',spec:r[ix.spec]||'',period:r[ix.period]||'',qty:Number(r[ix.qty])||0,sellingPrice:Number(r[ix.price])||0,arrivalDate:ad});
       }
       const importDate=document.getElementById('receivingDate').value;
-      try { await ProductAPI.importItems(parsed,importDate); } catch(apiErr){console.warn('import:',apiErr.message);}
-      await reloadFromFirestore(importDate);
-      renderProductCards(); updateStats();
+      const doImport=async()=>{
+        try{await ProductAPI.importItems(parsed,importDate);}catch(apiErr){console.warn('import:',apiErr.message);}
+        await reloadFromFirestore(importDate);
+        renderProductCards(); updateStats();
+      };
+      // 比對重複：採購單號 + 品號 兩者同時符合
+      const dupItems=parsed.filter(p=>{
+        const key=p.arrivalDate||importDate||'unknown';
+        const existing=productsByDate[key]||[];
+        return p.po&&p.itemNo&&existing.some(x=>x.po===p.po&&x.itemNo===p.itemNo);
+      });
+      if(dupItems.length>0){
+        const lines=dupItems.slice(0,4).map(p=>`採購單 ${p.po} / 品號 ${p.itemNo}（${p.name}）`).join('<br>');
+        const more=dupItems.length>4?`<br>…等共 ${dupItems.length} 筆`:'';
+        showAppConfirm({
+          icon:'⚠️',
+          title:`${dupItems.length} 筆重複商品`,
+          msg:`以下品項已存在（採購單號＋品號 重複），略過後繼續匯入？<br><br><span style="font-size:12px;color:#374151">${lines}${more}</span>`,
+          okColor:'#d97706',okLabel:'繼續匯入'
+        }, doImport);
+        return;
+      }
+      await doImport();
     } catch(err){alert('匯入失敗：'+err.message);}
   };
   reader.readAsBinaryString(file);
