@@ -2201,18 +2201,24 @@ function importExcel(input) {
 }
 
 // ── 手動新增 ─────────────────────────────────────────
+let _manualSaving = false;
 async function saveManualAdd() {
+  if (_manualSaving) return;
   const errDiv=document.getElementById('manualAddError');
   const name=document.getElementById('ma-name').value.trim();
   const qty=parseInt(document.getElementById('ma-qty').value)||0;
   errDiv.style.display='none';
   if(!name){errDiv.textContent='請輸入品名';errDiv.style.display='block';return;}
   if(qty<=0){errDiv.textContent='請輸入採購數量';errDiv.style.display='block';return;}
+  _manualSaving = true;
+  const btn = document.querySelector('#manualSheet button[onclick="saveManualAdd()"]');
+  if (btn) { btn.disabled = true; btn.textContent = '新增中…'; }
   const date=currentReceivingDate()||new Date().toLocaleDateString('sv-SE');
   try {
-    const result = await ProductAPI.create({arrivalDate:date,po:document.getElementById('ma-po').value.trim(),cat:document.getElementById('ma-cat').value.trim(),barcode:document.getElementById('ma-barcode').value.trim(),itemNo:document.getElementById('ma-itemNo').value.trim(),name,qty,sellingPrice:parseFloat(document.getElementById('ma-sellingPrice')?.value)||0});
-    if(result?.id){ const list=getDateProducts(date); list[list.length-1].id=result.id; }
+    await ProductAPI.create({arrivalDate:date,po:document.getElementById('ma-po').value.trim(),cat:document.getElementById('ma-cat').value.trim(),barcode:document.getElementById('ma-barcode').value.trim(),itemNo:document.getElementById('ma-itemNo').value.trim(),name,qty,sellingPrice:parseFloat(document.getElementById('ma-sellingPrice')?.value)||0});
   } catch(e){console.warn('create:',e.message);}
+  _manualSaving = false;
+  if (btn) { btn.disabled = false; btn.textContent = '新增臨時到貨'; }
   closeAllSheets(); renderProductCards(); updateStats();
 }
 
