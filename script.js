@@ -683,6 +683,57 @@ function renderProductTable() {
   }
 }
 
+// ── 臨時到貨 Excel 批次匯入 ──────────────────────────
+function importManualExcel(input) {
+  const file = input.files[0]; if (!file) return;
+  const importDate = currentReceivingDate() || new Date().toLocaleDateString('sv-SE');
+  const reader = new FileReader();
+  reader.onload = async e => {
+    try {
+      const wb = XLSX.read(e.target.result, {type:'binary'});
+      const sName = wb.SheetNames.find(s=>s.includes('明細')||s.includes('2'))||wb.SheetNames[0];
+      const ws = wb.Sheets[sName];
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+      let hRow = -1;
+      for (let i = 0; i < rows.length; i++) {
+        const r = rows[i].map(String);
+        if (r.includes('序') || r.some(c=>c.includes('採購單號'))) { hRow = i; break; }
+      }
+      if (hRow < 0) { showToast('找不到欄位標題，請確認格式','error',4000); input.value=''; return; }
+      const headers = rows[hRow].map(String);
+      const idx = {seq:headers.findIndex(h=>h==='序'),po:headers.findIndex(h=>h.includes('採購單號')),cat:headers.findIndex(h=>h.includes('大分類')),barcode:headers.findIndex(h=>h.includes('條碼')),itemNo:headers.findIndex(h=>h==='品號'),name:headers.findIndex(h=>h==='品名'),spec:headers.findIndex(h=>h.includes('規格')),period:headers.findIndex(h=>h.includes('期數')),qty:headers.findIndex(h=>h.includes('採購數量')),price:headers.findIndex(h=>h.includes('售價')),arrival:headers.findIndex(h=>h.includes('到貨日'))};
+      const parsed = [];
+      for (let i = hRow+1; i < rows.length; i++) {
+        const r = rows[i]; if (!r[idx.seq]||String(r[idx.seq]).trim()==='') continue;
+        const rawDate = r[idx.arrival]; let arrivalDate = '';
+        if (rawDate) { const d=new Date(rawDate); if(!isNaN(d)) arrivalDate=d.toISOString().slice(0,10); else { const s=String(rawDate).replace(/\//g,'-'); if(/^\d{4}-\d{2}-\d{2}$/.test(s)) arrivalDate=s; else if(/^\d{7}$/.test(s)){const y=parseInt(s.slice(0,3))+1911;arrivalDate=`${y}-${s.slice(3,5)}-${s.slice(5,7)}`;} } }
+        if (!arrivalDate) arrivalDate = importDate;
+        parsed.push({seq:r[idx.seq],po:r[idx.po]||'',cat:r[idx.cat]||'',barcode:r[idx.barcode]||'',itemNo:r[idx.itemNo]||'',name:r[idx.name]||'',spec:r[idx.spec]||'',period:r[idx.period]||'',qty:Number(r[idx.qty])||0,sellingPrice:Number(r[idx.price])||0,arrivalDate});
+      }
+      if (!parsed.length) { showToast('未找到有效資料列','error',4000); input.value=''; return; }
+      const doImport = async () => {
+        try {
+          const result = await ProductAPI.importItems(parsed, importDate, {isManual:true});
+          showToast(`臨時到貨匯入成功　共 ${result?.inserted||0} 筆新增`, 'success', 4000);
+        } catch(e) { showToast('雲端同步失敗：'+e.message,'error',4000); }
+        await reloadFromFirestore(importDate);
+        closeManualAddModal(); renderProductTable(); updateStats();
+      };
+      // 重複防呆
+      const dupItems = parsed.filter(p => { const key=p.arrivalDate||importDate; const existing=productsByDate[key]||[]; return p.po&&p.itemNo&&existing.some(x=>x.po===p.po&&x.itemNo===p.itemNo); });
+      if (dupItems.length > 0) {
+        const lines = dupItems.slice(0,5).map(p=>`・採購單 ${p.po} / 品號 ${p.itemNo}（${p.name}）`).join('\n');
+        const more  = dupItems.length > 5 ? `\n…等共 ${dupItems.length} 筆` : '';
+        const ok = confirm(`以下 ${dupItems.length} 筆商品已存在（採購單號 + 品號 重複），匯入時將略過：\n\n${lines}${more}\n\n確定繼續匯入？`);
+        if (!ok) { input.value=''; return; }
+      }
+      await doImport();
+    } catch(err) { showToast('匯入失敗：'+err.message,'error',5000); }
+    input.value='';
+  };
+  reader.readAsBinaryString(file);
+}
+
 // ── 手動新增臨時到貨 ──────────────────────────────────
 function openManualAddModal() {
   ['ma-po','ma-cat','ma-barcode','ma-itemNo','ma-name','ma-spec'].forEach(id => {

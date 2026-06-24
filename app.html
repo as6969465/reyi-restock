@@ -291,7 +291,12 @@
         <div><label class="field-label">售價</label><input id="ma-sellingPrice" type="number" min="0" class="input" placeholder="選填" /></div>
       </div>
       <div id="manualAddError" style="display:none;padding:12px;background:#fee2e2;border-radius:12px;font-size:13px;color:#991b1b;margin-bottom:12px"></div>
-      <button onclick="saveManualAdd()" class="btn" style="width:100%;background:#f59e0b;color:#fff;border:none">新增臨時到貨</button>
+      <button onclick="saveManualAdd()" class="btn" style="width:100%;background:#f59e0b;color:#fff;border:none;margin-bottom:10px">新增臨時到貨</button>
+      <label style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;border-radius:14px;border:1.5px dashed #a78bfa;background:#faf5ff;color:#7c3aed;font-size:14px;font-weight:600;cursor:pointer">
+        <svg style="width:18px;height:18px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        批次匯入 Excel（臨時到貨）
+        <input type="file" accept=".xlsx,.xls" class="hidden" onchange="importManualExcel(this)" />
+      </label>
     </div>
   </div>
 
