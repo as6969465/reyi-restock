@@ -659,7 +659,9 @@ function openManualAddModal() {
 }
 function closeManualAddModal() { document.getElementById('manualAddModal').classList.add('hidden'); }
 
+let _deskManualSaving = false;
 async function saveManualAdd() {
+  if (_deskManualSaving) return;
   const errDiv = document.getElementById('manualAddError');
   errDiv.classList.add('hidden');
   const name = document.getElementById('ma-name').value.trim();
@@ -667,36 +669,14 @@ async function saveManualAdd() {
   if (!name) { errDiv.textContent='請輸入品名'; errDiv.classList.remove('hidden'); return; }
   if (qty <= 0) { errDiv.textContent='請輸入採購數量'; errDiv.classList.remove('hidden'); return; }
 
+  _deskManualSaving = true;
+  const saveBtn = document.querySelector('#manualAddModal button[onclick="saveManualAdd()"]');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '新增中…'; }
+
   const date = currentReceivingDate() || new Date().toLocaleDateString('sv-SE');
-  if (!productsByDate[date]) productsByDate[date] = [];
-  const list = productsByDate[date];
-  const seq  = list.length + 1;
-
-  list.push({
-    seq,
-    po:          document.getElementById('ma-po').value.trim(),
-    cat:         document.getElementById('ma-cat').value.trim(),
-    barcode:     document.getElementById('ma-barcode').value.trim(),
-    itemNo:      document.getElementById('ma-itemNo').value.trim(),
-    name,
-    spec:        document.getElementById('ma-spec').value.trim(),
-    period:      '',
-    qty,
-    sellingPrice: parseFloat(document.getElementById('ma-sellingPrice')?.value)||0,
-    arrivalDate: date,
-    isManual:    true,   // 臨時到貨標記
-    status:      STATUS.PENDING,
-    received:    false,
-    goodQty:     0,
-    badQty:      0,
-    defectTime:  '', defectClass:'其他異常', defectReasons:[], defectNote:'', defectStaff:'',
-    photos:      [],
-    time:        ''
-  });
-
-  // 儲存到 Firestore，取回 id 更新本機記錄
+  const seq  = (productsByDate[date]?.length || 0) + 1;
   try {
-    const result = await ProductAPI.create({
+    await ProductAPI.create({
       arrivalDate: date, seq, po: document.getElementById('ma-po').value.trim(),
       cat: document.getElementById('ma-cat').value.trim(),
       barcode: document.getElementById('ma-barcode').value.trim(),
@@ -704,8 +684,10 @@ async function saveManualAdd() {
       name, spec: document.getElementById('ma-spec').value.trim(), qty,
       sellingPrice: parseFloat(document.getElementById('ma-sellingPrice')?.value)||0
     });
-    if (result?.id) list[list.length - 1].id = result.id;
+    await reloadFromFirestore(date);
   } catch(e) { console.warn('Firestore create failed:', e.message); }
+  _deskManualSaving = false;
+  if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '新增'; }
   closeManualAddModal();
   renderProductTable();
   updateStats();

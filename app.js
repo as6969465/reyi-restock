@@ -2217,9 +2217,11 @@ async function saveManualAdd() {
   try {
     await ProductAPI.create({arrivalDate:date,po:document.getElementById('ma-po').value.trim(),cat:document.getElementById('ma-cat').value.trim(),barcode:document.getElementById('ma-barcode').value.trim(),itemNo:document.getElementById('ma-itemNo').value.trim(),name,qty,sellingPrice:parseFloat(document.getElementById('ma-sellingPrice')?.value)||0});
   } catch(e){console.warn('create:',e.message);}
+  closeAllSheets();
+  await reloadFromFirestore(date);
   _manualSaving = false;
   if (btn) { btn.disabled = false; btn.textContent = '新增臨時到貨'; }
-  closeAllSheets(); renderProductCards(); updateStats();
+  renderProductCards(); updateStats();
 }
 
 // ── 照片上傳 ─────────────────────────────────────────
