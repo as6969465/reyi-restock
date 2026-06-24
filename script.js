@@ -406,6 +406,11 @@ function switchTab(name) {
   const gdf = document.getElementById('globalDateFilter');
   if (name === 'receiving') { gdf.classList.add('hidden'); gdf.classList.remove('flex'); renderProductTable(); updateStats(); return; }
   gdf.classList.remove('hidden'); gdf.classList.add('flex');
+  const today = new Date().toLocaleDateString('sv-SE');
+  const fromEl = document.getElementById('filterDateFrom');
+  const toEl   = document.getElementById('filterDateTo');
+  if (fromEl && !fromEl.value) fromEl.value = today;
+  if (toEl   && !toEl.value)   toEl.value   = today;
   ensureDeskAllDatesLoaded().then(() => {
     if (name === 'warehouse') renderWarehouseTable();
     if (name === 'review')    renderReviewTable();
