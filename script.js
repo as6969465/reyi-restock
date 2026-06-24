@@ -580,11 +580,12 @@ function renderProductTable() {
       if (_deskReceivingStatFilter === 'pending')  return p.status === STATUS.PENDING && !isArrived;
       if (_deskReceivingStatFilter === 'done')     return p.status !== STATUS.PENDING;
       if (_deskReceivingStatFilter === 'abnormal') return [STATUS.ABNORMAL_PENDING, STATUS.PROCUREMENT, STATUS.RESOLVED].includes(p.status);
+      if (_deskReceivingStatFilter === 'manual')   return !!p.isManual;
       return true;
     });
   }
   if (!list.length) {
-    const statLabels = {arrived:'已到貨', pending:'未到貨', done:'已確認', abnormal:'有異常'};
+    const statLabels = {arrived:'已到貨', pending:'未到貨', done:'已確認', abnormal:'有異常', manual:'臨時到貨'};
     const msg = kw
       ? `找不到符合「${kw}」的商品`
       : _deskReceivingStatFilter && _deskReceivingStatFilter !== 'total'
@@ -773,6 +774,7 @@ function updateStats() {
   sv('stat-done',     list.filter(p => p.status !== STATUS.PENDING).length);
   sv('stat-pending',  notArrived);
   sv('stat-abnormal', list.filter(p => [STATUS.ABNORMAL_PENDING, STATUS.PROCUREMENT, STATUS.RESOLVED].includes(p.status)).length);
+  sv('stat-manual',   list.filter(p => !!p.isManual).length);
   // 高亮篩選卡片
   const CARDS = [
     ['stat-card-total',   'total',    '#6b7280'],
@@ -780,6 +782,7 @@ function updateStats() {
     ['stat-card-pending', 'pending',  '#d97706'],
     ['stat-card-done',    'done',     '#2563eb'],
     ['stat-card-abnormal','abnormal', '#ef4444'],
+    ['stat-card-manual',  'manual',   '#7c3aed'],
   ];
   CARDS.forEach(([id, key, clr]) => {
     const el = document.getElementById(id); if (!el) return;
