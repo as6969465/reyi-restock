@@ -166,6 +166,20 @@ function currentReceivingDate() { return document.getElementById('receivingDate'
 function saveProductsData()     { localStorage.setItem('rr_products', JSON.stringify(productsByDate)); }
 function loadProductsData()     { productsByDate = JSON.parse(localStorage.getItem('rr_products') || '{}'); }
 
+let _deskAllKnownDates  = [];
+let _deskAllDatesLoaded = false;
+async function ensureDeskAllDatesLoaded() {
+  if (_deskAllDatesLoaded) return;
+  try {
+    if (!_deskAllKnownDates.length) _deskAllKnownDates = await ProductAPI.getDates();
+    const missing = _deskAllKnownDates.filter(d => !productsByDate[d]);
+    for (const d of missing) {
+      productsByDate[d] = normalizeProducts(await ProductAPI.getByDate(d));
+    }
+    _deskAllDatesLoaded = true;
+  } catch(e) { console.warn('ensureDeskAllDatesLoaded failed:', e.message); }
+}
+
 // ── 登入 (index.html) ─────────────────────────────────
 async function handleLogin(e) {
   e.preventDefault();
@@ -212,6 +226,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   try {
     const dates = await ProductAPI.getDates();
     if (dates && dates.length > 0) {
+      _deskAllKnownDates = dates;
       const best = dates.includes(today) ? today : dates[0];
       document.getElementById('receivingDate').value = best;
       // 預載當日資料到 productsByDate
@@ -291,7 +306,7 @@ function startDeskRealtimeSync() {
         }
       } else {
         const p = normalizeProducts([{id: change.doc.id, ...change.doc.data()}])[0];
-        if (!productsByDate[date]) productsByDate[date] = [];
+        if (!productsByDate[date]) { productsByDate[date] = []; if (!_deskAllKnownDates.includes(date)) _deskAllKnownDates.push(date); }
         const idx = productsByDate[date].findIndex(x => x.id === change.doc.id);
         if (idx >= 0) { productsByDate[date][idx] = p; }
         else { productsByDate[date].push(p); }
@@ -389,13 +404,15 @@ function switchTab(name) {
     else            { btn.classList.remove('border-blue-600','text-blue-600'); btn.classList.add('border-transparent','text-gray-500'); }
   });
   const gdf = document.getElementById('globalDateFilter');
-  if (name === 'receiving') { gdf.classList.add('hidden'); gdf.classList.remove('flex'); renderProductTable(); updateStats(); }
-  else { gdf.classList.remove('hidden'); gdf.classList.add('flex'); }
-  if (name === 'warehouse') renderWarehouseTable();
-  if (name === 'review')    renderReviewTable();
-  if (name === 'report')    { if(_deskReportSubTab==='stats') renderDeskReportStats(); else renderReportTable(); }
-  if (name === 'purchase')  renderPurchaseTable();
-  if (name === 'admin')     { loadAndRenderAdmin(); }
+  if (name === 'receiving') { gdf.classList.add('hidden'); gdf.classList.remove('flex'); renderProductTable(); updateStats(); return; }
+  gdf.classList.remove('hidden'); gdf.classList.add('flex');
+  ensureDeskAllDatesLoaded().then(() => {
+    if (name === 'warehouse') renderWarehouseTable();
+    if (name === 'review')    renderReviewTable();
+    if (name === 'report')    { if(_deskReportSubTab==='stats') renderDeskReportStats(); else renderReportTable(); }
+    if (name === 'purchase')  renderPurchaseTable();
+    if (name === 'admin')     { loadAndRenderAdmin(); }
+  });
 }
 
 // ── 匯入 Excel ────────────────────────────────────────
