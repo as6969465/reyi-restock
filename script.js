@@ -1481,7 +1481,7 @@ function saveReceiving() {
   const bad  = _deskDefectItems.reduce((s,it)=>(s+(parseInt(it.qty)||0)),0);
   if (isNaN(good) || good < 0) { errDiv.textContent='請輸入正確的到貨數量'; errDiv.classList.remove('hidden'); return; }
   if (bad > 0 && _deskDefectItems.some(item=>!item.category)) { errDiv.textContent='每筆異常明細都需選擇異常大分類'; errDiv.classList.remove('hidden'); return; }
-  if (bad > 0 && _deskDefectItems.some(item=>!(item.reasons&&item.reasons.length>0))) { errDiv.textContent='每筆異常明細都需選擇至少一項異常原因'; errDiv.classList.remove('hidden'); return; }
+  if (_deskDefectItems.length > 0 && _deskDefectItems.some(item=>!(item.reasons&&item.reasons.length>0))) { errDiv.textContent='每筆異常明細都需選擇至少一項異常原因'; errDiv.classList.remove('hidden'); return; }
   const { date, idx } = currentIdx;
   const p = getDateProducts(date)[idx];
   const user = getCurrentUser();

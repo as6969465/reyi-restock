@@ -1025,7 +1025,7 @@ async function saveReceiving() {
   const bad  = _defectItems.reduce((s,it)=>(s+(parseInt(it.qty)||0)),0);
   if (isNaN(good)||good<0) { errDiv.textContent='請輸入正確的到貨數量'; errDiv.style.display='block'; return; }
   if (bad>0 && _defectItems.some(item=>!item.category)) { errDiv.textContent='每筆異常明細都需選擇異常大分類'; errDiv.style.display='block'; return; }
-  if (bad>0 && _defectItems.some(item=>!(item.reasons&&item.reasons.length>0))) { errDiv.textContent='每筆異常明細都需選擇至少一項異常原因'; errDiv.style.display='block'; return; }
+  if (_defectItems.length>0 && _defectItems.some(item=>!(item.reasons&&item.reasons.length>0))) { errDiv.textContent='每筆異常明細都需選擇至少一項異常原因'; errDiv.style.display='block'; return; }
 
   // 防呆確認彈窗
   const { date, idx } = currentIdx;
