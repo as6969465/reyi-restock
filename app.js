@@ -541,10 +541,18 @@ function renderProductCards() {
           <div class="product-card-name">${p.name}</div>
           <div class="product-card-sub">${p.itemNo||'—'} · ${p.cat||'—'}${p.sellingPrice ? ` &nbsp;·&nbsp; 售價 $${p.sellingPrice.toLocaleString()}` : ''}</div>
         </div>
-        ${p.barcode ? `<div style="flex-shrink:0;width:100px;display:flex;flex-direction:column;align-items:center;gap:2px">
-          <canvas id="bc-r-${date}-${origIdx}" style="width:100px;height:36px;display:block"></canvas>
-          ${arrived && (p.arrivedBy||p.arrivedTime) ? `<div style="font-size:10px;color:#6b7280;text-align:center;line-height:1.3">${[p.arrivedBy,p.arrivedTime].filter(Boolean).join('<br>')}</div>` : ''}
-        </div>` : `${arrived && (p.arrivedBy||p.arrivedTime) ? `<div style="flex-shrink:0;font-size:10px;color:#6b7280;text-align:center;line-height:1.4">${[p.arrivedBy,p.arrivedTime].filter(Boolean).join('<br>')}</div>` : ''}`}
+        ${(() => {
+          const atParts = p.arrivedTime ? p.arrivedTime.split(' ') : [];
+          const atDate = atParts[0]||''; const atTime = atParts.slice(1).join(' ')||'';
+          const arrivedInfo = arrived && (p.arrivedBy||p.arrivedTime)
+            ? `<div style="font-size:10px;color:#6b7280;text-align:center;line-height:1.6">${[p.arrivedBy,atDate,atTime].filter(Boolean).join('<br>')}</div>` : '';
+          return p.barcode
+            ? `<div style="flex-shrink:0;width:100px;display:flex;flex-direction:column;align-items:center;gap:2px">
+                <canvas id="bc-r-${date}-${origIdx}" style="width:100px;height:36px;display:block"></canvas>
+                ${arrivedInfo}
+              </div>`
+            : arrivedInfo;
+        })()}
         <div class="product-card-right" style="flex-shrink:0;text-align:right">
           ${statusBadgeHtml(p)}
           <div style="margin-top:4px"><div style="font-size:10px;color:#9ca3af">採購</div><div style="font-size:20px;font-weight:800;color:#111">${p.qty}</div></div>
