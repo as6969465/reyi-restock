@@ -451,26 +451,16 @@ function importExcel(input) {
         price:   headers.findIndex(h => h.includes('售價')),
         arrival: headers.findIndex(h => h.includes('到貨日'))
       };
+      const importDate = document.getElementById('receivingDate').value;
       const parsed = [];
       for (let i = hRow + 1; i < rows.length; i++) {
         const r = rows[i];
         const seq = r[idx.seq];
         if (!seq || String(seq).trim() === '') continue;
-        const rawDate = r[idx.arrival];
-        let arrivalDate = '';
-        if (rawDate) {
-          const d = new Date(rawDate);
-          if (!isNaN(d)) arrivalDate = d.toISOString().slice(0,10);
-          else {
-            const s = String(rawDate).replace(/\//g,'-');
-            if (/^\d{4}-\d{2}-\d{2}$/.test(s)) arrivalDate = s;
-            else if (/^\d{7}$/.test(s)) { const y = parseInt(s.slice(0,3))+1911; arrivalDate = `${y}-${s.slice(3,5)}-${s.slice(5,7)}`; }
-          }
-        }
         parsed.push({
           seq, po: r[idx.po]||'', cat: r[idx.cat]||'', barcode: r[idx.barcode]||'',
           itemNo: r[idx.itemNo]||'', name: r[idx.name]||'', spec: r[idx.spec]||'',
-          period: r[idx.period]||'', qty: Number(r[idx.qty])||0, sellingPrice: Number(r[idx.price])||0, arrivalDate,
+          period: r[idx.period]||'', qty: Number(r[idx.qty])||0, sellingPrice: Number(r[idx.price])||0, arrivalDate: importDate,
           status: STATUS.PENDING,
           received: false, goodQty: 0, badQty: 0,
           defectTime:'', defectClass:'其他異常', defectReasons:[], defectNote:'', defectStaff:'',
@@ -478,8 +468,7 @@ function importExcel(input) {
           photos:[], time:''
         });
       }
-      const importDate = document.getElementById('receivingDate').value;
-      const dates = [...new Set(parsed.map(p=>p.arrivalDate).filter(Boolean))].sort();
+      const dates = [importDate].filter(Boolean);
       // 比對重複：採購單號 + 品號 兩者同時符合
       const dupItems = parsed.filter(p => {
         const key = p.arrivalDate || importDate || 'unknown';
@@ -705,10 +694,7 @@ function importManualExcel(input) {
       const parsed = [];
       for (let i = hRow+1; i < rows.length; i++) {
         const r = rows[i]; if (!r[idx.seq]||String(r[idx.seq]).trim()==='') continue;
-        const rawDate = r[idx.arrival]; let arrivalDate = '';
-        if (rawDate) { const d=new Date(rawDate); if(!isNaN(d)) arrivalDate=d.toISOString().slice(0,10); else { const s=String(rawDate).replace(/\//g,'-'); if(/^\d{4}-\d{2}-\d{2}$/.test(s)) arrivalDate=s; else if(/^\d{7}$/.test(s)){const y=parseInt(s.slice(0,3))+1911;arrivalDate=`${y}-${s.slice(3,5)}-${s.slice(5,7)}`;} } }
-        if (!arrivalDate) arrivalDate = importDate;
-        parsed.push({seq:r[idx.seq],po:r[idx.po]||'',cat:r[idx.cat]||'',barcode:r[idx.barcode]||'',itemNo:r[idx.itemNo]||'',name:r[idx.name]||'',spec:r[idx.spec]||'',period:r[idx.period]||'',qty:Number(r[idx.qty])||0,sellingPrice:Number(r[idx.price])||0,arrivalDate});
+        parsed.push({seq:r[idx.seq],po:r[idx.po]||'',cat:r[idx.cat]||'',barcode:r[idx.barcode]||'',itemNo:r[idx.itemNo]||'',name:r[idx.name]||'',spec:r[idx.spec]||'',period:r[idx.period]||'',qty:Number(r[idx.qty])||0,sellingPrice:Number(r[idx.price])||0,arrivalDate:importDate});
       }
       if (!parsed.length) { showToast('未找到有效資料列','error',4000); input.value=''; return; }
       const doImport = async () => {
