@@ -637,18 +637,18 @@ function renderProductTable() {
       </td>
       <td class="px-4 py-3 text-center">
         ${p.status === STATUS.PENDING
-          ? `<div class="flex items-center gap-1 justify-center">
-               <div class="flex flex-col items-center gap-0.5">
-               <button onclick="toggleDeskArrived('${date}',${origIdx})"
-                 class="${arrived
-                   ? 'bg-green-100 border border-green-400 text-green-700 hover:bg-green-200'
-                   : 'bg-gray-100 border border-gray-300 text-gray-600 hover:bg-gray-200'} text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors">
-                 ${arrived ? '✓ 已到貨' : '已到貨'}
-               </button>
-               ${arrived && (p.arrivedBy||p.arrivedTime) ? `<span class="text-gray-400" style="font-size:10px">${[p.arrivedBy,p.arrivedTime].filter(Boolean).join(' ')}</span>` : ''}
+          ? `<div class="flex flex-col items-center gap-0.5">
+               <div class="flex items-center gap-1 justify-center">
+                 <button onclick="toggleDeskArrived('${date}',${origIdx})"
+                   class="${arrived
+                     ? 'bg-green-100 border border-green-400 text-green-700 hover:bg-green-200'
+                     : 'bg-gray-100 border border-gray-300 text-gray-600 hover:bg-gray-200'} text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors">
+                   ${arrived ? '✓ 已到貨' : '已到貨'}
+                 </button>
+                 ${arrived ? `<button onclick="startDesktopReceiving('${date}',${origIdx})"
+                   class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg">確認</button>` : ''}
                </div>
-               ${arrived ? `<button onclick="startDesktopReceiving('${date}',${origIdx})"
-                 class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg">確認</button>` : ''}
+               ${arrived && (p.arrivedBy||p.arrivedTime) ? `<span class="text-gray-400" style="font-size:10px">${[p.arrivedBy,p.arrivedTime].filter(Boolean).join(' ')}</span>` : ''}
              </div>`
           : p.status === STATUS.RESOLVED
             ? '<span class="text-xs text-gray-400">已處理</span>'
