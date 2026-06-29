@@ -552,20 +552,23 @@ function renderProductCards() {
       <!-- 操作列 -->
       ${p.status !== STATUS.PENDING
         ? `<div style="padding:8px 12px;border-top:1px solid #f3f4f6;background:#f9fafb;font-size:12px;color:#9ca3af;text-align:center">已完成確認，不可修改${p.operatorName ? `<span style="margin-left:6px">· ${p.operatorName}</span>` : ''}${p.time ? `<span style="margin-left:6px;font-size:11px">· ${p.time}</span>` : ''}</div>`
-        : `<div style="display:flex;border-top:1px solid ${arrived?'#bbf7d0':'#f3f4f6'};background:${arrived?'#dcfce7':'#f9fafb'}">
-        <button onclick="toggleArrived('${date}',${origIdx})"
-          style="flex:1;padding:10px 0;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:600;
-            color:${arrived?'#15803d':'#6b7280'};display:flex;align-items:center;justify-content:center;gap:5px">
-          ${arrived
-            ? `<svg style="width:15px;height:15px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>已到貨（點擊取消）${p.arrivedBy ? `<span style="font-size:11px;font-weight:400;opacity:.7;margin-left:4px">· ${p.arrivedBy}</span>` : ''}${p.arrivedTime ? `<span style="font-size:11px;font-weight:400;opacity:.7;margin-left:4px">${p.arrivedTime}</span>` : ''}`
-            : `<svg style="width:15px;height:15px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="1.5"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h8"/></svg>標記已到貨`}
-        </button>
-        ${arrived ? `<button onclick="startReceiving('${date}',${origIdx})"
-          style="padding:10px 18px;border:none;border-left:1px solid #86efac;background:#16a34a;color:#fff;
-            font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px">
-          確認登錄
-          <svg style="width:14px;height:14px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
-        </button>` : ''}
+        : `<div style="border-top:1px solid ${arrived?'#bbf7d0':'#f3f4f6'};background:${arrived?'#dcfce7':'#f9fafb'}">
+        <div style="display:flex;align-items:stretch">
+          <button onclick="toggleArrived('${date}',${origIdx})"
+            style="flex:1;padding:10px 0;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:600;
+              color:${arrived?'#15803d':'#6b7280'};display:flex;align-items:center;justify-content:center;gap:5px">
+            ${arrived
+              ? `<svg style="width:15px;height:15px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>已到貨（點擊取消）`
+              : `<svg style="width:15px;height:15px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="1.5"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h8"/></svg>標記已到貨`}
+          </button>
+          ${arrived ? `<button onclick="startReceiving('${date}',${origIdx})"
+            style="padding:10px 18px;border:none;border-left:1px solid #86efac;background:#16a34a;color:#fff;
+              font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px">
+            確認登錄
+            <svg style="width:14px;height:14px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+          </button>` : ''}
+        </div>
+        ${arrived && (p.arrivedBy || p.arrivedTime) ? `<div style="padding:4px 12px 6px;font-size:11px;color:#6b7280;text-align:center">${[p.arrivedBy,p.arrivedTime].filter(Boolean).join(' · ')}</div>` : ''}
       </div>`}
     </div>`;
   }).join('');
