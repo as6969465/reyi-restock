@@ -541,9 +541,10 @@ function renderProductCards() {
           <div class="product-card-name">${p.name}</div>
           <div class="product-card-sub">${p.itemNo||'—'} · ${p.cat||'—'}${p.sellingPrice ? ` &nbsp;·&nbsp; 售價 $${p.sellingPrice.toLocaleString()}` : ''}</div>
         </div>
-        ${p.barcode ? `<div style="flex-shrink:0;width:100px;display:flex;align-items:center">
+        ${p.barcode ? `<div style="flex-shrink:0;width:100px;display:flex;flex-direction:column;align-items:center;gap:2px">
           <canvas id="bc-r-${date}-${origIdx}" style="width:100px;height:36px;display:block"></canvas>
-        </div>` : ''}
+          ${arrived && (p.arrivedBy||p.arrivedTime) ? `<div style="font-size:10px;color:#6b7280;text-align:center;line-height:1.3">${[p.arrivedBy,p.arrivedTime].filter(Boolean).join('<br>')}</div>` : ''}
+        </div>` : `${arrived && (p.arrivedBy||p.arrivedTime) ? `<div style="flex-shrink:0;font-size:10px;color:#6b7280;text-align:center;line-height:1.4">${[p.arrivedBy,p.arrivedTime].filter(Boolean).join('<br>')}</div>` : ''}`}
         <div class="product-card-right" style="flex-shrink:0;text-align:right">
           ${statusBadgeHtml(p)}
           <div style="margin-top:4px"><div style="font-size:10px;color:#9ca3af">採購</div><div style="font-size:20px;font-weight:800;color:#111">${p.qty}</div></div>
@@ -568,7 +569,7 @@ function renderProductCards() {
             <svg style="width:14px;height:14px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
           </button>` : ''}
         </div>
-        ${arrived && (p.arrivedBy || p.arrivedTime) ? `<div style="padding:4px 12px 6px;font-size:11px;color:#6b7280;text-align:center">${[p.arrivedBy,p.arrivedTime].filter(Boolean).join(' · ')}</div>` : ''}
+
       </div>`}
     </div>`;
   }).join('');
